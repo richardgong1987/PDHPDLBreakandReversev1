@@ -392,10 +392,10 @@ public class PdhpdlOrderExecutor {
                 TimeFrame = _timeFrame,
                 EntryTime = position.EntryTime,
                 EntryPrice = position.EntryPrice,
-                StopPrice = plan.StopPrice,
+                StopPrice = position.StopLoss ?? plan.StopPrice,
                 Tp1Price = plan.Tp1Price,
                 Tp2Price = plan.Tp2Price,
-                RiskPrice = plan.RiskPrice,
+                RiskPrice = Math.Abs(position.EntryPrice - (position.StopLoss ?? plan.StopPrice)),
                 VolumeInUnits = position.VolumeInUnits,
                 PositionId = position.Id.ToString(),
                 DealId = GetOpenDealId(position)
