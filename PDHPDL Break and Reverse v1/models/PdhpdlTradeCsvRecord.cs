@@ -45,5 +45,9 @@ public class PdhpdlTradeCsvRecord {
 
     public string CloseTime { get; set; }
 
-    public string CtraderId { get; set; }
+    public string PendingOrderId { get; set; }
+
+    public string PositionId { get; set; }
+
+    public string DealId { get; set; }
 }

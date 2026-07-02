@@ -32,7 +32,8 @@ public class PdhpdlTradeCsvLogger {
             Escape(record.StopPrice.ToString(CultureInfo.InvariantCulture)), Escape(record.Tp1Price.ToString(CultureInfo.InvariantCulture)),
             Escape(record.Tp2Price.ToString(CultureInfo.InvariantCulture)), Escape(record.RiskPrice.ToString(CultureInfo.InvariantCulture)),
             Escape(record.VolumeInUnits.ToString(CultureInfo.InvariantCulture)), Escape(record.CloseReason),
-            Escape(record.ProfitLoss.ToString(CultureInfo.InvariantCulture)), Escape(record.CloseTime), Escape(record.CtraderId));
+            Escape(record.ProfitLoss.ToString(CultureInfo.InvariantCulture)), Escape(record.CloseTime), Escape(record.PendingOrderId),
+            Escape(record.PositionId), Escape(record.DealId));
         File.AppendAllText(_filePath, line + Environment.NewLine, CsvEncoding);
     }
 
@@ -60,7 +61,7 @@ public class PdhpdlTradeCsvLogger {
 
     private static string BuildHeader() {
         return string.Join(",", "编号", "多空", "关键位", "信号", "收线入场", "回撤25入场", "回撤38.2入场", "回撤50入场", "备注", "交易品种", "时间周期", "入场时间", "入场价格",
-            "止损价格", "第一止盈价格", "第二止盈价格", "风险价格距离", "下单数量", "平仓原因", "平仓盈亏", "平仓时间", "cTrader平台ID");
+            "止损价格", "第一止盈价格", "第二止盈价格", "风险价格距离", "下单数量", "平仓原因", "平仓盈亏", "平仓时间", "挂单ID", "持仓ID", "成交ID");
     }
 
     private static string Escape(string value) {

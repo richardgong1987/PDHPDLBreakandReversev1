@@ -142,6 +142,20 @@ public class PdhpdlOrderExecutor {
         return "TP2";
     }
 
+    private static string GetOpenDealId(Position position) {
+        if (position.Deals == null || position.Deals.Count == 0)
+            return "";
+
+        return position.Deals[0].Id.ToString();
+    }
+
+    private static string GetCloseDealId(Position position) {
+        if (position.Deals == null || position.Deals.Count == 0)
+            return "";
+
+        return position.Deals[position.Deals.Count - 1].Id.ToString();
+    }
+
     private PdhpdlOrderPlan CreatePlan(PdhpdlSignal signal) {
         PdhpdlOrderPlan plan = new();
 
@@ -338,7 +352,8 @@ public class PdhpdlOrderExecutor {
                 Tp2Price = plan.Tp2Price,
                 RiskPrice = plan.RiskPrice,
                 VolumeInUnits = position.VolumeInUnits,
-                CtraderId = position.Id.ToString()
+                PositionId = position.Id.ToString(),
+                DealId = GetOpenDealId(position)
             };
 
             _positionCsvIds[position.Id] = record.Id;
@@ -378,7 +393,7 @@ public class PdhpdlOrderExecutor {
                 Tp2Price = plan.Tp2Price,
                 RiskPrice = plan.RiskPrice,
                 VolumeInUnits = order.VolumeInUnits,
-                CtraderId = csvId
+                PendingOrderId = csvId
             };
 
             _pendingCsvIdsByLabel[order.Label] = csvId;
@@ -417,7 +432,8 @@ public class PdhpdlOrderExecutor {
                 CloseReason = closeReason,
                 ProfitLoss = position.NetProfit,
                 CloseTime = _robot.Server.Time.ToString("yyyy-MM-dd HH:mm:ss"),
-                CtraderId = position.Id.ToString()
+                PositionId = position.Id.ToString(),
+                DealId = GetCloseDealId(position)
             };
 
             _csvLogger.Append(record);
