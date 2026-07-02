@@ -7,8 +7,6 @@ public class PdhpdlOrderPlan {
 
     public string RejectReason { get; set; }
 
-    public int TradeId { get; set; }
-
     public TradeType TradeType { get; set; }
 
     public PdhpdlEntryMode EntryMode { get; set; }

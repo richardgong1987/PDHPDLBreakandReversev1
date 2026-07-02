@@ -42,4 +42,8 @@ public class PdhpdlTradeCsvRecord {
     public string CloseReason { get; set; }
 
     public double ProfitLoss { get; set; }
+
+    public string CloseTime { get; set; }
+
+    public string CtraderId { get; set; }
 }
