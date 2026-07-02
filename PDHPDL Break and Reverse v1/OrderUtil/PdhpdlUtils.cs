@@ -38,7 +38,7 @@ public class PdhpdlUtils {
     }
 
     public static PdhpdlSignal DetectFalseBreakoutOnClosedBar(Bars bars, Bars dailyBars) {
-        PdhpdlSignal signal = new PdhpdlSignal();
+        PdhpdlSignal signal = new();
 
         if (bars.Count < 2)
             return signal;
