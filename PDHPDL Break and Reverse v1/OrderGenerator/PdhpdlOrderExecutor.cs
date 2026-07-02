@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using cAlgo.API;
 using cAlgo.API.Internals;
@@ -24,6 +25,7 @@ public class PdhpdlOrderExecutor {
     private readonly int _forceCloseHour;
     private readonly int _forceCloseMinute;
     private readonly int _resumeTradingHour;
+    private readonly List<NewsBlackoutWindow> _newsBlackoutWindows;
 
     private readonly string _timeFrame;
     private readonly PdhpdlTradeCsvLogger _csvLogger;
@@ -32,9 +34,9 @@ public class PdhpdlOrderExecutor {
     private readonly Dictionary<int, string> _positionCsvIds = new();
     private readonly Dictionary<int, Tp1State> _tp1States = new();
 
-    public PdhpdlOrderExecutor(Robot robot, Symbol symbol, string symbolName, string timeFrame, double riskPct, int stopOffsetTicks, double tp1R,
-        double tp2R, PdhpdlEntryMode entryMode, bool enableSessionRiskGuard, int noNewOrdersStartHour, int forceCloseHour,
-        int forceCloseMinute, int resumeTradingHour, PdhpdlTradeCsvLogger csvLogger) {
+    public PdhpdlOrderExecutor(Robot robot, Symbol symbol, string symbolName, string timeFrame, double riskPct, int stopOffsetTicks,
+        double tp1R, double tp2R, PdhpdlEntryMode entryMode, bool enableSessionRiskGuard, int noNewOrdersStartHour, int forceCloseHour,
+        int forceCloseMinute, int resumeTradingHour, string newsBlackoutWindows, PdhpdlTradeCsvLogger csvLogger) {
         _robot = robot;
         _symbol = symbol;
         _symbolName = symbolName;
@@ -50,7 +52,11 @@ public class PdhpdlOrderExecutor {
         _forceCloseHour = forceCloseHour;
         _forceCloseMinute = forceCloseMinute;
         _resumeTradingHour = resumeTradingHour;
+        _newsBlackoutWindows = ParseNewsBlackoutWindows(newsBlackoutWindows);
         _csvLogger = csvLogger;
+
+        if (_newsBlackoutWindows.Count > 0)
+            _robot.Print("*****News blackout windows loaded. Count: {0}", _newsBlackoutWindows.Count);
 
         _robot.Positions.Closed += OnPositionClosed;
         _robot.Positions.Opened += OnPositionOpened;
@@ -62,7 +68,7 @@ public class PdhpdlOrderExecutor {
     }
 
     public void ManageOpenPositions() {
-        CloseExposureBeforeSessionBreak();
+        CloseExposureBeforeRiskWindow();
 
         foreach (Position position in _robot.Positions.Where(IsStrategyPosition).ToArray())
             TryCloseTp1(position);
@@ -75,8 +81,8 @@ public class PdhpdlOrderExecutor {
         if (!signal.IsLongSignal && !signal.IsShortSignal)
             return;
 
-        if (IsNewOrderBlockedBySessionRisk()) {
-            _robot.Print("*****Order skipped | Session risk guard blocked new order. Time: {0}", _robot.Server.Time);
+        if (IsNewOrderBlockedByRiskWindow()) {
+            _robot.Print("*****Order skipped | Risk guard blocked new order. Time: {0}", _robot.Server.Time);
             return;
         }
 
@@ -108,33 +114,33 @@ public class PdhpdlOrderExecutor {
         return _robot.PendingOrders.Any(order => order.SymbolName == _symbolName);
     }
 
-    private void CloseExposureBeforeSessionBreak() {
-        if (!_enableSessionRiskGuard)
-            return;
-
-        if (!IsForceCloseTime(_robot.Server.Time))
+    private void CloseExposureBeforeRiskWindow() {
+        if (!IsForceCloseTime(_robot.Server.Time) && !IsInNewsBlackout(_robot.Server.Time))
             return;
 
         foreach (PendingOrder order in _robot.PendingOrders.Where(IsStrategyPendingOrder).ToArray()) {
             TradeResult result = _robot.CancelPendingOrder(order);
 
             if (!result.IsSuccessful)
-                _robot.Print("*****Session risk pending cancel failed | Order: {0}, Error: {1}", order.Id, result.Error);
+                _robot.Print("*****Risk guard pending cancel failed | Order: {0}, Error: {1}", order.Id, result.Error);
         }
 
         foreach (Position position in _robot.Positions.Where(IsStrategyPosition).ToArray()) {
             TradeResult result = _robot.ClosePosition(position);
 
             if (!result.IsSuccessful)
-                _robot.Print("*****Session risk close failed | Position: {0}, Error: {1}", position.Id, result.Error);
+                _robot.Print("*****Risk guard close failed | Position: {0}, Error: {1}", position.Id, result.Error);
         }
     }
 
-    private bool IsNewOrderBlockedBySessionRisk() {
+    private bool IsNewOrderBlockedByRiskWindow() {
+        DateTime time = _robot.Server.Time;
+
+        if (IsInNewsBlackout(time))
+            return true;
+
         if (!_enableSessionRiskGuard)
             return false;
-
-        DateTime time = _robot.Server.Time;
 
         if (time.DayOfWeek == DayOfWeek.Saturday || time.DayOfWeek == DayOfWeek.Sunday)
             return true;
@@ -143,6 +149,9 @@ public class PdhpdlOrderExecutor {
     }
 
     private bool IsForceCloseTime(DateTime time) {
+        if (!_enableSessionRiskGuard)
+            return false;
+
         if (time.DayOfWeek == DayOfWeek.Saturday || time.DayOfWeek == DayOfWeek.Sunday)
             return true;
 
@@ -177,6 +186,50 @@ public class PdhpdlOrderExecutor {
             return currentMinutes >= startMinutes && currentMinutes < endMinutes;
 
         return currentMinutes >= startMinutes || currentMinutes < endMinutes;
+    }
+
+    private bool IsInNewsBlackout(DateTime time) {
+        foreach (NewsBlackoutWindow window in _newsBlackoutWindows) {
+            if (time >= window.Start && time < window.End)
+                return true;
+        }
+
+        return false;
+    }
+
+    private static List<NewsBlackoutWindow> ParseNewsBlackoutWindows(string value) {
+        var windows = new List<NewsBlackoutWindow>();
+
+        if (string.IsNullOrWhiteSpace(value))
+            return windows;
+
+        string[] entries = value.Split(new[] { ';', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+
+        foreach (string entry in entries) {
+            string[] range = entry.Split(new[] { '~' }, StringSplitOptions.RemoveEmptyEntries);
+
+            if (range.Length != 2)
+                continue;
+
+            if (!TryParseBlackoutTime(range[0], out DateTime start))
+                continue;
+
+            if (!TryParseBlackoutTime(range[1], out DateTime end))
+                continue;
+
+            if (end <= start)
+                continue;
+
+            windows.Add(new NewsBlackoutWindow { Start = start, End = end });
+        }
+
+        return windows;
+    }
+
+    private static bool TryParseBlackoutTime(string value, out DateTime time) {
+        string[] formats = { "yyyy-MM-dd HH:mm", "yyyy-MM-dd HH:mm:ss", "yyyy/MM/dd HH:mm", "yyyy/MM/dd HH:mm:ss" };
+
+        return DateTime.TryParseExact(value.Trim(), formats, CultureInfo.InvariantCulture, DateTimeStyles.None, out time);
     }
 
     private void OnPositionClosed(PositionClosedEventArgs args) {
@@ -225,8 +278,7 @@ public class PdhpdlOrderExecutor {
     }
 
     private bool IsStrategyPendingOrder(PendingOrder order) {
-        return order.SymbolName == _symbolName && !string.IsNullOrWhiteSpace(order.Label) &&
-               order.Label.StartsWith(LabelPrefix + "_");
+        return order.SymbolName == _symbolName && !string.IsNullOrWhiteSpace(order.Label) && order.Label.StartsWith(LabelPrefix + "_");
     }
 
     private string GetCloseRecordId(string csvId, PositionCloseReason reason) {
@@ -433,8 +485,8 @@ public class PdhpdlOrderExecutor {
         _robot.Print(
             "*****Order plan | Side: {0}, EntryMode: {1}, Entry: {2}, Stop: {3}, TP1: {4}, TP2: {5}, RiskPrice: {6}, StopLossPips: {7}, RiskMoney: {8}, EstimatedRiskMoney: {9}, NativeVolumeUnits: {10}, PriceRiskCappedVolumeUnits: {11}, Lots: {12}, TotalVolumeUnits: {13}, Tp1CloseVolumeUnits: {14}",
             plan.TradeType, plan.EntryMode, plan.EntryPrice, plan.StopPrice, plan.Tp1Price, plan.Tp2Price, plan.RiskPrice,
-            plan.StopLossPips, plan.RiskMoney, plan.EstimatedRiskMoney, plan.NativeRiskVolumeInUnits,
-            plan.PriceRiskCappedVolumeInUnits, plan.TotalLots, plan.TotalVolumeInUnits, plan.Tp1CloseVolumeInUnits);
+            plan.StopLossPips, plan.RiskMoney, plan.EstimatedRiskMoney, plan.NativeRiskVolumeInUnits, plan.PriceRiskCappedVolumeInUnits,
+            plan.TotalLots, plan.TotalVolumeInUnits, plan.Tp1CloseVolumeInUnits);
 
         TradeResult result = ExecuteOrder(plan);
 
@@ -630,5 +682,11 @@ public class PdhpdlOrderExecutor {
 
     private static string GetEntryModeCsvValue(PdhpdlEntryMode columnMode, PdhpdlEntryMode selectedMode) {
         return columnMode == selectedMode ? "ORDER" : "";
+    }
+
+    private class NewsBlackoutWindow {
+        public DateTime Start { get; set; }
+
+        public DateTime End { get; set; }
     }
 }

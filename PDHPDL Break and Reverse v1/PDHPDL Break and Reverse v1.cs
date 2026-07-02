@@ -43,6 +43,9 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("恢复开仓小时", DefaultValue = 8, MinValue = 0, MaxValue = 23)]
     public int ResumeTradingHour { get; set; }
 
+    [Parameter("五星数据空仓时间段", DefaultValue = "")]
+    public string NewsBlackoutWindows { get; set; }
+
 
     private PdhpdlLines _pdhpdlLines;
     private Bars _dailyBars;
@@ -63,7 +66,8 @@ public class PDHPDLBreakandReversev1 : Robot {
         Print("****CSV logger path: {0}", _csvLogger.FilePath);
 
         _orderExecutor = new PdhpdlOrderExecutor(this, Symbol, SymbolName, Bars.TimeFrame.ToString(), RiskPct, StopOffsetTicks, Tp1R, Tp2R,
-            EntryMode, EnableSessionRiskGuard, NoNewOrdersStartHour, ForceCloseHour, ForceCloseMinute, ResumeTradingHour, _csvLogger);
+            EntryMode, EnableSessionRiskGuard, NoNewOrdersStartHour, ForceCloseHour, ForceCloseMinute, ResumeTradingHour,
+            NewsBlackoutWindows, _csvLogger);
 
         Print("*****PDH/PDL step painter started. DaysToDraw: {0}", daysToDraw);
     }
