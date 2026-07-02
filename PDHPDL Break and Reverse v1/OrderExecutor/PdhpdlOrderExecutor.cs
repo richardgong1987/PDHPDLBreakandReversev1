@@ -132,7 +132,13 @@ public class PdhpdlOrderExecutor {
         if (!IsStrategyPosition(args.Position))
             return;
 
-        WriteCloseCsvRecord(args.Position, args.Reason);
+        string csvId = GetPositionCsvId(args.Position);
+        string closeRecordId = _csvLogger.AppendClose(args.Position, args.Reason, csvId, _symbolName, _timeFrame, _robot.Server.Time);
+        _positionCsvIds.Remove(args.Position.Id);
+
+        if (!string.IsNullOrWhiteSpace(closeRecordId))
+            _robot.Print("*****CSV close record added. Id: {0}, ProfitLoss: {1}", closeRecordId, args.Position.NetProfit);
+
         _tp1States.Remove(args.Position.Id);
     }
 
@@ -152,19 +158,6 @@ public class PdhpdlOrderExecutor {
         _pendingPlansByLabel.Remove(args.Position.Label);
     }
 
-    private static string GetCloseReasonCode(PositionCloseReason reason) {
-        switch (reason) {
-            case PositionCloseReason.StopLoss:
-                return "SL";
-            case PositionCloseReason.StopOut:
-                return "SO";
-            case PositionCloseReason.TakeProfit:
-                return "TP";
-            default:
-                return "CLOSE";
-        }
-    }
-
     private bool IsStrategyPosition(Position position) {
         return position.SymbolName == _symbolName && !string.IsNullOrWhiteSpace(position.Label) &&
                position.Label.StartsWith(LabelPrefix + "_");
@@ -172,27 +165,6 @@ public class PdhpdlOrderExecutor {
 
     private bool IsStrategyPendingOrder(PendingOrder order) {
         return order.SymbolName == _symbolName && !string.IsNullOrWhiteSpace(order.Label) && order.Label.StartsWith(LabelPrefix + "_");
-    }
-
-    private string GetCloseRecordId(string csvId, PositionCloseReason reason) {
-        if (reason == PositionCloseReason.TakeProfit)
-            return $"{csvId}-TP2";
-
-        return $"{csvId}-{GetCloseReasonCode(reason)}";
-    }
-
-    private static string GetOpenDealId(Position position) {
-        if (position.Deals == null || position.Deals.Count == 0)
-            return "";
-
-        return position.Deals[0].Id.ToString();
-    }
-
-    private static string GetCloseDealId(Position position) {
-        if (position.Deals == null || position.Deals.Count == 0)
-            return "";
-
-        return position.Deals[position.Deals.Count - 1].Id.ToString();
     }
 
     private void RegisterTp1State(Position position, PdhpdlOrderPlan plan) {
@@ -231,7 +203,12 @@ public class PdhpdlOrderExecutor {
         }
 
         state.IsClosed = true;
-        WriteTp1CsvRecord(position, closeVolume);
+        string csvId = GetPositionCsvId(position);
+        string tp1RecordId = _csvLogger.AppendTp1(position, closeVolume, csvId, _symbolName, _timeFrame, _robot.Server.Time);
+
+        if (!string.IsNullOrWhiteSpace(tp1RecordId))
+            _robot.Print("*****CSV TP1 record added. Id: {0}, Volume: {1}", tp1RecordId, closeVolume);
+
         _robot.Print("*****TP1 partial close succeeded | Position: {0}, Volume: {1}", position.Id, closeVolume);
     }
 
@@ -392,10 +369,20 @@ public class PdhpdlOrderExecutor {
 
         if (_entryMode == PdhpdlEntryMode.Close) {
             RegisterTp1State(result.Position, plan);
-            WriteEntryCsvRecord(plan, result.Position);
+            string csvId = _csvLogger.AppendEntry(plan, result.Position, _symbolName, _timeFrame);
+
+            if (!string.IsNullOrWhiteSpace(csvId)) {
+                _positionCsvIds[result.Position.Id] = csvId;
+                _robot.Print("*****CSV trade record added. Path: {0}", _csvLogger.FilePath);
+            }
         } else {
             _pendingPlansByLabel[plan.Label] = plan;
-            WritePendingEntryCsvRecord(plan, result.PendingOrder);
+            string csvId = _csvLogger.AppendPendingEntry(plan, result.PendingOrder, _symbolName, _timeFrame);
+
+            if (!string.IsNullOrWhiteSpace(csvId)) {
+                _pendingCsvIdsByLabel[result.PendingOrder.Label] = csvId;
+                _robot.Print("*****CSV pending order record added. Id: {0}, Path: {1}", csvId, _csvLogger.FilePath);
+            }
         }
     }
 
@@ -409,171 +396,10 @@ public class PdhpdlOrderExecutor {
             plan.Tp2Pips, ProtectionType.Relative, null, EntryComment);
     }
 
-    private void WriteEntryCsvRecord(PdhpdlOrderPlan plan, Position position) {
-        if (position == null)
-            return;
-
-        try {
-            string side = plan.TradeType == TradeType.Buy ? "B" : "S";
-            string keyLevel = plan.TradeType == TradeType.Buy ? "PDL" : "PDH";
-
-            var record = new PdhpdlTradeCsvRecord {
-                Id = position.Id.ToString(),
-                Side = side,
-                KeyLevel = keyLevel,
-                Signal = "false-breakout",
-                CloseEntryResult = GetEntryModeCsvValue(PdhpdlEntryMode.Close, plan.EntryMode),
-                Pullback25Result = GetEntryModeCsvValue(PdhpdlEntryMode.Pullback25, plan.EntryMode),
-                Pullback382Result = GetEntryModeCsvValue(PdhpdlEntryMode.Pullback382, plan.EntryMode),
-                Pullback50Result = GetEntryModeCsvValue(PdhpdlEntryMode.Pullback50, plan.EntryMode),
-                Comment = "ENTRY",
-                Symbol = _symbolName,
-                TimeFrame = _timeFrame,
-                EntryTime = position.EntryTime,
-                EntryPrice = position.EntryPrice,
-                StopPrice = position.StopLoss ?? plan.StopPrice,
-                Tp1Price = plan.Tp1Price,
-                Tp2Price = plan.Tp2Price,
-                RiskPrice = Math.Abs(position.EntryPrice - (position.StopLoss ?? plan.StopPrice)),
-                VolumeInUnits = position.VolumeInUnits,
-                PositionId = position.Id.ToString(),
-                DealId = GetOpenDealId(position)
-            };
-
-            _positionCsvIds[position.Id] = record.Id;
-            _csvLogger.Append(record);
-
-            _robot.Print("*****CSV trade record added. Path: {0}", _csvLogger.FilePath);
-        } catch (Exception ex) {
-            _robot.Print("*****CSV write failed | {0}", ex.Message);
-        }
-    }
-
-    private void WritePendingEntryCsvRecord(PdhpdlOrderPlan plan, PendingOrder order) {
-        if (order == null)
-            return;
-
-        try {
-            string side = plan.TradeType == TradeType.Buy ? "B" : "S";
-            string keyLevel = plan.TradeType == TradeType.Buy ? "PDL" : "PDH";
-            string csvId = order.Id.ToString();
-
-            var record = new PdhpdlTradeCsvRecord {
-                Id = csvId,
-                Side = side,
-                KeyLevel = keyLevel,
-                Signal = "false-breakout",
-                CloseEntryResult = GetEntryModeCsvValue(PdhpdlEntryMode.Close, plan.EntryMode),
-                Pullback25Result = GetEntryModeCsvValue(PdhpdlEntryMode.Pullback25, plan.EntryMode),
-                Pullback382Result = GetEntryModeCsvValue(PdhpdlEntryMode.Pullback382, plan.EntryMode),
-                Pullback50Result = GetEntryModeCsvValue(PdhpdlEntryMode.Pullback50, plan.EntryMode),
-                Comment = "ENTRY",
-                Symbol = _symbolName,
-                TimeFrame = _timeFrame,
-                EntryTime = order.SubmittedTime,
-                EntryPrice = order.TargetPrice,
-                StopPrice = plan.StopPrice,
-                Tp1Price = plan.Tp1Price,
-                Tp2Price = plan.Tp2Price,
-                RiskPrice = plan.RiskPrice,
-                VolumeInUnits = order.VolumeInUnits,
-                PendingOrderId = csvId
-            };
-
-            _pendingCsvIdsByLabel[order.Label] = csvId;
-            _csvLogger.Append(record);
-
-            _robot.Print("*****CSV pending order record added. Id: {0}, Path: {1}", record.Id, _csvLogger.FilePath);
-        } catch (Exception ex) {
-            _robot.Print("*****CSV pending order write failed | {0}", ex.Message);
-        }
-    }
-
-    private void WriteCloseCsvRecord(Position position, PositionCloseReason reason) {
-        try {
-            string closeReason = GetCloseReasonCode(reason);
-            string csvId = GetPositionCsvId(position);
-
-            var record = new PdhpdlTradeCsvRecord {
-                Id = GetCloseRecordId(csvId, reason),
-                Side = position.TradeType == TradeType.Buy ? "B" : "S",
-                KeyLevel = "",
-                Signal = "close",
-                CloseEntryResult = "",
-                Pullback25Result = "",
-                Pullback382Result = "",
-                Pullback50Result = "",
-                Comment = position.NetProfit >= 0.0 ? "盈利" : "亏损",
-                Symbol = _symbolName,
-                TimeFrame = _timeFrame,
-                EntryTime = position.EntryTime,
-                EntryPrice = position.EntryPrice,
-                StopPrice = 0.0,
-                Tp1Price = 0.0,
-                Tp2Price = 0.0,
-                RiskPrice = 0.0,
-                VolumeInUnits = position.VolumeInUnits,
-                CloseReason = closeReason,
-                ProfitLoss = position.NetProfit,
-                CloseTime = _robot.Server.Time.ToString("yyyy-MM-dd HH:mm:ss"),
-                PositionId = position.Id.ToString(),
-                DealId = GetCloseDealId(position)
-            };
-
-            _csvLogger.Append(record);
-            _positionCsvIds.Remove(position.Id);
-
-            _robot.Print("*****CSV close record added. Id: {0}, ProfitLoss: {1}", record.Id, record.ProfitLoss);
-        } catch (Exception ex) {
-            _robot.Print("*****CSV close write failed | {0}", ex.Message);
-        }
-    }
-
-    private void WriteTp1CsvRecord(Position position, double closeVolumeInUnits) {
-        try {
-            string csvId = GetPositionCsvId(position);
-
-            var record = new PdhpdlTradeCsvRecord {
-                Id = $"{csvId}-TP1",
-                Side = position.TradeType == TradeType.Buy ? "B" : "S",
-                KeyLevel = "",
-                Signal = "partial-close",
-                CloseEntryResult = "",
-                Pullback25Result = "",
-                Pullback382Result = "",
-                Pullback50Result = "",
-                Comment = "TP1部分止盈",
-                Symbol = _symbolName,
-                TimeFrame = _timeFrame,
-                EntryTime = position.EntryTime,
-                EntryPrice = position.EntryPrice,
-                StopPrice = 0.0,
-                Tp1Price = 0.0,
-                Tp2Price = 0.0,
-                RiskPrice = 0.0,
-                VolumeInUnits = closeVolumeInUnits,
-                CloseReason = "TP1",
-                ProfitLoss = position.NetProfit,
-                CloseTime = _robot.Server.Time.ToString("yyyy-MM-dd HH:mm:ss"),
-                PositionId = position.Id.ToString(),
-                DealId = GetCloseDealId(position)
-            };
-
-            _csvLogger.Append(record);
-            _robot.Print("*****CSV TP1 record added. Id: {0}, Volume: {1}", record.Id, closeVolumeInUnits);
-        } catch (Exception ex) {
-            _robot.Print("*****CSV TP1 write failed | {0}", ex.Message);
-        }
-    }
-
     private string GetPositionCsvId(Position position) {
         if (_positionCsvIds.TryGetValue(position.Id, out string csvId))
             return csvId;
 
         return position.Id.ToString();
-    }
-
-    private static string GetEntryModeCsvValue(PdhpdlEntryMode columnMode, PdhpdlEntryMode selectedMode) {
-        return columnMode == selectedMode ? "ORDER" : "";
     }
 }
