@@ -16,8 +16,17 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("每笔交易风险百分比，默认1%", DefaultValue = 1.0, MinValue = 0.1, MaxValue = 10.0, Step = 0.1)]
     public double RiskPct { get; set; }
 
+    [Parameter("最大单笔风险金额", DefaultValue = 100.0, MinValue = 0.0, Step = 1.0)]
+    public double MaxRiskMoney { get; set; }
+
+    [Parameter("风险安全系数", DefaultValue = 0.9, MinValue = 0.1, MaxValue = 1.0, Step = 0.05)]
+    public double RiskSafetyFactor { get; set; }
+
     [Parameter("止损偏移点数", DefaultValue = 15, MinValue = 0, MaxValue = 1000)]
     public int StopOffsetTicks { get; set; }
+
+    [Parameter("最小止损价格距离", DefaultValue = 5.0, MinValue = 0.0, Step = 0.1)]
+    public double MinRiskPrice { get; set; }
 
     [Parameter("第一止盈目标", DefaultValue = 2.0, MinValue = 0.5, MaxValue = 20.0, Step = 0.1)]
     public double Tp1R { get; set; }
@@ -28,13 +37,10 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("回撤开仓模式", DefaultValue = PdhpdlEntryMode.Close)]
     public PdhpdlEntryMode EntryMode { get; set; }
 
-    [Parameter("启用交易时段风控", DefaultValue = true)]
-    public bool EnableSessionRiskGuard { get; set; }
-
-    [Parameter("禁止开仓开始小时", DefaultValue = 5, MinValue = 0, MaxValue = 23)]
+    [Parameter("禁止开仓开始小时", DefaultValue = 4, MinValue = 0, MaxValue = 23)]
     public int NoNewOrdersStartHour { get; set; }
 
-    [Parameter("强制平仓小时", DefaultValue = 6, MinValue = 0, MaxValue = 23)]
+    [Parameter("强制平仓小时", DefaultValue = 4, MinValue = 0, MaxValue = 23)]
     public int ForceCloseHour { get; set; }
 
     [Parameter("强制平仓分钟", DefaultValue = 30, MinValue = 0, MaxValue = 59)]
@@ -42,6 +48,15 @@ public class PDHPDLBreakandReversev1 : Robot {
 
     [Parameter("恢复开仓小时", DefaultValue = 8, MinValue = 0, MaxValue = 23)]
     public int ResumeTradingHour { get; set; }
+
+    [Parameter("周五禁止开仓开始小时", DefaultValue = 0, MinValue = 0, MaxValue = 23)]
+    public int FridayNoNewOrdersStartHour { get; set; }
+
+    [Parameter("周五强制平仓小时", DefaultValue = 3, MinValue = 0, MaxValue = 23)]
+    public int FridayForceCloseHour { get; set; }
+
+    [Parameter("周五强制平仓分钟", DefaultValue = 30, MinValue = 0, MaxValue = 59)]
+    public int FridayForceCloseMinute { get; set; }
 
     [Parameter("五星数据空仓时间段", DefaultValue = "")]
     public string NewsBlackoutWindows { get; set; }
@@ -65,15 +80,16 @@ public class PDHPDLBreakandReversev1 : Robot {
         _csvLogger = new PdhpdlTradeCsvLogger();
         Print("****CSV logger path: {0}", _csvLogger.FilePath);
 
-        _orderExecutor = new PdhpdlOrderExecutor(this, Symbol, SymbolName, Bars.TimeFrame.ToString(), RiskPct, StopOffsetTicks, Tp1R, Tp2R,
-            EntryMode, EnableSessionRiskGuard, NoNewOrdersStartHour, ForceCloseHour, ForceCloseMinute, ResumeTradingHour,
-            NewsBlackoutWindows, _csvLogger);
+        _orderExecutor = new PdhpdlOrderExecutor(this, Symbol, SymbolName, Bars.TimeFrame.ToString(), RiskPct, MaxRiskMoney, RiskSafetyFactor,
+            StopOffsetTicks, MinRiskPrice, Tp1R, Tp2R, EntryMode, NoNewOrdersStartHour, ForceCloseHour, ForceCloseMinute, ResumeTradingHour,
+            FridayNoNewOrdersStartHour, FridayForceCloseHour, FridayForceCloseMinute, NewsBlackoutWindows, _csvLogger);
 
         Print("*****PDH/PDL step painter started. DaysToDraw: {0}", daysToDraw);
     }
 
     protected override void OnBar() {
         _pdhpdlLines.Draw();
+        _orderExecutor?.ManageOpenPositions();
         DetectFalseBreakoutOnClosedBar();
     }
 
