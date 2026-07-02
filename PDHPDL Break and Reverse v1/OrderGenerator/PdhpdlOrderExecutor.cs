@@ -121,8 +121,7 @@ public class PdhpdlOrderExecutor {
     }
 
     private bool IsStrategyPosition(Position position) {
-        return position.SymbolName == _symbolName &&
-               !string.IsNullOrWhiteSpace(position.Label) &&
+        return position.SymbolName == _symbolName && !string.IsNullOrWhiteSpace(position.Label) &&
                position.Label.StartsWith(LabelPrefix + "_");
     }
 
