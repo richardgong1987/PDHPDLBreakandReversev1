@@ -63,10 +63,7 @@ public class PdhpdlRiskGuard {
         double proportionalRiskMoney = RiskUtil.CalcRiskMoney(equity, riskPct);
         double safetyFactor = Math.Max(0.1, Math.Min(_config.RiskSafetyFactor, 1.0));
 
-        if (_config.MaxRiskMoney <= 0.0)
-            return proportionalRiskMoney * safetyFactor;
-
-        return Math.Min(proportionalRiskMoney, _config.MaxRiskMoney) * safetyFactor;
+        return proportionalRiskMoney * safetyFactor;
     }
 
     public bool IsInNewsBlackout(DateTime time) {

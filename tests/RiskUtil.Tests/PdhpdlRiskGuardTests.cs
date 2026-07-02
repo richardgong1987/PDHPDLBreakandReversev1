@@ -51,10 +51,10 @@ namespace RiskUtil.Tests {
         }
 
         [Fact]
-        public void applies_max_risk_money_and_safety_factor() {
+        public void calculates_percent_risk_from_current_equity_with_safety_factor() {
             PdhpdlRiskGuard guard = CreateGuard();
 
-            Assert.Equal(90.0, guard.CalculateRiskMoney(20000.0, 1.0), precision: 10);
+            Assert.Equal(180.0, guard.CalculateRiskMoney(20000.0, 1.0), precision: 10);
             Assert.Equal(45.0, guard.CalculateRiskMoney(5000.0, 1.0), precision: 10);
         }
 
@@ -69,7 +69,6 @@ namespace RiskUtil.Tests {
 
         private static PdhpdlRiskGuard CreateGuard(string newsBlackoutWindows = "") {
             return new PdhpdlRiskGuard(new PdhpdlRiskGuardConfig {
-                MaxRiskMoney = 100.0,
                 RiskSafetyFactor = 0.9,
                 MinRiskPrice = 5.0,
                 NoNewOrdersStartHour = 4,

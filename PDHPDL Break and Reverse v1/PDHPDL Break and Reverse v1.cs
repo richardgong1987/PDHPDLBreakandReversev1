@@ -16,9 +16,6 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("每笔交易风险百分比，默认1%", DefaultValue = 1.0, MinValue = 0.1, MaxValue = 10.0, Step = 0.1)]
     public double RiskPct { get; set; }
 
-    [Parameter("最大单笔风险金额", DefaultValue = 100.0, MinValue = 0.0, Step = 1.0)]
-    public double MaxRiskMoney { get; set; }
-
     [Parameter("风险安全系数", DefaultValue = 0.9, MinValue = 0.1, MaxValue = 1.0, Step = 0.05)]
     public double RiskSafetyFactor { get; set; }
 
@@ -81,7 +78,6 @@ public class PDHPDLBreakandReversev1 : Robot {
         Print("****CSV logger path: {0}", _csvLogger.FilePath);
 
         var riskGuardConfig = new PdhpdlRiskGuardConfig {
-            MaxRiskMoney = MaxRiskMoney,
             RiskSafetyFactor = RiskSafetyFactor,
             MinRiskPrice = MinRiskPrice,
             NoNewOrdersStartHour = NoNewOrdersStartHour,
