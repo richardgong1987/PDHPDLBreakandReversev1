@@ -33,6 +33,10 @@ public class PdhpdlOrderPlan {
 
     public double TotalVolumeInUnits { get; set; }
 
+    public double NativeRiskVolumeInUnits { get; set; }
+
+    public double PriceRiskCappedVolumeInUnits { get; set; }
+
     public double Tp1CloseVolumeInUnits { get; set; }
 
     public double RiskMoney { get; set; }

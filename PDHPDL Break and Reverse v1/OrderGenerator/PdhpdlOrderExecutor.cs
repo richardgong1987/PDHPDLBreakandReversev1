@@ -242,19 +242,34 @@ public class PdhpdlOrderExecutor {
 
         double riskMoney = RiskUtil.CalcRiskMoney(_robot.Account.Equity, _riskPct);
 
-        double totalVolumeInUnits = _symbol.VolumeForProportionalRisk(
+        double nativeRiskVolumeInUnits = _symbol.VolumeForProportionalRisk(
             ProportionalAmountType.Equity, _riskPct, stopLossPips, RoundingMode.Down);
 
+        nativeRiskVolumeInUnits = _symbol.NormalizeVolumeInUnits(nativeRiskVolumeInUnits, RoundingMode.Down);
+
+        double priceRiskCappedVolumeInUnits = riskMoney / riskPrice;
+        priceRiskCappedVolumeInUnits = _symbol.NormalizeVolumeInUnits(priceRiskCappedVolumeInUnits, RoundingMode.Down);
+
+        double totalVolumeInUnits = Math.Min(nativeRiskVolumeInUnits, priceRiskCappedVolumeInUnits);
         totalVolumeInUnits = _symbol.NormalizeVolumeInUnits(totalVolumeInUnits, RoundingMode.Down);
 
         if (totalVolumeInUnits < _symbol.VolumeInUnitsMin) {
-            plan.RejectReason = $"Calculated volume is too small. TotalVolume={totalVolumeInUnits}, Min={_symbol.VolumeInUnitsMin}";
+            plan.RejectReason =
+                $"Calculated volume is too small. TotalVolume={totalVolumeInUnits}, NativeVolume={nativeRiskVolumeInUnits}, PriceRiskCappedVolume={priceRiskCappedVolumeInUnits}, Min={_symbol.VolumeInUnitsMin}";
             return plan;
         }
 
         if (totalVolumeInUnits > _symbol.VolumeInUnitsMax) {
             plan.RejectReason =
                 $"Calculated volume is above broker maximum. TotalVolume={totalVolumeInUnits}, Max={_symbol.VolumeInUnitsMax}";
+            return plan;
+        }
+
+        double cappedRiskMoney = totalVolumeInUnits * riskPrice;
+
+        if (cappedRiskMoney > riskMoney) {
+            plan.RejectReason =
+                $"Calculated volume exceeds risk limit. RiskMoney={riskMoney}, CappedRiskMoney={cappedRiskMoney}, TotalVolume={totalVolumeInUnits}";
             return plan;
         }
 
@@ -283,6 +298,8 @@ public class PdhpdlOrderExecutor {
         plan.Tp2Pips = tp2Pips;
         plan.TotalLots = totalVolumeInUnits / _symbol.LotSize;
         plan.TotalVolumeInUnits = totalVolumeInUnits;
+        plan.NativeRiskVolumeInUnits = nativeRiskVolumeInUnits;
+        plan.PriceRiskCappedVolumeInUnits = priceRiskCappedVolumeInUnits;
         plan.Tp1CloseVolumeInUnits = tp1CloseVolumeInUnits;
         plan.RiskMoney = riskMoney;
         plan.EstimatedRiskMoney = estimatedRiskMoney;
@@ -320,10 +337,10 @@ public class PdhpdlOrderExecutor {
 
     private void ExecutePlan(PdhpdlOrderPlan plan) {
         _robot.Print(
-            "*****Order plan | Side: {0}, EntryMode: {1}, Entry: {2}, Stop: {3}, TP1: {4}, TP2: {5}, RiskPrice: {6}, StopLossPips: {7}, RiskMoney: {8}, EstimatedRiskMoney: {9}, Lots: {10}, TotalVolumeUnits: {11}, Tp1CloseVolumeUnits: {12}",
+            "*****Order plan | Side: {0}, EntryMode: {1}, Entry: {2}, Stop: {3}, TP1: {4}, TP2: {5}, RiskPrice: {6}, StopLossPips: {7}, RiskMoney: {8}, EstimatedRiskMoney: {9}, NativeVolumeUnits: {10}, PriceRiskCappedVolumeUnits: {11}, Lots: {12}, TotalVolumeUnits: {13}, Tp1CloseVolumeUnits: {14}",
             plan.TradeType, plan.EntryMode, plan.EntryPrice, plan.StopPrice, plan.Tp1Price, plan.Tp2Price, plan.RiskPrice,
-            plan.StopLossPips, plan.RiskMoney, plan.EstimatedRiskMoney, plan.TotalLots, plan.TotalVolumeInUnits,
-            plan.Tp1CloseVolumeInUnits);
+            plan.StopLossPips, plan.RiskMoney, plan.EstimatedRiskMoney, plan.NativeRiskVolumeInUnits,
+            plan.PriceRiskCappedVolumeInUnits, plan.TotalLots, plan.TotalVolumeInUnits, plan.Tp1CloseVolumeInUnits);
 
         TradeResult result = ExecuteOrder(plan);
 
