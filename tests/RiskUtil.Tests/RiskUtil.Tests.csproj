@@ -16,6 +16,9 @@
        so tests stay free of the cTrader.Automate / cAlgo.API dependency. -->
   <ItemGroup>
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Util\RiskUtil.cs" Link="RiskUtil.cs" />
+    <Compile Include="..\..\PDHPDL Break and Reverse v1\Util\PdhpdlRiskGuard.cs" Link="PdhpdlRiskGuard.cs" />
+    <Compile Include="..\..\PDHPDL Break and Reverse v1\models\PdhpdlRiskGuardConfig.cs" Link="PdhpdlRiskGuardConfig.cs" />
+    <Compile Include="..\..\PDHPDL Break and Reverse v1\models\NewsBlackoutWindow.cs" Link="NewsBlackoutWindow.cs" />
   </ItemGroup>
 
 </Project>

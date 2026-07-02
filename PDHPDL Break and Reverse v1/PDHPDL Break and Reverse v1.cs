@@ -80,9 +80,24 @@ public class PDHPDLBreakandReversev1 : Robot {
         _csvLogger = new PdhpdlTradeCsvLogger();
         Print("****CSV logger path: {0}", _csvLogger.FilePath);
 
-        _orderExecutor = new PdhpdlOrderExecutor(this, Symbol, SymbolName, Bars.TimeFrame.ToString(), RiskPct, MaxRiskMoney, RiskSafetyFactor,
-            StopOffsetTicks, MinRiskPrice, Tp1R, Tp2R, EntryMode, NoNewOrdersStartHour, ForceCloseHour, ForceCloseMinute, ResumeTradingHour,
-            FridayNoNewOrdersStartHour, FridayForceCloseHour, FridayForceCloseMinute, NewsBlackoutWindows, _csvLogger);
+        var riskGuardConfig = new PdhpdlRiskGuardConfig {
+            MaxRiskMoney = MaxRiskMoney,
+            RiskSafetyFactor = RiskSafetyFactor,
+            MinRiskPrice = MinRiskPrice,
+            NoNewOrdersStartHour = NoNewOrdersStartHour,
+            ForceCloseHour = ForceCloseHour,
+            ForceCloseMinute = ForceCloseMinute,
+            ResumeTradingHour = ResumeTradingHour,
+            FridayNoNewOrdersStartHour = FridayNoNewOrdersStartHour,
+            FridayForceCloseHour = FridayForceCloseHour,
+            FridayForceCloseMinute = FridayForceCloseMinute,
+            NewsBlackoutWindows = NewsBlackoutWindows
+        };
+
+        var riskGuard = new PdhpdlRiskGuard(riskGuardConfig);
+
+        _orderExecutor = new PdhpdlOrderExecutor(this, Symbol, SymbolName, Bars.TimeFrame.ToString(), RiskPct, StopOffsetTicks, Tp1R, Tp2R,
+            EntryMode, riskGuard, _csvLogger);
 
         Print("*****PDH/PDL step painter started. DaysToDraw: {0}", daysToDraw);
     }
