@@ -3,6 +3,8 @@ using System;
 namespace cAlgo.Robots;
 
 public class PdhpdlTradeCsvRecord {
+    public string Id { get; set; }
+
     public string Side { get; set; }
 
     public string KeyLevel { get; set; }
@@ -36,4 +38,8 @@ public class PdhpdlTradeCsvRecord {
     public double RiskPrice { get; set; }
 
     public double VolumeInUnits { get; set; }
+
+    public string CloseReason { get; set; }
+
+    public double ProfitLoss { get; set; }
 }
