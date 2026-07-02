@@ -58,7 +58,9 @@ public class PDHPDLBreakandReversev1 : Robot {
         DetectFalseBreakoutOnClosedBar();
     }
 
-    protected override void OnTick() { }
+    protected override void OnTick() {
+        _orderExecutor?.ManageOpenPositions();
+    }
 
 
     private void DetectFalseBreakoutOnClosedBar() {
