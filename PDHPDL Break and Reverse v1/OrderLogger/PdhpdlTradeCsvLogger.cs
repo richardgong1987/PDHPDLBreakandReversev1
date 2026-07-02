@@ -10,7 +10,6 @@ namespace cAlgo.Robots;
 public class PdhpdlTradeCsvLogger {
     private const string FileName = "pdhpdl-trades.csv";
     private static readonly Encoding CsvEncoding = new UTF8Encoding(true);
-
     private readonly string _filePath;
 
     public PdhpdlTradeCsvLogger() {
