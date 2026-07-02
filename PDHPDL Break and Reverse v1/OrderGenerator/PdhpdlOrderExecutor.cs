@@ -19,6 +19,11 @@ public class PdhpdlOrderExecutor {
     private readonly double _tp1R;
     private readonly double _tp2R;
     private readonly PdhpdlEntryMode _entryMode;
+    private readonly bool _enableSessionRiskGuard;
+    private readonly int _noNewOrdersStartHour;
+    private readonly int _forceCloseHour;
+    private readonly int _forceCloseMinute;
+    private readonly int _resumeTradingHour;
 
     private readonly string _timeFrame;
     private readonly PdhpdlTradeCsvLogger _csvLogger;
@@ -27,8 +32,9 @@ public class PdhpdlOrderExecutor {
     private readonly Dictionary<int, string> _positionCsvIds = new();
     private readonly Dictionary<int, Tp1State> _tp1States = new();
 
-    public PdhpdlOrderExecutor(Robot robot, Symbol symbol, string symbolName, string timeFrame, double riskPct, int stopOffsetTicks,
-        double tp1R, double tp2R, PdhpdlEntryMode entryMode, PdhpdlTradeCsvLogger csvLogger) {
+    public PdhpdlOrderExecutor(Robot robot, Symbol symbol, string symbolName, string timeFrame, double riskPct, int stopOffsetTicks, double tp1R,
+        double tp2R, PdhpdlEntryMode entryMode, bool enableSessionRiskGuard, int noNewOrdersStartHour, int forceCloseHour,
+        int forceCloseMinute, int resumeTradingHour, PdhpdlTradeCsvLogger csvLogger) {
         _robot = robot;
         _symbol = symbol;
         _symbolName = symbolName;
@@ -39,6 +45,11 @@ public class PdhpdlOrderExecutor {
         _tp1R = tp1R;
         _tp2R = tp2R;
         _entryMode = entryMode;
+        _enableSessionRiskGuard = enableSessionRiskGuard;
+        _noNewOrdersStartHour = noNewOrdersStartHour;
+        _forceCloseHour = forceCloseHour;
+        _forceCloseMinute = forceCloseMinute;
+        _resumeTradingHour = resumeTradingHour;
         _csvLogger = csvLogger;
 
         _robot.Positions.Closed += OnPositionClosed;
@@ -51,6 +62,8 @@ public class PdhpdlOrderExecutor {
     }
 
     public void ManageOpenPositions() {
+        CloseExposureBeforeSessionBreak();
+
         foreach (Position position in _robot.Positions.Where(IsStrategyPosition).ToArray())
             TryCloseTp1(position);
     }
@@ -61,6 +74,11 @@ public class PdhpdlOrderExecutor {
 
         if (!signal.IsLongSignal && !signal.IsShortSignal)
             return;
+
+        if (IsNewOrderBlockedBySessionRisk()) {
+            _robot.Print("*****Order skipped | Session risk guard blocked new order. Time: {0}", _robot.Server.Time);
+            return;
+        }
 
         if (HasOpenSymbolPosition()) {
             _robot.Print("*****Order skipped | Existing position found on symbol: {0}", _symbolName);
@@ -88,6 +106,77 @@ public class PdhpdlOrderExecutor {
 
     private bool HasOpenSymbolPendingOrder() {
         return _robot.PendingOrders.Any(order => order.SymbolName == _symbolName);
+    }
+
+    private void CloseExposureBeforeSessionBreak() {
+        if (!_enableSessionRiskGuard)
+            return;
+
+        if (!IsForceCloseTime(_robot.Server.Time))
+            return;
+
+        foreach (PendingOrder order in _robot.PendingOrders.Where(IsStrategyPendingOrder).ToArray()) {
+            TradeResult result = _robot.CancelPendingOrder(order);
+
+            if (!result.IsSuccessful)
+                _robot.Print("*****Session risk pending cancel failed | Order: {0}, Error: {1}", order.Id, result.Error);
+        }
+
+        foreach (Position position in _robot.Positions.Where(IsStrategyPosition).ToArray()) {
+            TradeResult result = _robot.ClosePosition(position);
+
+            if (!result.IsSuccessful)
+                _robot.Print("*****Session risk close failed | Position: {0}, Error: {1}", position.Id, result.Error);
+        }
+    }
+
+    private bool IsNewOrderBlockedBySessionRisk() {
+        if (!_enableSessionRiskGuard)
+            return false;
+
+        DateTime time = _robot.Server.Time;
+
+        if (time.DayOfWeek == DayOfWeek.Saturday || time.DayOfWeek == DayOfWeek.Sunday)
+            return true;
+
+        return IsInNoNewOrderWindow(time);
+    }
+
+    private bool IsForceCloseTime(DateTime time) {
+        if (time.DayOfWeek == DayOfWeek.Saturday || time.DayOfWeek == DayOfWeek.Sunday)
+            return true;
+
+        return IsInForceCloseWindow(time);
+    }
+
+    private bool IsInNoNewOrderWindow(DateTime time) {
+        int currentMinutes = GetMinutesOfDay(time);
+        int startMinutes = _noNewOrdersStartHour * 60;
+        int resumeMinutes = _resumeTradingHour * 60;
+
+        return IsWithinWindow(currentMinutes, startMinutes, resumeMinutes);
+    }
+
+    private bool IsInForceCloseWindow(DateTime time) {
+        int currentMinutes = GetMinutesOfDay(time);
+        int startMinutes = _forceCloseHour * 60 + _forceCloseMinute;
+        int resumeMinutes = _resumeTradingHour * 60;
+
+        return IsWithinWindow(currentMinutes, startMinutes, resumeMinutes);
+    }
+
+    private static int GetMinutesOfDay(DateTime time) {
+        return time.Hour * 60 + time.Minute;
+    }
+
+    private static bool IsWithinWindow(int currentMinutes, int startMinutes, int endMinutes) {
+        if (startMinutes == endMinutes)
+            return true;
+
+        if (startMinutes < endMinutes)
+            return currentMinutes >= startMinutes && currentMinutes < endMinutes;
+
+        return currentMinutes >= startMinutes || currentMinutes < endMinutes;
     }
 
     private void OnPositionClosed(PositionClosedEventArgs args) {
@@ -133,6 +222,11 @@ public class PdhpdlOrderExecutor {
     private bool IsStrategyPosition(Position position) {
         return position.SymbolName == _symbolName && !string.IsNullOrWhiteSpace(position.Label) &&
                position.Label.StartsWith(LabelPrefix + "_");
+    }
+
+    private bool IsStrategyPendingOrder(PendingOrder order) {
+        return order.SymbolName == _symbolName && !string.IsNullOrWhiteSpace(order.Label) &&
+               order.Label.StartsWith(LabelPrefix + "_");
     }
 
     private string GetCloseRecordId(string csvId, PositionCloseReason reason) {
