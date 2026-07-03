@@ -9,6 +9,10 @@ namespace cAlgo.Robots;
 
 public class PdhpdlTradeCsvLogger {
     private const string FileName = "pdhpdl-trades.csv";
+    private const int CurrentColumnCount = 25;
+    private const int OldColumnCountBeforeAccountEquity = 23;
+    private const int OldColumnCountBeforeSingleTakeProfit = 24;
+    private const int OldColumnCountWithAccountEquityBeforeProfitLoss = 25;
     private static readonly Encoding CsvEncoding = new UTF8Encoding(true);
     private readonly string _filePath;
 
@@ -40,6 +44,8 @@ public class PdhpdlTradeCsvLogger {
             Comment = "ENTRY",
             Symbol = symbolName,
             TimeFrame = timeFrame,
+            EntryAccountEquity = plan.AccountEquity,
+            CloseAccountEquity = 0.0,
             EntryTime = position.EntryTime,
             EntryPrice = position.EntryPrice,
             StopPrice = position.StopLoss ?? plan.StopPrice,
@@ -74,6 +80,8 @@ public class PdhpdlTradeCsvLogger {
             Comment = "ENTRY",
             Symbol = symbolName,
             TimeFrame = timeFrame,
+            EntryAccountEquity = plan.AccountEquity,
+            CloseAccountEquity = 0.0,
             EntryTime = order.SubmittedTime,
             EntryPrice = order.TargetPrice,
             StopPrice = plan.StopPrice,
@@ -87,11 +95,16 @@ public class PdhpdlTradeCsvLogger {
         return record.Id;
     }
 
-    public string AppendClose(Position position, PositionCloseReason reason, string csvId, string symbolName, string timeFrame, DateTime serverTime) {
+    public string AppendClose(Position position, PositionCloseReason reason, string csvId, string symbolName, string timeFrame, DateTime serverTime,
+        double entryAccountEquity, double closeAccountEquity) {
         if (position == null)
             return "";
 
         string closeReason = GetCloseReasonCode(reason);
+        double resolvedEntryAccountEquity = entryAccountEquity;
+
+        if (resolvedEntryAccountEquity <= 0.0 && closeAccountEquity > 0.0)
+            resolvedEntryAccountEquity = closeAccountEquity - position.NetProfit;
 
         var record = new PdhpdlTradeCsvRecord {
             Id = GetCloseRecordId(csvId, reason),
@@ -105,6 +118,8 @@ public class PdhpdlTradeCsvLogger {
             Comment = position.NetProfit >= 0.0 ? "盈利" : "亏损",
             Symbol = symbolName,
             TimeFrame = timeFrame,
+            EntryAccountEquity = resolvedEntryAccountEquity,
+            CloseAccountEquity = closeAccountEquity,
             EntryTime = position.EntryTime,
             EntryPrice = position.EntryPrice,
             StopPrice = 0.0,
@@ -134,8 +149,9 @@ public class PdhpdlTradeCsvLogger {
             Escape(record.StopPrice.ToString(CultureInfo.InvariantCulture)),
             Escape(record.TakeProfitPrice.ToString(CultureInfo.InvariantCulture)), Escape(record.RiskPrice.ToString(CultureInfo.InvariantCulture)),
             Escape(record.VolumeInUnits.ToString(CultureInfo.InvariantCulture)), Escape(record.CloseReason),
-            Escape(record.ProfitLoss.ToString(CultureInfo.InvariantCulture)), Escape(record.CloseTime), Escape(record.PendingOrderId),
-            Escape(record.PositionId), Escape(record.DealId));
+            Escape(FormatOptionalNumber(record.EntryAccountEquity)), Escape(FormatOptionalNumber(record.CloseAccountEquity)),
+            Escape(record.ProfitLoss.ToString(CultureInfo.InvariantCulture)), Escape(record.CloseTime), Escape(record.PendingOrderId), Escape(record.PositionId),
+            Escape(record.DealId));
         System.IO.File.AppendAllText(_filePath, line + Environment.NewLine, CsvEncoding);
     }
 
@@ -154,16 +170,143 @@ public class PdhpdlTradeCsvLogger {
             return;
         }
 
-        if (lines[0] == header)
+        bool hasCurrentHeader = lines[0] == header;
+
+        if (hasCurrentHeader && !NeedsRowMigration(lines))
             return;
 
         lines[0] = header;
+        MigrateRows(lines);
         System.IO.File.WriteAllLines(_filePath, lines, CsvEncoding);
     }
 
     private static string BuildHeader() {
         return string.Join(",", "编号", "多空", "关键位", "信号", "收线入场", "回撤25入场", "回撤38.2入场", "回撤50入场", "备注", "交易品种", "时间周期", "入场时间", "入场价格",
-            "止损价格", "止盈价格", "风险价格距离", "下单数量", "平仓原因", "平仓盈亏", "平仓时间", "挂单ID", "持仓ID", "成交ID");
+            "止损价格", "止盈价格", "风险价格距离", "下单数量", "平仓原因", "开仓账户权益", "平仓账户权益", "平仓盈亏", "平仓时间", "挂单ID", "持仓ID", "成交ID");
+    }
+
+    private static bool NeedsRowMigration(string[] lines) {
+        for (int i = 1; i < lines.Length; i++) {
+            if (string.IsNullOrWhiteSpace(lines[i]))
+                continue;
+
+            string[] columns = lines[i].Split(',');
+
+            if (columns.Length != CurrentColumnCount)
+                return true;
+
+            if (IsOldAccountEquityColumnOrder(columns))
+                return true;
+
+            if (IsOldNoEquityCurrentColumnOrder(columns))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static void MigrateRows(string[] lines) {
+        for (int i = 1; i < lines.Length; i++) {
+            if (string.IsNullOrWhiteSpace(lines[i]))
+                continue;
+
+            string[] columns = lines[i].Split(',');
+
+            if (columns.Length == OldColumnCountBeforeAccountEquity) {
+                lines[i] = string.Join(",", MigrateOldSingleTakeProfitRow(columns));
+                continue;
+            }
+
+            if (columns.Length == OldColumnCountBeforeSingleTakeProfit) {
+                lines[i] = string.Join(",", MigrateOldTwoTakeProfitRow(columns));
+                continue;
+            }
+
+            if (columns.Length == OldColumnCountWithAccountEquityBeforeProfitLoss && IsOldAccountEquityColumnOrder(columns)) {
+                MoveEquityColumnsNearProfitLoss(columns);
+                lines[i] = string.Join(",", columns);
+                continue;
+            }
+
+            if (columns.Length == CurrentColumnCount && IsOldNoEquityCurrentColumnOrder(columns)) {
+                MoveProfitLossFromEquityColumn(columns);
+                lines[i] = string.Join(",", columns);
+            }
+        }
+    }
+
+    private static bool IsOldAccountEquityColumnOrder(string[] columns) {
+        return columns.Length == CurrentColumnCount && !LooksLikeDateTime(columns[11]) && LooksLikeDateTime(columns[13]);
+    }
+
+    private static bool IsOldNoEquityCurrentColumnOrder(string[] columns) {
+        return columns.Length == CurrentColumnCount && string.IsNullOrWhiteSpace(columns[19]) && string.IsNullOrWhiteSpace(columns[20]) &&
+               IsNumber(columns[18]);
+    }
+
+    private static bool LooksLikeDateTime(string value) {
+        if (string.IsNullOrWhiteSpace(value))
+            return false;
+
+        return DateTime.TryParseExact(value.Trim(), "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out _);
+    }
+
+    private static void MoveEquityColumnsNearProfitLoss(string[] columns) {
+        string entryAccountEquity = columns[11];
+        string closeAccountEquity = columns[12];
+
+        for (int i = 11; i <= 18; i++)
+            columns[i] = columns[i + 2];
+
+        columns[19] = entryAccountEquity;
+        columns[20] = closeAccountEquity;
+    }
+
+    private static void MoveProfitLossFromEquityColumn(string[] columns) {
+        columns[20] = columns[18];
+        columns[18] = "";
+        columns[19] = "";
+    }
+
+    private static string[] MigrateOldSingleTakeProfitRow(string[] columns) {
+        string[] migrated = CreateEmptyRow();
+        Array.Copy(columns, 0, migrated, 0, 18);
+        migrated[18] = "";
+        migrated[19] = "";
+        Array.Copy(columns, 18, migrated, 20, columns.Length - 18);
+        return migrated;
+    }
+
+    private static string[] MigrateOldTwoTakeProfitRow(string[] columns) {
+        string[] migrated = CreateEmptyRow();
+        Array.Copy(columns, 0, migrated, 0, 15);
+        migrated[15] = columns[16];
+        migrated[16] = columns[17];
+        migrated[17] = columns[18];
+        migrated[18] = "";
+        migrated[19] = "";
+        Array.Copy(columns, 19, migrated, 20, columns.Length - 19);
+        return migrated;
+    }
+
+    private static string[] CreateEmptyRow() {
+        string[] columns = new string[CurrentColumnCount];
+
+        for (int i = 0; i < columns.Length; i++)
+            columns[i] = "";
+
+        return columns;
+    }
+
+    private static string FormatOptionalNumber(double value) {
+        if (value <= 0.0)
+            return "";
+
+        return value.ToString(CultureInfo.InvariantCulture);
+    }
+
+    private static bool IsNumber(string value) {
+        return double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out _);
     }
 
     private static string Escape(string value) {

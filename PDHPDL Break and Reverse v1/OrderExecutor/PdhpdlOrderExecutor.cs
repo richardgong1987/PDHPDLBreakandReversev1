@@ -23,7 +23,9 @@ public class PdhpdlOrderExecutor {
     private readonly string _timeFrame;
     private readonly PdhpdlTradeCsvLogger _csvLogger;
     private readonly Dictionary<string, string> _pendingCsvIdsByLabel = new();
+    private readonly Dictionary<string, double> _pendingEntryEquitiesByLabel = new();
     private readonly Dictionary<int, string> _positionCsvIds = new();
+    private readonly Dictionary<int, double> _positionEntryEquities = new();
 
     public PdhpdlOrderExecutor(Robot robot, Symbol symbol, string symbolName, string timeFrame, double riskPct, int stopOffsetTicks,
         double takeProfitR, PdhpdlEntryMode entryMode, PdhpdlRiskGuard riskGuard, PdhpdlTradeCsvLogger csvLogger) {
@@ -126,8 +128,11 @@ public class PdhpdlOrderExecutor {
             return;
 
         string csvId = GetPositionCsvId(args.Position);
-        string closeRecordId = _csvLogger.AppendClose(args.Position, args.Reason, csvId, _symbolName, _timeFrame, _robot.Server.Time);
+        double entryEquity = GetPositionEntryEquity(args.Position);
+        string closeRecordId = _csvLogger.AppendClose(args.Position, args.Reason, csvId, _symbolName, _timeFrame, _robot.Server.Time,
+            entryEquity, _robot.Account.Equity);
         _positionCsvIds.Remove(args.Position.Id);
+        _positionEntryEquities.Remove(args.Position.Id);
 
         if (!string.IsNullOrWhiteSpace(closeRecordId))
             _robot.Print("*****CSV close record added. Id: {0}, ProfitLoss: {1}", closeRecordId, args.Position.NetProfit);
@@ -140,6 +145,11 @@ public class PdhpdlOrderExecutor {
         if (_pendingCsvIdsByLabel.TryGetValue(args.Position.Label, out string csvId)) {
             _positionCsvIds[args.Position.Id] = csvId;
             _pendingCsvIdsByLabel.Remove(args.Position.Label);
+        }
+
+        if (_pendingEntryEquitiesByLabel.TryGetValue(args.Position.Label, out double entryEquity)) {
+            _positionEntryEquities[args.Position.Id] = entryEquity;
+            _pendingEntryEquitiesByLabel.Remove(args.Position.Label);
         }
     }
 
@@ -185,7 +195,8 @@ public class PdhpdlOrderExecutor {
         double stopLossPips = riskPrice / _symbol.PipSize;
         double takeProfitPips = Math.Abs(takeProfit - entry) / _symbol.PipSize;
 
-        double riskMoney = _riskGuard.CalculateRiskMoney(_robot.Account.Equity, _riskPct);
+        double accountEquity = _robot.Account.Equity;
+        double riskMoney = _riskGuard.CalculateRiskMoney(accountEquity, _riskPct);
 
         double nativeRiskVolumeInUnits = _symbol.VolumeForProportionalRisk(
             ProportionalAmountType.Equity, _riskPct, stopLossPips, RoundingMode.Down);
@@ -236,6 +247,7 @@ public class PdhpdlOrderExecutor {
         plan.TotalVolumeInUnits = totalVolumeInUnits;
         plan.NativeRiskVolumeInUnits = nativeRiskVolumeInUnits;
         plan.PriceRiskCappedVolumeInUnits = priceRiskCappedVolumeInUnits;
+        plan.AccountEquity = accountEquity;
         plan.RiskMoney = riskMoney;
         plan.EstimatedRiskMoney = estimatedRiskMoney;
         plan.Label = $"{LabelPrefix}_{side}";
@@ -291,6 +303,7 @@ public class PdhpdlOrderExecutor {
 
             if (!string.IsNullOrWhiteSpace(csvId)) {
                 _positionCsvIds[result.Position.Id] = csvId;
+                _positionEntryEquities[result.Position.Id] = plan.AccountEquity;
                 _robot.Print("*****CSV trade record added. Path: {0}", _csvLogger.FilePath);
             }
         } else {
@@ -298,6 +311,7 @@ public class PdhpdlOrderExecutor {
 
             if (!string.IsNullOrWhiteSpace(csvId)) {
                 _pendingCsvIdsByLabel[result.PendingOrder.Label] = csvId;
+                _pendingEntryEquitiesByLabel[result.PendingOrder.Label] = plan.AccountEquity;
                 _robot.Print("*****CSV pending order record added. Id: {0}, Path: {1}", csvId, _csvLogger.FilePath);
             }
         }
@@ -318,5 +332,12 @@ public class PdhpdlOrderExecutor {
             return csvId;
 
         return position.Id.ToString();
+    }
+
+    private double GetPositionEntryEquity(Position position) {
+        if (_positionEntryEquities.TryGetValue(position.Id, out double entryEquity))
+            return entryEquity;
+
+        return 0.0;
     }
 }

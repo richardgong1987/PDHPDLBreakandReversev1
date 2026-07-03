@@ -16,7 +16,7 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("每笔交易风险百分比，默认1%", DefaultValue = 1.0, MinValue = 0.1, MaxValue = 10.0, Step = 0.1)]
     public double RiskPct { get; set; }
 
-    [Parameter("风险安全系数", DefaultValue = 0.9, MinValue = 0.1, MaxValue = 1.0, Step = 0.05)]
+    [Parameter("风险安全系数", DefaultValue = 1.0, MinValue = 0.1, MaxValue = 1.0, Step = 0.05)]
     public double RiskSafetyFactor { get; set; }
 
     [Parameter("止损偏移点数", DefaultValue = 15, MinValue = 0, MaxValue = 1000)]

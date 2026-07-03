@@ -25,6 +25,10 @@ public class PdhpdlTradeCsvRecord {
 
     public string TimeFrame { get; set; }
 
+    public double EntryAccountEquity { get; set; }
+
+    public double CloseAccountEquity { get; set; }
+
     public DateTime EntryTime { get; set; }
 
     public double EntryPrice { get; set; }

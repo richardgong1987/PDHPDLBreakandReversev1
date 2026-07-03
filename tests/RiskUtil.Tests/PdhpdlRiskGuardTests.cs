@@ -51,8 +51,16 @@ namespace RiskUtil.Tests {
         }
 
         [Fact]
-        public void calculates_percent_risk_from_current_equity_with_safety_factor() {
+        public void calculates_percent_risk_from_current_equity() {
             PdhpdlRiskGuard guard = CreateGuard();
+
+            Assert.Equal(200.0, guard.CalculateRiskMoney(20000.0, 1.0), precision: 10);
+            Assert.Equal(50.0, guard.CalculateRiskMoney(5000.0, 1.0), precision: 10);
+        }
+
+        [Fact]
+        public void applies_safety_factor_when_configured_below_one() {
+            PdhpdlRiskGuard guard = CreateGuard(riskSafetyFactor: 0.9);
 
             Assert.Equal(180.0, guard.CalculateRiskMoney(20000.0, 1.0), precision: 10);
             Assert.Equal(45.0, guard.CalculateRiskMoney(5000.0, 1.0), precision: 10);
@@ -67,9 +75,9 @@ namespace RiskUtil.Tests {
             Assert.False(guard.TryGetRiskPriceRejectReason(5.0, out _));
         }
 
-        private static PdhpdlRiskGuard CreateGuard(string newsBlackoutWindows = "") {
+        private static PdhpdlRiskGuard CreateGuard(string newsBlackoutWindows = "", double riskSafetyFactor = 1.0) {
             return new PdhpdlRiskGuard(new PdhpdlRiskGuardConfig {
-                RiskSafetyFactor = 0.9,
+                RiskSafetyFactor = riskSafetyFactor,
                 MinRiskPrice = 5.0,
                 NoNewOrdersStartHour = 4,
                 ForceCloseHour = 4,
