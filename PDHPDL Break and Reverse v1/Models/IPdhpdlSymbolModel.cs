@@ -2,7 +2,7 @@ namespace cAlgo.Robots;
 
 // The subset of cTrader symbol facts the planner needs, expressed without any
 // cAlgo.API type. CAlgoSymbol adapts the real Symbol; tests supply a fake.
-public interface IPdhpdlSymbol {
+public interface IPdhpdlSymbolModel {
     double TickSize { get; }
     double PipSize { get; }
     double LotSize { get; }

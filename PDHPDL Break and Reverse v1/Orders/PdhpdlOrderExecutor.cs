@@ -71,14 +71,14 @@ public class PdhpdlOrderExecutor {
             return;
         }
 
-        PdhpdlOrderPlan plan = _planner.CreatePlan(signal, _robot.Account.Equity);
+        PdhpdlOrderPlanModel planModel = _planner.CreatePlan(signal, _robot.Account.Equity);
 
-        if (!plan.IsValid) {
-            _robot.Print("*****Order rejected | Reason: {0}", plan.RejectReason);
+        if (!planModel.IsValid) {
+            _robot.Print("*****Order rejected | Reason: {0}", planModel.RejectReason);
             return;
         }
 
-        ExecutePlan(plan);
+        ExecutePlan(planModel);
     }
 
     private bool HasOpenSymbolPosition() {
@@ -108,59 +108,59 @@ public class PdhpdlOrderExecutor {
         }
     }
 
-    private void ExecutePlan(PdhpdlOrderPlan plan) {
+    private void ExecutePlan(PdhpdlOrderPlanModel planModel) {
         _robot.Print(
             "*****Order plan | Side: {0}, EntryMode: {1}, Entry: {2}, Stop: {3}, TakeProfit: {4}, RiskPrice: {5}, StopLossPips: {6}, RiskMoney: {7}, EstimatedRiskMoney: {8}, NativeVolumeUnits: {9}, PriceRiskCappedVolumeUnits: {10}, Lots: {11}, TotalVolumeUnits: {12}",
-            plan.Direction, plan.EntryMode, plan.EntryPrice, plan.StopPrice, plan.TakeProfitPrice, plan.RiskPrice,
-            plan.StopLossPips, plan.RiskMoney, plan.EstimatedRiskMoney, plan.NativeRiskVolumeInUnits, plan.PriceRiskCappedVolumeInUnits,
-            plan.TotalLots, plan.TotalVolumeInUnits);
+            planModel.DirectionModel, planModel.EntryModel, planModel.EntryPrice, planModel.StopPrice, planModel.TakeProfitPrice, planModel.RiskPrice,
+            planModel.StopLossPips, planModel.RiskMoney, planModel.EstimatedRiskMoney, planModel.NativeRiskVolumeInUnits, planModel.PriceRiskCappedVolumeInUnits,
+            planModel.TotalLots, planModel.TotalVolumeInUnits);
 
-        TradeResult result = SubmitOrder(plan);
+        TradeResult result = SubmitOrder(planModel);
 
         if (!result.IsSuccessful) {
             _robot.Print("*****Order failed | Error: {0}", result.Error);
             return;
         }
 
-        _robot.Print("*****Order submitted | Label: {0}", plan.Label);
+        _robot.Print("*****Order submitted | Label: {0}", planModel.Label);
 
-        if (plan.IsMarketOrder)
-            RecordMarketEntry(plan, result.Position);
+        if (planModel.IsMarketOrder)
+            RecordMarketEntry(planModel, result.Position);
         else
-            RecordPendingEntry(plan, result.PendingOrder);
+            RecordPendingEntry(planModel, result.PendingOrder);
     }
 
-    private TradeResult SubmitOrder(PdhpdlOrderPlan plan) {
-        TradeType tradeType = ToTradeType(plan.Direction);
+    private TradeResult SubmitOrder(PdhpdlOrderPlanModel planModel) {
+        TradeType tradeType = ToTradeType(planModel.DirectionModel);
 
-        if (plan.IsMarketOrder) {
-            return _robot.ExecuteMarketOrder(tradeType, _symbolName, plan.TotalVolumeInUnits, plan.Label, plan.StopLossPips,
-                plan.TakeProfitPips, EntryComment);
+        if (planModel.IsMarketOrder) {
+            return _robot.ExecuteMarketOrder(tradeType, _symbolName, planModel.TotalVolumeInUnits, planModel.Label, planModel.StopLossPips,
+                planModel.TakeProfitPips, EntryComment);
         }
 
-        return _robot.PlaceLimitOrder(tradeType, _symbolName, plan.TotalVolumeInUnits, plan.EntryPrice, plan.Label, plan.StopLossPips,
-            plan.TakeProfitPips, ProtectionType.Relative, null, EntryComment);
+        return _robot.PlaceLimitOrder(tradeType, _symbolName, planModel.TotalVolumeInUnits, planModel.EntryPrice, planModel.Label, planModel.StopLossPips,
+            planModel.TakeProfitPips, ProtectionType.Relative, null, EntryComment);
     }
 
-    private void RecordMarketEntry(PdhpdlOrderPlan plan, Position position) {
-        string csvId = _csvLogger.AppendEntry(plan, position, _symbolName, _timeFrame);
+    private void RecordMarketEntry(PdhpdlOrderPlanModel planModel, Position position) {
+        string csvId = _csvLogger.AppendEntry(planModel, position, _symbolName, _timeFrame);
 
         if (string.IsNullOrWhiteSpace(csvId))
             return;
 
         _positionCsvIds[position.Id] = csvId;
-        _positionEntryEquities[position.Id] = plan.AccountEquity;
+        _positionEntryEquities[position.Id] = planModel.AccountEquity;
         _robot.Print("*****CSV trade record added. Path: {0}", _csvLogger.FilePath);
     }
 
-    private void RecordPendingEntry(PdhpdlOrderPlan plan, PendingOrder order) {
-        string csvId = _csvLogger.AppendPendingEntry(plan, order, _symbolName, _timeFrame);
+    private void RecordPendingEntry(PdhpdlOrderPlanModel planModel, PendingOrder order) {
+        string csvId = _csvLogger.AppendPendingEntry(planModel, order, _symbolName, _timeFrame);
 
         if (string.IsNullOrWhiteSpace(csvId))
             return;
 
         _pendingCsvIdsByLabel[order.Label] = csvId;
-        _pendingEntryEquitiesByLabel[order.Label] = plan.AccountEquity;
+        _pendingEntryEquitiesByLabel[order.Label] = planModel.AccountEquity;
         _robot.Print("*****CSV pending order record added. Id: {0}, Path: {1}", csvId, _csvLogger.FilePath);
     }
 
@@ -213,7 +213,7 @@ public class PdhpdlOrderExecutor {
         return _positionEntryEquities.TryGetValue(position.Id, out double entryEquity) ? entryEquity : 0.0;
     }
 
-    private static TradeType ToTradeType(PdhpdlTradeDirection direction) {
-        return direction == PdhpdlTradeDirection.Long ? TradeType.Buy : TradeType.Sell;
+    private static TradeType ToTradeType(PdhpdlTradeDirectionModel directionModel) {
+        return directionModel == PdhpdlTradeDirectionModel.Long ? TradeType.Buy : TradeType.Sell;
     }
 }

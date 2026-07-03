@@ -25,32 +25,32 @@ public class PdhpdlTradeCsvLogger {
 
     public string FilePath => _filePath;
 
-    public string AppendEntry(PdhpdlOrderPlan plan, Position position, string symbolName, string timeFrame) {
-        if (plan == null || position == null)
+    public string AppendEntry(PdhpdlOrderPlanModel planModel, Position position, string symbolName, string timeFrame) {
+        if (planModel == null || position == null)
             return "";
 
-        string side = plan.Direction == PdhpdlTradeDirection.Long ? "B" : "S";
-        string keyLevel = plan.Direction == PdhpdlTradeDirection.Long ? "PDL" : "PDH";
+        string side = planModel.DirectionModel == PdhpdlTradeDirectionModel.Long ? "B" : "S";
+        string keyLevel = planModel.DirectionModel == PdhpdlTradeDirectionModel.Long ? "PDL" : "PDH";
 
-        var record = new PdhpdlTradeCsvRecord {
+        var record = new PdhpdlTradeCsvRecordModel {
             Id = position.Id.ToString(),
             Side = side,
             KeyLevel = keyLevel,
             Signal = "false-breakout",
-            CloseEntryResult = GetEntryModeCsvValue(PdhpdlEntryMode.Close, plan.EntryMode),
-            Pullback25Result = GetEntryModeCsvValue(PdhpdlEntryMode.Pullback25, plan.EntryMode),
-            Pullback382Result = GetEntryModeCsvValue(PdhpdlEntryMode.Pullback382, plan.EntryMode),
-            Pullback50Result = GetEntryModeCsvValue(PdhpdlEntryMode.Pullback50, plan.EntryMode),
+            CloseEntryResult = GetEntryModeCsvValue(PdhpdlEntryModel.Close, planModel.EntryModel),
+            Pullback25Result = GetEntryModeCsvValue(PdhpdlEntryModel.Pullback25, planModel.EntryModel),
+            Pullback382Result = GetEntryModeCsvValue(PdhpdlEntryModel.Pullback382, planModel.EntryModel),
+            Pullback50Result = GetEntryModeCsvValue(PdhpdlEntryModel.Pullback50, planModel.EntryModel),
             Comment = "ENTRY",
             Symbol = symbolName,
             TimeFrame = timeFrame,
-            EntryAccountEquity = plan.AccountEquity,
+            EntryAccountEquity = planModel.AccountEquity,
             CloseAccountEquity = 0.0,
             EntryTime = position.EntryTime,
             EntryPrice = position.EntryPrice,
-            StopPrice = position.StopLoss ?? plan.StopPrice,
-            TakeProfitPrice = plan.TakeProfitPrice,
-            RiskPrice = Math.Abs(position.EntryPrice - (position.StopLoss ?? plan.StopPrice)),
+            StopPrice = position.StopLoss ?? planModel.StopPrice,
+            TakeProfitPrice = planModel.TakeProfitPrice,
+            RiskPrice = Math.Abs(position.EntryPrice - (position.StopLoss ?? planModel.StopPrice)),
             VolumeInUnits = position.VolumeInUnits,
             PositionId = position.Id.ToString(),
             DealId = GetOpenDealId(position)
@@ -60,33 +60,33 @@ public class PdhpdlTradeCsvLogger {
         return record.Id;
     }
 
-    public string AppendPendingEntry(PdhpdlOrderPlan plan, PendingOrder order, string symbolName, string timeFrame) {
-        if (plan == null || order == null)
+    public string AppendPendingEntry(PdhpdlOrderPlanModel planModel, PendingOrder order, string symbolName, string timeFrame) {
+        if (planModel == null || order == null)
             return "";
 
-        string side = plan.Direction == PdhpdlTradeDirection.Long ? "B" : "S";
-        string keyLevel = plan.Direction == PdhpdlTradeDirection.Long ? "PDL" : "PDH";
+        string side = planModel.DirectionModel == PdhpdlTradeDirectionModel.Long ? "B" : "S";
+        string keyLevel = planModel.DirectionModel == PdhpdlTradeDirectionModel.Long ? "PDL" : "PDH";
         string csvId = order.Id.ToString();
 
-        var record = new PdhpdlTradeCsvRecord {
+        var record = new PdhpdlTradeCsvRecordModel {
             Id = csvId,
             Side = side,
             KeyLevel = keyLevel,
             Signal = "false-breakout",
-            CloseEntryResult = GetEntryModeCsvValue(PdhpdlEntryMode.Close, plan.EntryMode),
-            Pullback25Result = GetEntryModeCsvValue(PdhpdlEntryMode.Pullback25, plan.EntryMode),
-            Pullback382Result = GetEntryModeCsvValue(PdhpdlEntryMode.Pullback382, plan.EntryMode),
-            Pullback50Result = GetEntryModeCsvValue(PdhpdlEntryMode.Pullback50, plan.EntryMode),
+            CloseEntryResult = GetEntryModeCsvValue(PdhpdlEntryModel.Close, planModel.EntryModel),
+            Pullback25Result = GetEntryModeCsvValue(PdhpdlEntryModel.Pullback25, planModel.EntryModel),
+            Pullback382Result = GetEntryModeCsvValue(PdhpdlEntryModel.Pullback382, planModel.EntryModel),
+            Pullback50Result = GetEntryModeCsvValue(PdhpdlEntryModel.Pullback50, planModel.EntryModel),
             Comment = "ENTRY",
             Symbol = symbolName,
             TimeFrame = timeFrame,
-            EntryAccountEquity = plan.AccountEquity,
+            EntryAccountEquity = planModel.AccountEquity,
             CloseAccountEquity = 0.0,
             EntryTime = order.SubmittedTime,
             EntryPrice = order.TargetPrice,
-            StopPrice = plan.StopPrice,
-            TakeProfitPrice = plan.TakeProfitPrice,
-            RiskPrice = plan.RiskPrice,
+            StopPrice = planModel.StopPrice,
+            TakeProfitPrice = planModel.TakeProfitPrice,
+            RiskPrice = planModel.RiskPrice,
             VolumeInUnits = order.VolumeInUnits,
             PendingOrderId = csvId
         };
@@ -95,8 +95,8 @@ public class PdhpdlTradeCsvLogger {
         return record.Id;
     }
 
-    public string AppendClose(Position position, PositionCloseReason reason, string csvId, string symbolName, string timeFrame, DateTime serverTime,
-        double entryAccountEquity, double closeAccountEquity) {
+    public string AppendClose(Position position, PositionCloseReason reason, string csvId, string symbolName, string timeFrame,
+        DateTime serverTime, double entryAccountEquity, double closeAccountEquity) {
         if (position == null)
             return "";
 
@@ -106,7 +106,7 @@ public class PdhpdlTradeCsvLogger {
         if (resolvedEntryAccountEquity <= 0.0 && closeAccountEquity > 0.0)
             resolvedEntryAccountEquity = closeAccountEquity - position.NetProfit;
 
-        var record = new PdhpdlTradeCsvRecord {
+        var record = new PdhpdlTradeCsvRecordModel {
             Id = GetCloseRecordId(csvId, reason),
             Side = position.TradeType == TradeType.Buy ? "B" : "S",
             KeyLevel = "",
@@ -137,21 +137,22 @@ public class PdhpdlTradeCsvLogger {
         return record.Id;
     }
 
-    public void Append(PdhpdlTradeCsvRecord record) {
-        if (record == null)
+    public void Append(PdhpdlTradeCsvRecordModel recordModel) {
+        if (recordModel == null)
             return;
 
-        string line = string.Join(",", Escape(record.Id), Escape(record.Side), Escape(record.KeyLevel), Escape(record.Signal),
-            Escape(record.CloseEntryResult), Escape(record.Pullback25Result), Escape(record.Pullback382Result),
-            Escape(record.Pullback50Result), Escape(record.Comment), Escape(record.Symbol), Escape(record.TimeFrame),
-            Escape(record.EntryTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)),
-            Escape(record.EntryPrice.ToString(CultureInfo.InvariantCulture)),
-            Escape(record.StopPrice.ToString(CultureInfo.InvariantCulture)),
-            Escape(record.TakeProfitPrice.ToString(CultureInfo.InvariantCulture)), Escape(record.RiskPrice.ToString(CultureInfo.InvariantCulture)),
-            Escape(record.VolumeInUnits.ToString(CultureInfo.InvariantCulture)), Escape(record.CloseReason),
-            Escape(FormatOptionalNumber(record.EntryAccountEquity)), Escape(FormatOptionalNumber(record.CloseAccountEquity)),
-            Escape(record.ProfitLoss.ToString(CultureInfo.InvariantCulture)), Escape(record.CloseTime), Escape(record.PendingOrderId), Escape(record.PositionId),
-            Escape(record.DealId));
+        string line = string.Join(",", Escape(recordModel.Id), Escape(recordModel.Side), Escape(recordModel.KeyLevel), Escape(recordModel.Signal),
+            Escape(recordModel.CloseEntryResult), Escape(recordModel.Pullback25Result), Escape(recordModel.Pullback382Result),
+            Escape(recordModel.Pullback50Result), Escape(recordModel.Comment), Escape(recordModel.Symbol), Escape(recordModel.TimeFrame),
+            Escape(recordModel.EntryTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)),
+            Escape(recordModel.EntryPrice.ToString(CultureInfo.InvariantCulture)),
+            Escape(recordModel.StopPrice.ToString(CultureInfo.InvariantCulture)),
+            Escape(recordModel.TakeProfitPrice.ToString(CultureInfo.InvariantCulture)),
+            Escape(recordModel.RiskPrice.ToString(CultureInfo.InvariantCulture)),
+            Escape(recordModel.VolumeInUnits.ToString(CultureInfo.InvariantCulture)), Escape(recordModel.CloseReason),
+            Escape(FormatOptionalNumber(recordModel.EntryAccountEquity)), Escape(FormatOptionalNumber(recordModel.CloseAccountEquity)),
+            Escape(recordModel.ProfitLoss.ToString(CultureInfo.InvariantCulture)), Escape(recordModel.CloseTime), Escape(recordModel.PendingOrderId),
+            Escape(recordModel.PositionId), Escape(recordModel.DealId));
         System.IO.File.AppendAllText(_filePath, line + Environment.NewLine, CsvEncoding);
     }
 
@@ -355,7 +356,7 @@ public class PdhpdlTradeCsvLogger {
         return position.Deals[position.Deals.Count - 1].Id.ToString();
     }
 
-    private static string GetEntryModeCsvValue(PdhpdlEntryMode columnMode, PdhpdlEntryMode selectedMode) {
-        return columnMode == selectedMode ? "ORDER" : "";
+    private static string GetEntryModeCsvValue(PdhpdlEntryModel columnModel, PdhpdlEntryModel selectedModel) {
+        return columnModel == selectedModel ? "ORDER" : "";
     }
 }

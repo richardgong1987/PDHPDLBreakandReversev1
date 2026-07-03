@@ -1,6 +1,6 @@
 namespace cAlgo.Robots;
 
-public enum PdhpdlEntryMode {
+public enum PdhpdlEntryModel {
     Close = 0,
     Pullback25 = 1,
     Pullback382 = 2,

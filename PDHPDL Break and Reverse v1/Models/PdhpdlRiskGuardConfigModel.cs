@@ -1,6 +1,6 @@
 namespace cAlgo.Robots;
 
-public class PdhpdlRiskGuardConfig {
+public class PdhpdlRiskGuardConfigModel {
     public double RiskSafetyFactor { get; set; }
 
     public double MinRiskPrice { get; set; }

@@ -5,10 +5,10 @@ namespace cAlgo.Robots;
 
 // Adapts the real cTrader Symbol to IPdhpdlSymbol. Rounding and risk basis are fixed
 // here (round volume down, risk measured against equity) so the port stays cAlgo-free.
-public class CAlgoSymbol : IPdhpdlSymbol {
+public class CAlgoSymbolModel : IPdhpdlSymbolModel {
     private readonly Symbol _symbol;
 
-    public CAlgoSymbol(Symbol symbol) {
+    public CAlgoSymbolModel(Symbol symbol) {
         _symbol = symbol;
     }
 

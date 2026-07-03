@@ -28,8 +28,8 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("止盈目标", DefaultValue = 2.0, MinValue = 0.5, MaxValue = 20.0, Step = 0.1)]
     public double TakeProfitR { get; set; }
 
-    [Parameter("回撤开仓模式", DefaultValue = PdhpdlEntryMode.Close)]
-    public PdhpdlEntryMode EntryMode { get; set; }
+    [Parameter("回撤开仓模式", DefaultValue = PdhpdlEntryModel.Close)]
+    public PdhpdlEntryModel EntryModel { get; set; }
 
     [Parameter("禁止开仓开始小时", DefaultValue = 4, MinValue = 0, MaxValue = 23)]
     public int NoNewOrdersStartHour { get; set; }
@@ -74,14 +74,14 @@ public class PDHPDLBreakandReversev1 : Robot {
         Print("****CSV logger path: {0}", _csvLogger.FilePath);
 
         var riskGuard = new PdhpdlRiskGuard(BuildRiskGuardConfig());
-        var planner = new PdhpdlOrderPlanner(new CAlgoSymbol(Symbol), riskGuard, StopOffsetTicks, TakeProfitR, EntryMode, RiskPct);
+        var planner = new PdhpdlOrderPlanner(new CAlgoSymbolModel(Symbol), riskGuard, StopOffsetTicks, TakeProfitR, EntryModel, RiskPct);
         _orderExecutor = new PdhpdlOrderExecutor(this, SymbolName, Bars.TimeFrame.ToString(), planner, riskGuard, _csvLogger);
 
         Print("*****PDH/PDL Break and Reverse started.");
     }
 
-    private PdhpdlRiskGuardConfig BuildRiskGuardConfig() {
-        return new PdhpdlRiskGuardConfig {
+    private PdhpdlRiskGuardConfigModel BuildRiskGuardConfig() {
+        return new PdhpdlRiskGuardConfigModel {
             RiskSafetyFactor = RiskSafetyFactor,
             MinRiskPrice = MinRiskPrice,
             NoNewOrdersStartHour = NoNewOrdersStartHour,

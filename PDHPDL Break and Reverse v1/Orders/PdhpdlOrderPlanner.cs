@@ -11,65 +11,65 @@ namespace cAlgo.Robots;
 public class PdhpdlOrderPlanner {
     public const string LabelPrefix = "PDHPDL_V1";
 
-    private readonly IPdhpdlSymbol _symbol;
+    private readonly IPdhpdlSymbolModel _symbolModel;
     private readonly PdhpdlRiskGuard _riskGuard;
     private readonly int _stopOffsetTicks;
     private readonly double _takeProfitR;
-    private readonly PdhpdlEntryMode _entryMode;
+    private readonly PdhpdlEntryModel _entryModel;
     private readonly double _riskPct;
 
-    public PdhpdlOrderPlanner(IPdhpdlSymbol symbol, PdhpdlRiskGuard riskGuard, int stopOffsetTicks, double takeProfitR,
-        PdhpdlEntryMode entryMode, double riskPct) {
-        _symbol = symbol;
+    public PdhpdlOrderPlanner(IPdhpdlSymbolModel symbolModel, PdhpdlRiskGuard riskGuard, int stopOffsetTicks, double takeProfitR,
+        PdhpdlEntryModel entryModel, double riskPct) {
+        _symbolModel = symbolModel;
         _riskGuard = riskGuard;
         _stopOffsetTicks = stopOffsetTicks;
         _takeProfitR = takeProfitR;
-        _entryMode = entryMode;
+        _entryModel = entryModel;
         _riskPct = riskPct;
     }
 
-    public PdhpdlOrderPlan CreatePlan(PdhpdlSignal signal, double accountEquity) {
-        PdhpdlOrderPlan plan = new();
+    public PdhpdlOrderPlanModel CreatePlan(PdhpdlSignal signal, double accountEquity) {
+        PdhpdlOrderPlanModel planModel = new();
 
-        PdhpdlTradeDirection direction = signal.IsLongSignal ? PdhpdlTradeDirection.Long : PdhpdlTradeDirection.Short;
-        FillGeometry(signal, direction, out double entry, out double stop, out double riskPrice, out double takeProfit);
+        PdhpdlTradeDirectionModel directionModel = signal.IsLongSignal ? PdhpdlTradeDirectionModel.Long : PdhpdlTradeDirectionModel.Short;
+        FillGeometry(signal, directionModel, out double entry, out double stop, out double riskPrice, out double takeProfit);
 
         if (_riskGuard.TryGetRiskPriceRejectReason(riskPrice, out string rejectReason)) {
-            plan.RejectReason = rejectReason;
-            return plan;
+            planModel.RejectReason = rejectReason;
+            return planModel;
         }
 
-        double stopLossPips = riskPrice / _symbol.PipSize;
-        double takeProfitPips = Math.Abs(takeProfit - entry) / _symbol.PipSize;
+        double stopLossPips = riskPrice / _symbolModel.PipSize;
+        double takeProfitPips = Math.Abs(takeProfit - entry) / _symbolModel.PipSize;
         double riskMoney = _riskGuard.CalculateRiskMoney(accountEquity, _riskPct);
 
-        double nativeRiskVolume = _symbol.NormalizeVolumeInUnits(_symbol.VolumeForProportionalRisk(_riskPct, stopLossPips));
-        double priceRiskCappedVolume = _symbol.NormalizeVolumeInUnits(riskMoney / riskPrice);
-        double totalVolume = _symbol.NormalizeVolumeInUnits(Math.Min(nativeRiskVolume, priceRiskCappedVolume));
+        double nativeRiskVolume = _symbolModel.NormalizeVolumeInUnits(_symbolModel.VolumeForProportionalRisk(_riskPct, stopLossPips));
+        double priceRiskCappedVolume = _symbolModel.NormalizeVolumeInUnits(riskMoney / riskPrice);
+        double totalVolume = _symbolModel.NormalizeVolumeInUnits(Math.Min(nativeRiskVolume, priceRiskCappedVolume));
 
         if (TryGetVolumeRejectReason(totalVolume, nativeRiskVolume, priceRiskCappedVolume, riskPrice, riskMoney, out rejectReason)) {
-            plan.RejectReason = rejectReason;
-            return plan;
+            planModel.RejectReason = rejectReason;
+            return planModel;
         }
 
-        FillPlan(plan, direction, entry, stop, takeProfit, riskPrice, stopLossPips, takeProfitPips, totalVolume,
+        FillPlan(planModel, directionModel, entry, stop, takeProfit, riskPrice, stopLossPips, takeProfitPips, totalVolume,
             nativeRiskVolume, priceRiskCappedVolume, accountEquity, riskMoney);
-        return plan;
+        return planModel;
     }
 
-    private void FillGeometry(PdhpdlSignal signal, PdhpdlTradeDirection direction, out double entry, out double stop,
+    private void FillGeometry(PdhpdlSignal signal, PdhpdlTradeDirectionModel directionModel, out double entry, out double stop,
         out double riskPrice, out double takeProfit) {
         double closeEntry = signal.Close;
-        double stopOffset = _symbol.TickSize * _stopOffsetTicks;
+        double stopOffset = _symbolModel.TickSize * _stopOffsetTicks;
 
-        if (direction == PdhpdlTradeDirection.Long) {
+        if (directionModel == PdhpdlTradeDirectionModel.Long) {
             stop = signal.Low - stopOffset;
-            entry = GetEntryPrice(closeEntry, stop, direction);
+            entry = GetEntryPrice(closeEntry, stop, directionModel);
             riskPrice = entry - stop;
             takeProfit = entry + _takeProfitR * riskPrice;
         } else {
             stop = signal.High + stopOffset;
-            entry = GetEntryPrice(closeEntry, stop, direction);
+            entry = GetEntryPrice(closeEntry, stop, directionModel);
             riskPrice = stop - entry;
             takeProfit = entry - _takeProfitR * riskPrice;
         }
@@ -79,14 +79,14 @@ public class PdhpdlOrderPlanner {
         double riskPrice, double riskMoney, out string rejectReason) {
         rejectReason = "";
 
-        if (totalVolume < _symbol.VolumeInUnitsMin) {
+        if (totalVolume < _symbolModel.VolumeInUnitsMin) {
             rejectReason =
-                $"Calculated volume is too small. TotalVolume={totalVolume}, NativeVolume={nativeRiskVolume}, PriceRiskCappedVolume={priceRiskCappedVolume}, Min={_symbol.VolumeInUnitsMin}";
+                $"Calculated volume is too small. TotalVolume={totalVolume}, NativeVolume={nativeRiskVolume}, PriceRiskCappedVolume={priceRiskCappedVolume}, Min={_symbolModel.VolumeInUnitsMin}";
             return true;
         }
 
-        if (totalVolume > _symbol.VolumeInUnitsMax) {
-            rejectReason = $"Calculated volume is above broker maximum. TotalVolume={totalVolume}, Max={_symbol.VolumeInUnitsMax}";
+        if (totalVolume > _symbolModel.VolumeInUnitsMax) {
+            rejectReason = $"Calculated volume is above broker maximum. TotalVolume={totalVolume}, Max={_symbolModel.VolumeInUnitsMax}";
             return true;
         }
 
@@ -101,32 +101,32 @@ public class PdhpdlOrderPlanner {
         return false;
     }
 
-    private void FillPlan(PdhpdlOrderPlan plan, PdhpdlTradeDirection direction, double entry, double stop, double takeProfit,
+    private void FillPlan(PdhpdlOrderPlanModel planModel, PdhpdlTradeDirectionModel directionModel, double entry, double stop, double takeProfit,
         double riskPrice, double stopLossPips, double takeProfitPips, double totalVolume, double nativeRiskVolume,
         double priceRiskCappedVolume, double accountEquity, double riskMoney) {
-        string side = direction == PdhpdlTradeDirection.Long ? "L" : "S";
+        string side = directionModel == PdhpdlTradeDirectionModel.Long ? "L" : "S";
 
-        plan.IsValid = true;
-        plan.Direction = direction;
-        plan.EntryMode = _entryMode;
-        plan.IsMarketOrder = _entryMode == PdhpdlEntryMode.Close;
-        plan.EntryPrice = entry;
-        plan.StopPrice = stop;
-        plan.TakeProfitPrice = takeProfit;
-        plan.RiskPrice = riskPrice;
-        plan.StopLossPips = stopLossPips;
-        plan.TakeProfitPips = takeProfitPips;
-        plan.TotalLots = totalVolume / _symbol.LotSize;
-        plan.TotalVolumeInUnits = totalVolume;
-        plan.NativeRiskVolumeInUnits = nativeRiskVolume;
-        plan.PriceRiskCappedVolumeInUnits = priceRiskCappedVolume;
-        plan.AccountEquity = accountEquity;
-        plan.RiskMoney = riskMoney;
-        plan.EstimatedRiskMoney = _symbol.AmountRisked(totalVolume, stopLossPips);
-        plan.Label = $"{LabelPrefix}_{side}";
+        planModel.IsValid = true;
+        planModel.DirectionModel = directionModel;
+        planModel.EntryModel = _entryModel;
+        planModel.IsMarketOrder = _entryModel == PdhpdlEntryModel.Close;
+        planModel.EntryPrice = entry;
+        planModel.StopPrice = stop;
+        planModel.TakeProfitPrice = takeProfit;
+        planModel.RiskPrice = riskPrice;
+        planModel.StopLossPips = stopLossPips;
+        planModel.TakeProfitPips = takeProfitPips;
+        planModel.TotalLots = totalVolume / _symbolModel.LotSize;
+        planModel.TotalVolumeInUnits = totalVolume;
+        planModel.NativeRiskVolumeInUnits = nativeRiskVolume;
+        planModel.PriceRiskCappedVolumeInUnits = priceRiskCappedVolume;
+        planModel.AccountEquity = accountEquity;
+        planModel.RiskMoney = riskMoney;
+        planModel.EstimatedRiskMoney = _symbolModel.AmountRisked(totalVolume, stopLossPips);
+        planModel.Label = $"{LabelPrefix}_{side}";
     }
 
-    private double GetEntryPrice(double closeEntry, double stop, PdhpdlTradeDirection direction) {
+    private double GetEntryPrice(double closeEntry, double stop, PdhpdlTradeDirectionModel directionModel) {
         double ratio = GetPullbackRatio();
 
         if (ratio <= 0.0)
@@ -134,19 +134,19 @@ public class PdhpdlOrderPlanner {
 
         double distanceToStop = Math.Abs(closeEntry - stop);
 
-        if (direction == PdhpdlTradeDirection.Long)
+        if (directionModel == PdhpdlTradeDirectionModel.Long)
             return closeEntry - distanceToStop * ratio;
 
         return closeEntry + distanceToStop * ratio;
     }
 
     private double GetPullbackRatio() {
-        switch (_entryMode) {
-            case PdhpdlEntryMode.Pullback25:
+        switch (_entryModel) {
+            case PdhpdlEntryModel.Pullback25:
                 return 0.25;
-            case PdhpdlEntryMode.Pullback382:
+            case PdhpdlEntryModel.Pullback382:
                 return 0.382;
-            case PdhpdlEntryMode.Pullback50:
+            case PdhpdlEntryModel.Pullback50:
                 return 0.50;
             default:
                 return 0.0;

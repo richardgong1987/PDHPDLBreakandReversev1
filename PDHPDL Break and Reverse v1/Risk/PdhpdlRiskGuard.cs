@@ -5,12 +5,12 @@ using System.Globalization;
 namespace cAlgo.Robots;
 
 public class PdhpdlRiskGuard {
-    private readonly PdhpdlRiskGuardConfig _config;
-    private readonly List<NewsBlackoutWindow> _newsBlackoutWindows;
+    private readonly PdhpdlRiskGuardConfigModel _configModel;
+    private readonly List<NewsBlackoutWindowModel> _newsBlackoutWindows;
 
-    public PdhpdlRiskGuard(PdhpdlRiskGuardConfig config) {
-        _config = config ?? new PdhpdlRiskGuardConfig();
-        _newsBlackoutWindows = ParseNewsBlackoutWindows(_config.NewsBlackoutWindows);
+    public PdhpdlRiskGuard(PdhpdlRiskGuardConfigModel configModel) {
+        _configModel = configModel ?? new PdhpdlRiskGuardConfigModel();
+        _newsBlackoutWindows = ParseNewsBlackoutWindows(_configModel.NewsBlackoutWindows);
     }
 
     public int NewsBlackoutWindowCount {
@@ -51,8 +51,8 @@ public class PdhpdlRiskGuard {
             return true;
         }
 
-        if (_config.MinRiskPrice > 0.0 && riskPrice < _config.MinRiskPrice) {
-            rejectReason = $"Risk price is too small. RiskPrice={riskPrice}, MinRiskPrice={_config.MinRiskPrice}";
+        if (_configModel.MinRiskPrice > 0.0 && riskPrice < _configModel.MinRiskPrice) {
+            rejectReason = $"Risk price is too small. RiskPrice={riskPrice}, MinRiskPrice={_configModel.MinRiskPrice}";
             return true;
         }
 
@@ -61,13 +61,13 @@ public class PdhpdlRiskGuard {
 
     public double CalculateRiskMoney(double equity, double riskPct) {
         double proportionalRiskMoney = RiskUtil.CalcRiskMoney(equity, riskPct);
-        double safetyFactor = Math.Max(0.1, Math.Min(_config.RiskSafetyFactor, 1.0));
+        double safetyFactor = Math.Max(0.1, Math.Min(_configModel.RiskSafetyFactor, 1.0));
 
         return proportionalRiskMoney * safetyFactor;
     }
 
     public bool IsInNewsBlackout(DateTime time) {
-        foreach (NewsBlackoutWindow window in _newsBlackoutWindows) {
+        foreach (NewsBlackoutWindowModel window in _newsBlackoutWindows) {
             if (time >= window.Start && time < window.End)
                 return true;
         }
@@ -79,28 +79,28 @@ public class PdhpdlRiskGuard {
         if (time.DayOfWeek != DayOfWeek.Friday)
             return false;
 
-        return GetMinutesOfDay(time) >= _config.FridayNoNewOrdersStartHour * 60;
+        return GetMinutesOfDay(time) >= _configModel.FridayNoNewOrdersStartHour * 60;
     }
 
     private bool IsFridayForceCloseTime(DateTime time) {
         if (time.DayOfWeek != DayOfWeek.Friday)
             return false;
 
-        return GetMinutesOfDay(time) >= _config.FridayForceCloseHour * 60 + _config.FridayForceCloseMinute;
+        return GetMinutesOfDay(time) >= _configModel.FridayForceCloseHour * 60 + _configModel.FridayForceCloseMinute;
     }
 
     private bool IsInNoNewOrderWindow(DateTime time) {
         int currentMinutes = GetMinutesOfDay(time);
-        int startMinutes = _config.NoNewOrdersStartHour * 60;
-        int resumeMinutes = _config.ResumeTradingHour * 60;
+        int startMinutes = _configModel.NoNewOrdersStartHour * 60;
+        int resumeMinutes = _configModel.ResumeTradingHour * 60;
 
         return IsWithinWindow(currentMinutes, startMinutes, resumeMinutes);
     }
 
     private bool IsInForceCloseWindow(DateTime time) {
         int currentMinutes = GetMinutesOfDay(time);
-        int startMinutes = _config.ForceCloseHour * 60 + _config.ForceCloseMinute;
-        int resumeMinutes = _config.ResumeTradingHour * 60;
+        int startMinutes = _configModel.ForceCloseHour * 60 + _configModel.ForceCloseMinute;
+        int resumeMinutes = _configModel.ResumeTradingHour * 60;
 
         return IsWithinWindow(currentMinutes, startMinutes, resumeMinutes);
     }
@@ -119,8 +119,8 @@ public class PdhpdlRiskGuard {
         return currentMinutes >= startMinutes || currentMinutes < endMinutes;
     }
 
-    private static List<NewsBlackoutWindow> ParseNewsBlackoutWindows(string value) {
-        var windows = new List<NewsBlackoutWindow>();
+    private static List<NewsBlackoutWindowModel> ParseNewsBlackoutWindows(string value) {
+        var windows = new List<NewsBlackoutWindowModel>();
 
         if (string.IsNullOrWhiteSpace(value))
             return windows;
@@ -142,7 +142,7 @@ public class PdhpdlRiskGuard {
             if (end <= start)
                 continue;
 
-            windows.Add(new NewsBlackoutWindow { Start = start, End = end });
+            windows.Add(new NewsBlackoutWindowModel { Start = start, End = end });
         }
 
         return windows;
