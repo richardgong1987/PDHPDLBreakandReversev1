@@ -42,11 +42,13 @@ public class PdhpdlOrderPlanner {
         double takeProfitPips = Math.Abs(takeProfit - entry) / _symbolModel.PipSize;
         double riskMoney = _riskGuard.CalculateRiskMoney(accountEquity, _riskPct);
 
-        // Volume whose loss at the stop equals the risk budget (units * riskPrice = riskMoney),
-        // snapped to the nearest tradable step so the realized loss lands as close to the budget
-        // as the step allows. Rounding down here (the old behavior) systematically under-risked,
-        // badly so for small positions; nearest rounding centers realized risk on the budget.
-        double idealVolume = riskMoney / riskPrice;
+        // Volume whose loss at the stop equals the risk budget, snapped to the nearest tradable
+        // step. lossPerUnit uses PipValue (account-currency value of a pip), so the budget stays
+        // in the account currency. Dividing riskMoney by the raw price distance (the old formula)
+        // ignored the quote->deposit currency conversion — e.g. a EUR account trading USD-quoted
+        // XAUUSD was sized ~15% too small, so realized losses fell short of the budget.
+        double lossPerUnit = stopLossPips * _symbolModel.PipValue;
+        double idealVolume = lossPerUnit > 0.0 ? riskMoney / lossPerUnit : 0.0;
         double totalVolume = _symbolModel.NormalizeVolumeInUnits(idealVolume);
 
         if (TryGetVolumeRejectReason(totalVolume, out rejectReason)) {

@@ -117,39 +117,47 @@ See `docs/testing.md` for how to run them.
 
 ```
 riskMoney   = equity * riskPct / 100            (RiskUtil.CalcRiskMoney, x safety factor)
-idealVolume = riskMoney / riskPrice             (riskPrice = |entry - stop| in price)
+stopLossPips = riskPrice / pipSize              (riskPrice = |entry - stop| in price)
+lossPerUnit = stopLossPips * pipValue           (pipValue = account-currency value of a pip)
+idealVolume = riskMoney / lossPerUnit
 volume      = NormalizeVolumeInUnits(idealVolume)   // nearest tradable step
 reject if volume < VolumeInUnitsMin or > VolumeInUnitsMax
 ```
 
-By construction `volume * riskPrice ≈ riskMoney`, so a stop-out loses ≈ `riskPct`% of equity.
+`pipValue` is the deposit-currency value of one pip for one unit, so `volume * lossPerUnit ≈
+riskMoney` **in the account currency** — a stop-out loses ≈ `riskPct`% of equity regardless of
+what currency the instrument is quoted in.
 
-**The bug that was fixed.** The earlier version computed *two* volumes — the broker's
-`VolumeForProportionalRisk` and `riskMoney / riskPrice` — took `Math.Min` of them, and rounded
-with `RoundingMode.Down`. Both choices only ever shrink the position, so realized stop-out
-losses came in **well under** the 1% budget. Backtest evidence (XAUUSD M15, 89 stop-outs),
-measured on the clean post-fix run:
+**The two bugs that were fixed (in order):**
 
-| Metric | Before | After |
-| --- | --- | --- |
-| avg realized loss / 1% target | **0.75** | **0.82** |
-| worst single trade (large stop, ~2 units) | **0.41** | **0.82** |
+1. **Min-of-two + round-down (fixed first).** The earliest version took `Math.Min` of the
+   broker's `VolumeForProportionalRisk` and `riskMoney / riskPrice`, then rounded with
+   `RoundingMode.Down`. Both only shrink the position. Replaced with a single formula rounded to
+   the *nearest* step.
+2. **Currency conversion (this fix).** `riskMoney / riskPrice` divides an account-currency
+   budget by a *quote-currency* price distance. For the test account — **EUR deposit, USD-quoted
+   XAUUSD** (1 USD ≈ 0.855 EUR, confirmed from `report.html`: `depositAsset: EUR`, and every
+   trade's gross = price-move × volume × 0.855) — that sized every position ~15% too small.
+   Using `pipValue` folds in the USD→EUR conversion, so the budget is spent in the currency it
+   is measured in.
 
-The undersizing was worst for small positions, where `Down`-rounding discards up to a whole
-unit (e.g. ideal 2.13 units → 1, halving the risk). Taking the *nearest* step and dropping the
-redundant `Min`/`VolumeForProportionalRisk` cap centers *intended* risk on the budget.
+Diagnostic tell (visible in `log.txt`): the plan logged `RiskMoney` (the target) far above
+`EstimatedRiskMoney` (`Symbol.AmountRisked`, the *true* account-currency risk). Trade 1:
+`RiskMoney 90` vs `EstimatedRiskMoney 73` — the ~0.855 gap is exactly the conversion. After the
+fix the sized position makes those two agree.
 
-**Residual gap (~18%, not a sizing bug).** Two effects remain, neither of which sizing should
-chase:
-1. **Execution (~13%).** Entries are market orders; on losing trades the fill/spread makes the
-   realized entry-to-stop loss come in below the planned `riskPrice`. "Risk 1%" is defined as
-   *intended* risk (stop at the planned level) = 1%; realized loss is naturally ≤ that.
-2. **Integer step (~5%).** A wide stop makes 1% only worth ~1–2 units, so nearest-rounding
-   still can't hit the budget exactly (2.13 → 2). Distribution of realized/target after the
-   fix: min 0.55, median 0.82, max 1.02.
+**What the shortfall was made of** (why a −1% target realized ≈ −0.75% before this fix):
+- **Currency conversion ~0.855** — the bug above. Fixed.
+- **Safety factor 0.9** — `RiskSafetyFactor` is a user parameter; it deliberately targets 0.9%.
+  Set it to `1.0` for a full 1%.
+- **Integer step** — a wide stop makes 1% worth only ~1–2 units, so nearest-rounding can't hit
+  the budget exactly. Irreducible with whole-unit volume steps; worst on large-stop trades.
 
-Compensating by sizing up (e.g. dividing `riskMoney` by the ~0.87 execution factor) would push
-cleanly-stopped trades over 1%, so it is deliberately not done. If a run wants realized loss
+Note: the stop itself is **not** hit early — trade 1's stop was planned at 4405.04 and filled at
+4405.03. The shortfall was position size, not stop placement.
+
+The residual after the currency fix is only the safety factor and integer rounding. Sizing does
+not otherwise compensate. If a run wants realized loss
 centered exactly on 1%, that would be an explicit opt-in knob, not the default.
 
 ## 13. Trade-log reset

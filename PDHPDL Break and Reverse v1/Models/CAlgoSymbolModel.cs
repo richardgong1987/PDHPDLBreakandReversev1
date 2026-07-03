@@ -17,6 +17,7 @@ public class CAlgoSymbolModel : IPdhpdlSymbolModel {
     public double LotSize => _symbol.LotSize;
     public double VolumeInUnitsMin => _symbol.VolumeInUnitsMin;
     public double VolumeInUnitsMax => _symbol.VolumeInUnitsMax;
+    public double PipValue => _symbol.PipValue;
 
     public double NormalizeVolumeInUnits(double volumeInUnits) {
         return _symbol.NormalizeVolumeInUnits(volumeInUnits, RoundingMode.ToNearest);

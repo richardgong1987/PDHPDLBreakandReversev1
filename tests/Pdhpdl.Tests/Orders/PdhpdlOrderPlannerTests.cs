@@ -33,6 +33,24 @@ namespace Pdhpdl.Tests.Orders {
         }
 
         [Fact]
+        public void sizes_up_when_pip_value_is_below_pip_size_so_account_currency_risk_hits_the_budget() {
+            // pipValue 0.0855 < pipSize 0.1 models a EUR account trading a USD-quoted instrument.
+            // The old formula (riskMoney / riskPrice) ignored this and sized 47; the currency-correct
+            // volume is larger so the loss measured in the account currency still equals the budget.
+            PdhpdlOrderPlanner planner = CreatePlanner(PdhpdlEntryModel.Close, pipValue: 0.0855);
+            PdhpdlSignal signal = LongSignal(close: 100.0, low: 98.0, high: 101.0);
+
+            PdhpdlOrderPlanModel plan = planner.CreatePlan(signal, accountEquity: 10000.0);
+
+            Assert.True(plan.IsValid);
+            // riskMoney 100; lossPerUnit = stopLossPips 21.5 * pipValue 0.0855 = 1.83825; ideal 54.4 -> 54.
+            Assert.Equal(54.0, plan.TotalVolumeInUnits, precision: 6);
+            // Account-currency risk of the sized position lands within one step of the budget.
+            double accountCurrencyRisk = plan.TotalVolumeInUnits * plan.StopLossPips * 0.0855;
+            Assert.True(Math.Abs(accountCurrencyRisk - plan.RiskMoney) <= plan.StopLossPips * 0.0855);
+        }
+
+        [Fact]
         public void sizes_short_close_entry_geometry() {
             PdhpdlOrderPlanner planner = CreatePlanner(PdhpdlEntryModel.Close);
             PdhpdlSignal signal = ShortSignal(close: 100.0, low: 99.0, high: 101.0);
@@ -84,13 +102,16 @@ namespace Pdhpdl.Tests.Orders {
         }
 
         private static PdhpdlOrderPlanner CreatePlanner(PdhpdlEntryModel entryModel, double volumeInUnitsMin = 1.0,
-            double minRiskPrice = 0.0) {
+            double minRiskPrice = 0.0, double pipValue = 0.1) {
+            // Default pipValue == pipSize models an instrument quoted in the account currency
+            // (one price unit = one currency unit per unit of volume), so volume = riskMoney / riskPrice.
             var symbol = new FakeSymbolModel {
                 TickSize = 0.01,
                 PipSize = 0.1,
                 LotSize = 100.0,
                 VolumeInUnitsMin = volumeInUnitsMin,
-                VolumeInUnitsMax = 1_000_000.0
+                VolumeInUnitsMax = 1_000_000.0,
+                PipValue = pipValue
             };
             var guard = new PdhpdlRiskGuard(new PdhpdlRiskGuardConfigModel { RiskSafetyFactor = 1.0, MinRiskPrice = minRiskPrice });
             return new PdhpdlOrderPlanner(symbol, guard, stopOffsetTicks: 15, takeProfitR: 2.0, entryModel, riskPct: 1.0);
@@ -112,9 +133,10 @@ namespace Pdhpdl.Tests.Orders {
             public double LotSize { get; set; }
             public double VolumeInUnitsMin { get; set; }
             public double VolumeInUnitsMax { get; set; }
+            public double PipValue { get; set; }
 
             public double NormalizeVolumeInUnits(double volumeInUnits) => Math.Round(volumeInUnits, MidpointRounding.AwayFromZero);
-            public double AmountRisked(double volumeInUnits, double stopLossPips) => volumeInUnits;
+            public double AmountRisked(double volumeInUnits, double stopLossPips) => volumeInUnits * stopLossPips * PipValue;
         }
     }
 }
