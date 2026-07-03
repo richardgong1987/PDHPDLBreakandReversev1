@@ -14,11 +14,11 @@ public class PdhpdlUtils {
         return Math.Max(2, days + 2);
     }
 
-    public static bool IsSortSignal(double high, double close, double pdh, double open) {
+    public static bool IsSortSignal(double high, double low, double open, double close, double pdh, double pdl) {
         return IsFalseBreakUp(high, close, pdh, open);
     }
 
-    public static bool IsLongSignal(double low, double close, double pdl, double open) {
+    public static bool IsLongSignal(double high, double low, double open, double close, double pdh, double pdl) {
         return IsFalseBreakDown(low, close, pdl, open);
     }
 
@@ -65,8 +65,8 @@ public class PdhpdlUtils {
         double close = bars.ClosePrices[closedBarIndex];
         double open = bars.OpenPrices[closedBarIndex];
 
-        bool shortSignal = IsSortSignal(high, close, pdh, open);
-        bool longSignal = IsLongSignal(low, close, pdl, open);
+        bool shortSignal = IsSortSignal(high, low, open, close, pdh, pdl);
+        bool longSignal = IsLongSignal(high, low, open, close, pdh, pdl);
 
         signal.HasData = true;
         signal.BarIndex = closedBarIndex;
