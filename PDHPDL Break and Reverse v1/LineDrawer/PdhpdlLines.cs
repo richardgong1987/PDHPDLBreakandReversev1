@@ -17,11 +17,21 @@ public class PdhpdlLines {
 
     private DateTime _lastDailyOpenTime = DateTime.MinValue;
 
-    public PdhpdlLines(Chart chart, MarketData marketData, string symbolName, int daysToDraw, int thickness) {
+    public PdhpdlLines(Chart chart, MarketData marketData, string symbolName, Bars chartBars, int thickness) {
         _chart = chart;
         _dailyBars = marketData.GetBars(TimeFrame.Daily, symbolName);
-        _daysToDraw = daysToDraw;
+        _daysToDraw = GetDaysToDraw(chartBars);
         _thickness = thickness;
+    }
+
+    // Draw one extra day of headroom on each side of the visible chart range.
+    private static int GetDaysToDraw(Bars chartBars) {
+        if (chartBars.Count < 2)
+            return 2;
+
+        DateTime start = chartBars.OpenTimes[0].Date;
+        DateTime end = chartBars.OpenTimes[chartBars.Count - 1].Date;
+        return Math.Max(2, (end - start).Days + 2);
     }
 
     public void Draw() {

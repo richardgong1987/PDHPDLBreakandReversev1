@@ -5,10 +5,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this is
 
 A **cTrader cBot** (automated trading robot) written in C# against the cAlgo API, targeting
-`net6.0`. The intended strategy — per the project name — is **PDH/PDL Break and Reverse**
-(trade breakouts/reversals around the Previous Day High and Previous Day Low). The current
-`PDHPDL Break and Reverse v1.cs` is still the default cTrader scaffold (a "Hello world!"
-`Robot`); the strategy logic has not been implemented yet.
+`net6.0`. The strategy is **PDH/PDL Break and Reverse**: it detects false breakouts of the
+Previous Day High/Low, sizes an order against a fixed per-trade risk budget, places it, and
+logs each trade to CSV. The strategy is implemented; `PDHPDL Break and Reverse v1.cs` is the
+Robot lifecycle shell that wires the pieces together (the composition root).
+
+## Module map
+
+Source lives beside the feature it serves (no generic `models/` or `Util` folders):
+
+- `Signals/` — `PdhpdlSignalRules` (pure long/short predicates, unit tested),
+  `PdhpdlSignalDetector` (reads the closed bar + previous-day levels), `PdhpdlSignal` (data).
+- `Orders/` — `PdhpdlOrderPlanner` (pure sizing/geometry, unit tested) talks to the broker
+  only through the `IPdhpdlSymbol` port; `CAlgoSymbol` adapts the real `Symbol`;
+  `PdhpdlOrderExecutor` gates on risk/exposure, submits orders, and tracks CSV row ids;
+  `PdhpdlOrderPlan` / `PdhpdlTradeDirection` / `PdhpdlEntryMode` are pure data.
+- `Risk/` — `PdhpdlRiskGuard` (time/news/weekend windows + risk-money, pure, unit tested),
+  `RiskUtil`, `PdhpdlRiskGuardConfig`, `NewsBlackoutWindow`.
+- `LineDrawer/` — `PdhpdlLines`, `PdhpdlSignalMarkers` (chart drawing).
+- `OrderLogger/` — `PdhpdlTradeCsvLogger`, `PdhpdlTradeCsvRecord`.
+
+Rule of thumb: classes with no `using cAlgo.API` are pure and testable; keep them that way.
+The design rationale lives in `docs/design/refactor-structure.md`.
 
 ## Build & run
 

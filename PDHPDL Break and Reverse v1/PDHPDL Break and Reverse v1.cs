@@ -57,24 +57,31 @@ public class PDHPDLBreakandReversev1 : Robot {
 
 
     private PdhpdlLines _pdhpdlLines;
-    private Bars _dailyBars;
+    private PdhpdlSignalDetector _signalDetector;
     private PdhpdlSignalMarkers _signalMarkers;
     private PdhpdlOrderExecutor _orderExecutor;
     private PdhpdlTradeCsvLogger _csvLogger;
 
     protected override void OnStart() {
-        int daysToDraw = PdhpdlUtils.GetDaysToDraw(Bars);
-        _pdhpdlLines = new PdhpdlLines(Chart, MarketData, SymbolName, daysToDraw, LineThickness);
-        _dailyBars = MarketData.GetBars(TimeFrame.Daily, SymbolName);
-
-        _signalMarkers = new PdhpdlSignalMarkers(Chart, Symbol.TickSize);
-
+        _pdhpdlLines = new PdhpdlLines(Chart, MarketData, SymbolName, Bars, LineThickness);
         _pdhpdlLines.Draw();
+
+        Bars dailyBars = MarketData.GetBars(TimeFrame.Daily, SymbolName);
+        _signalDetector = new PdhpdlSignalDetector(Bars, dailyBars);
+        _signalMarkers = new PdhpdlSignalMarkers(Chart, Symbol.TickSize);
 
         _csvLogger = new PdhpdlTradeCsvLogger();
         Print("****CSV logger path: {0}", _csvLogger.FilePath);
 
-        var riskGuardConfig = new PdhpdlRiskGuardConfig {
+        var riskGuard = new PdhpdlRiskGuard(BuildRiskGuardConfig());
+        var planner = new PdhpdlOrderPlanner(new CAlgoSymbol(Symbol), riskGuard, StopOffsetTicks, TakeProfitR, EntryMode, RiskPct);
+        _orderExecutor = new PdhpdlOrderExecutor(this, SymbolName, Bars.TimeFrame.ToString(), planner, riskGuard, _csvLogger);
+
+        Print("*****PDH/PDL Break and Reverse started.");
+    }
+
+    private PdhpdlRiskGuardConfig BuildRiskGuardConfig() {
+        return new PdhpdlRiskGuardConfig {
             RiskSafetyFactor = RiskSafetyFactor,
             MinRiskPrice = MinRiskPrice,
             NoNewOrdersStartHour = NoNewOrdersStartHour,
@@ -86,28 +93,20 @@ public class PDHPDLBreakandReversev1 : Robot {
             FridayForceCloseMinute = FridayForceCloseMinute,
             NewsBlackoutWindows = NewsBlackoutWindows
         };
-
-        var riskGuard = new PdhpdlRiskGuard(riskGuardConfig);
-
-        _orderExecutor = new PdhpdlOrderExecutor(this, Symbol, SymbolName, Bars.TimeFrame.ToString(), RiskPct, StopOffsetTicks, TakeProfitR,
-            EntryMode, riskGuard, _csvLogger);
-
-        Print("*****PDH/PDL step painter started. DaysToDraw: {0}", daysToDraw);
     }
 
     protected override void OnBar() {
         _pdhpdlLines.Draw();
         _orderExecutor?.ManageOpenPositions();
-        DetectFalseBreakoutOnClosedBar();
+        HandleClosedBarSignal();
     }
 
     protected override void OnTick() {
         _orderExecutor?.ManageOpenPositions();
     }
 
-
-    private void DetectFalseBreakoutOnClosedBar() {
-        PdhpdlSignal signal = PdhpdlUtils.DetectFalseBreakoutOnClosedBar(Bars, _dailyBars);
+    private void HandleClosedBarSignal() {
+        PdhpdlSignal signal = _signalDetector.DetectOnClosedBar();
 
         if (!signal.HasData)
             return;

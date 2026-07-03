@@ -29,8 +29,8 @@ public class PdhpdlTradeCsvLogger {
         if (plan == null || position == null)
             return "";
 
-        string side = plan.TradeType == TradeType.Buy ? "B" : "S";
-        string keyLevel = plan.TradeType == TradeType.Buy ? "PDL" : "PDH";
+        string side = plan.Direction == PdhpdlTradeDirection.Long ? "B" : "S";
+        string keyLevel = plan.Direction == PdhpdlTradeDirection.Long ? "PDL" : "PDH";
 
         var record = new PdhpdlTradeCsvRecord {
             Id = position.Id.ToString(),
@@ -64,8 +64,8 @@ public class PdhpdlTradeCsvLogger {
         if (plan == null || order == null)
             return "";
 
-        string side = plan.TradeType == TradeType.Buy ? "B" : "S";
-        string keyLevel = plan.TradeType == TradeType.Buy ? "PDL" : "PDH";
+        string side = plan.Direction == PdhpdlTradeDirection.Long ? "B" : "S";
+        string keyLevel = plan.Direction == PdhpdlTradeDirection.Long ? "PDL" : "PDH";
         string csvId = order.Id.ToString();
 
         var record = new PdhpdlTradeCsvRecord {
