@@ -76,7 +76,7 @@ namespace Pdhpdl.Tests.Risk {
         }
 
         private static PdhpdlRiskGuard CreateGuard(string newsBlackoutWindows = "", double riskSafetyFactor = 1.0) {
-            return new PdhpdlRiskGuard(new PdhpdlRiskGuardConfig {
+            return new PdhpdlRiskGuard(new PdhpdlRiskGuardConfigModel {
                 RiskSafetyFactor = riskSafetyFactor,
                 MinRiskPrice = 5.0,
                 NoNewOrdersStartHour = 4,

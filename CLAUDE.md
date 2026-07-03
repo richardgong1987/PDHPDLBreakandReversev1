@@ -12,21 +12,27 @@ Robot lifecycle shell that wires the pieces together (the composition root).
 
 ## Module map
 
-Source lives beside the feature it serves (no generic `models/` or `Util` folders):
+Behavior classes live beside the feature they serve; all data types live in `Models/`
+(suffixed `Model`):
 
 - `Signals/` — `PdhpdlSignalRules` (pure long/short predicates, unit tested),
   `PdhpdlSignalDetector` (reads the closed bar + previous-day levels), `PdhpdlSignal` (data).
 - `Orders/` — `PdhpdlOrderPlanner` (pure sizing/geometry, unit tested) talks to the broker
-  only through the `IPdhpdlSymbol` port; `CAlgoSymbol` adapts the real `Symbol`;
-  `PdhpdlOrderExecutor` gates on risk/exposure, submits orders, and tracks CSV row ids;
-  `PdhpdlOrderPlan` / `PdhpdlTradeDirection` / `PdhpdlEntryMode` are pure data.
+  only through the `IPdhpdlSymbolModel` port; `PdhpdlOrderExecutor` gates on risk/exposure,
+  submits orders, and tracks CSV row ids.
 - `Risk/` — `PdhpdlRiskGuard` (time/news/weekend windows + risk-money, pure, unit tested),
-  `RiskUtil`, `PdhpdlRiskGuardConfig`, `NewsBlackoutWindow`.
+  `RiskUtil`.
 - `LineDrawer/` — `PdhpdlLines`, `PdhpdlSignalMarkers` (chart drawing).
-- `OrderLogger/` — `PdhpdlTradeCsvLogger`, `PdhpdlTradeCsvRecord`.
+- `OrderLogger/` — `PdhpdlTradeCsvLogger`.
+- `Models/` — data types: `PdhpdlOrderPlanModel`, `PdhpdlTradeDirectionModel`,
+  `PdhpdlEntryModel`, `PdhpdlRiskGuardConfigModel`, `NewsBlackoutWindowModel`,
+  `PdhpdlTradeCsvRecordModel`, the `IPdhpdlSymbolModel` port, and its `CAlgoSymbolModel`
+  adapter (the one Models/ file that references `cAlgo.API`).
 
 Rule of thumb: classes with no `using cAlgo.API` are pure and testable; keep them that way.
-The design rationale lives in `docs/design/refactor-structure.md`.
+`CAlgoSymbolModel` is the sole broker adapter — it is the only Models/ file that touches
+cAlgo, and it is never linked into the test project. The design rationale lives in
+`docs/design/refactor-structure.md`.
 
 ## Build & run
 

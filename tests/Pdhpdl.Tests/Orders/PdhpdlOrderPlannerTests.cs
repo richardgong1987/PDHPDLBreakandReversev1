@@ -10,13 +10,13 @@ namespace Pdhpdl.Tests.Orders {
 
         [Fact]
         public void sizes_long_close_entry_and_caps_volume_by_risk_money() {
-            PdhpdlOrderPlanner planner = CreatePlanner(PdhpdlEntryMode.Close);
+            PdhpdlOrderPlanner planner = CreatePlanner(PdhpdlEntryModel.Close);
             PdhpdlSignal signal = LongSignal(close: 100.0, low: 98.0, high: 101.0);
 
-            PdhpdlOrderPlan plan = planner.CreatePlan(signal, accountEquity: 10000.0);
+            PdhpdlOrderPlanModel plan = planner.CreatePlan(signal, accountEquity: 10000.0);
 
             Assert.True(plan.IsValid);
-            Assert.Equal(PdhpdlTradeDirection.Long, plan.Direction);
+            Assert.Equal(PdhpdlTradeDirectionModel.Long, plan.DirectionModel);
             Assert.True(plan.IsMarketOrder);
             Assert.Equal(100.0, plan.EntryPrice, precision: 6);
             Assert.Equal(97.85, plan.StopPrice, precision: 6);
@@ -34,13 +34,13 @@ namespace Pdhpdl.Tests.Orders {
 
         [Fact]
         public void sizes_short_close_entry_geometry() {
-            PdhpdlOrderPlanner planner = CreatePlanner(PdhpdlEntryMode.Close);
+            PdhpdlOrderPlanner planner = CreatePlanner(PdhpdlEntryModel.Close);
             PdhpdlSignal signal = ShortSignal(close: 100.0, low: 99.0, high: 101.0);
 
-            PdhpdlOrderPlan plan = planner.CreatePlan(signal, accountEquity: 10000.0);
+            PdhpdlOrderPlanModel plan = planner.CreatePlan(signal, accountEquity: 10000.0);
 
             Assert.True(plan.IsValid);
-            Assert.Equal(PdhpdlTradeDirection.Short, plan.Direction);
+            Assert.Equal(PdhpdlTradeDirectionModel.Short, plan.DirectionModel);
             Assert.Equal(100.0, plan.EntryPrice, precision: 6);
             Assert.Equal(101.15, plan.StopPrice, precision: 6);
             Assert.Equal(1.15, plan.RiskPrice, precision: 6);
@@ -49,10 +49,10 @@ namespace Pdhpdl.Tests.Orders {
 
         [Fact]
         public void pullback_entry_moves_entry_toward_stop_and_places_limit_order() {
-            PdhpdlOrderPlanner planner = CreatePlanner(PdhpdlEntryMode.Pullback50);
+            PdhpdlOrderPlanner planner = CreatePlanner(PdhpdlEntryModel.Pullback50);
             PdhpdlSignal signal = LongSignal(close: 100.0, low: 98.0, high: 101.0);
 
-            PdhpdlOrderPlan plan = planner.CreatePlan(signal, accountEquity: 10000.0);
+            PdhpdlOrderPlanModel plan = planner.CreatePlan(signal, accountEquity: 10000.0);
 
             Assert.True(plan.IsValid);
             Assert.False(plan.IsMarketOrder);
@@ -63,10 +63,10 @@ namespace Pdhpdl.Tests.Orders {
 
         [Fact]
         public void rejects_when_capped_volume_is_below_broker_minimum() {
-            PdhpdlOrderPlanner planner = CreatePlanner(PdhpdlEntryMode.Close, volumeInUnitsMin: 100.0);
+            PdhpdlOrderPlanner planner = CreatePlanner(PdhpdlEntryModel.Close, volumeInUnitsMin: 100.0);
             PdhpdlSignal signal = LongSignal(close: 100.0, low: 98.0, high: 101.0);
 
-            PdhpdlOrderPlan plan = planner.CreatePlan(signal, accountEquity: 10000.0);
+            PdhpdlOrderPlanModel plan = planner.CreatePlan(signal, accountEquity: 10000.0);
 
             Assert.False(plan.IsValid);
             Assert.Contains("too small", plan.RejectReason);
@@ -74,18 +74,18 @@ namespace Pdhpdl.Tests.Orders {
 
         [Fact]
         public void rejects_when_risk_price_is_below_minimum() {
-            PdhpdlOrderPlanner planner = CreatePlanner(PdhpdlEntryMode.Close, minRiskPrice: 5.0);
+            PdhpdlOrderPlanner planner = CreatePlanner(PdhpdlEntryModel.Close, minRiskPrice: 5.0);
             PdhpdlSignal signal = LongSignal(close: 100.0, low: 98.0, high: 101.0);
 
-            PdhpdlOrderPlan plan = planner.CreatePlan(signal, accountEquity: 10000.0);
+            PdhpdlOrderPlanModel plan = planner.CreatePlan(signal, accountEquity: 10000.0);
 
             Assert.False(plan.IsValid);
             Assert.Contains("Risk price is too small", plan.RejectReason);
         }
 
-        private static PdhpdlOrderPlanner CreatePlanner(PdhpdlEntryMode entryMode, double volumeInUnitsMin = 1.0,
+        private static PdhpdlOrderPlanner CreatePlanner(PdhpdlEntryModel entryModel, double volumeInUnitsMin = 1.0,
             double minRiskPrice = 0.0) {
-            var symbol = new FakeSymbol {
+            var symbol = new FakeSymbolModel {
                 TickSize = 0.01,
                 PipSize = 0.1,
                 LotSize = 100.0,
@@ -93,8 +93,8 @@ namespace Pdhpdl.Tests.Orders {
                 VolumeInUnitsMax = 1_000_000.0,
                 ProportionalRiskVolume = 1000.0
             };
-            var guard = new PdhpdlRiskGuard(new PdhpdlRiskGuardConfig { RiskSafetyFactor = 1.0, MinRiskPrice = minRiskPrice });
-            return new PdhpdlOrderPlanner(symbol, guard, stopOffsetTicks: 15, takeProfitR: 2.0, entryMode, riskPct: 1.0);
+            var guard = new PdhpdlRiskGuard(new PdhpdlRiskGuardConfigModel { RiskSafetyFactor = 1.0, MinRiskPrice = minRiskPrice });
+            return new PdhpdlOrderPlanner(symbol, guard, stopOffsetTicks: 15, takeProfitR: 2.0, entryModel, riskPct: 1.0);
         }
 
         private static PdhpdlSignal LongSignal(double close, double low, double high) {
@@ -106,7 +106,7 @@ namespace Pdhpdl.Tests.Orders {
         }
 
         // Deterministic stand-in for a cTrader Symbol: volumes floor to whole units.
-        private sealed class FakeSymbol : IPdhpdlSymbol {
+        private sealed class FakeSymbolModel : IPdhpdlSymbolModel {
             public double TickSize { get; set; }
             public double PipSize { get; set; }
             public double LotSize { get; set; }

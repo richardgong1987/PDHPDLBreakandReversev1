@@ -79,9 +79,14 @@ dotnet test "tests/Pdhpdl.Tests/Pdhpdl.Tests.csproj" \
 2. Put the test in the folder that matches the source area (`Risk/`, `Signals/`, `Orders/`),
    in a class named after the unit under test (e.g. `PdhpdlOrderPlannerTests`), and name each
    test by behavior (e.g. `rejects_when_capped_volume_is_below_broker_minimum`).
-3. If the class under test lives in a new file, link it in the matching `ItemGroup` of
-   `tests/Pdhpdl.Tests/Pdhpdl.Tests.csproj`:
+3. If the class under test (or a pure data type it needs) lives in a new file, link it in the
+   matching `ItemGroup` of `tests/Pdhpdl.Tests/Pdhpdl.Tests.csproj`. Behavior classes go in
+   the area group; data types from `Models/` go in the `Models under test` group:
 
    ```xml
    <Compile Include="..\..\PDHPDL Break and Reverse v1\Orders\YourClass.cs" Link="Orders\YourClass.cs" />
+   <Compile Include="..\..\PDHPDL Break and Reverse v1\Models\YourModel.cs" Link="Models\YourModel.cs" />
    ```
+
+   Never link a file that has `using cAlgo.API` (e.g. `CAlgoSymbolModel`) — it would pull the
+   cTrader dependency into the tests.

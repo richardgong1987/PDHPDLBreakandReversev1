@@ -19,8 +19,8 @@ fixed risk budget, place it through cTrader, and record the trade to CSV.
 | Signal rules (`high/low/close` vs `PDH/PDL`) | `PdhpdlSignalRules` (pure) | no | yes |
 | Read bars into a signal | `PdhpdlSignalDetector` | yes (reads `Bars`) | no |
 | Position sizing / order geometry | `PdhpdlOrderPlanner` (pure) | no | yes |
-| Symbol facts the planner needs | `IPdhpdlSymbol` port | no | fakeable |
-| Real cTrader symbol | `CAlgoSymbol` adapter | yes | n/a |
+| Symbol facts the planner needs | `IPdhpdlSymbolModel` port | no | fakeable |
+| Real cTrader symbol | `CAlgoSymbolModel` adapter | yes | n/a |
 | Place & track orders | `PdhpdlOrderExecutor` | yes | no |
 | Time / news / risk windows | `PdhpdlRiskGuard` (pure) | no | yes |
 | Draw lines / markers | `PdhpdlLines`, `PdhpdlSignalMarkers` | yes | no |
@@ -31,48 +31,52 @@ fixed risk budget, place it through cTrader, and record the trade to CSV.
 ```
 Robot (composition root)
   -> PdhpdlSignalDetector -> PdhpdlSignalRules (pure)
-  -> PdhpdlOrderExecutor  -> PdhpdlOrderPlanner (pure) -> IPdhpdlSymbol (port)
-                          -> PdhpdlRiskGuard (pure)     ^-- CAlgoSymbol (adapter)
+  -> PdhpdlOrderExecutor  -> PdhpdlOrderPlanner (pure) -> IPdhpdlSymbolModel (port)
+                          -> PdhpdlRiskGuard (pure)     ^-- CAlgoSymbolModel (adapter)
                           -> PdhpdlTradeCsvLogger
 ```
 
 Pure classes never import `cAlgo.API`. The planner talks to the broker only through
-`IPdhpdlSymbol`, so it can be sized and asserted in tests with a fake symbol.
+`IPdhpdlSymbolModel`, so it can be sized and asserted in tests with a fake symbol.
 
 ## 5. Key Design Choices
 
-- **`PdhpdlTradeDirection { Long, Short }`** replaces `cAlgo.API.TradeType` inside the
+- **`PdhpdlTradeDirectionModel { Long, Short }`** replaces `cAlgo.API.TradeType` inside the
   plan/planner, so the sizing math carries no cAlgo dependency. The executor maps it
   to `TradeType` at the broker boundary only.
 - **`GetDaysToDraw`** moves from the `PdhpdlUtils` grab-bag into `PdhpdlLines`, its only
   caller (a drawing concern).
-- The `PdhpdlUtils` catch-all and the misleadingly named `OrderUtil/` and `models/`
-  folders are removed. Files live beside the feature they serve.
+- The `PdhpdlUtils` catch-all and the misleadingly named `OrderUtil/` folder are removed.
+  Behavior classes live beside the feature they serve; all data types live in `Models/`
+  (suffixed `Model`).
 
-## 6. Folder Layout (target)
+## 6. Folder Layout
 
 ```
-Signals/     PdhpdlSignal, PdhpdlSignalRules (pure), PdhpdlSignalDetector
-Orders/      PdhpdlTradeDirection, PdhpdlEntryMode, PdhpdlOrderPlan,
-             IPdhpdlSymbol, PdhpdlOrderPlanner (all pure), CAlgoSymbol, PdhpdlOrderExecutor
-Risk/        RiskUtil, PdhpdlRiskGuard, PdhpdlRiskGuardConfig, NewsBlackoutWindow (pure)
+Signals/     PdhpdlSignalRules (pure), PdhpdlSignalDetector, PdhpdlSignal (data)
+Orders/      PdhpdlOrderPlanner (pure), PdhpdlOrderExecutor
+Risk/        RiskUtil, PdhpdlRiskGuard (both pure)
 LineDrawer/  PdhpdlLines, PdhpdlSignalMarkers
-OrderLogger/ PdhpdlTradeCsvLogger, PdhpdlTradeCsvRecord
+OrderLogger/ PdhpdlTradeCsvLogger
+Models/      PdhpdlOrderPlanModel, PdhpdlTradeDirectionModel, PdhpdlEntryModel,
+             PdhpdlRiskGuardConfigModel, NewsBlackoutWindowModel, PdhpdlTradeCsvRecordModel,
+             IPdhpdlSymbolModel (port), CAlgoSymbolModel (adapter — only Models/ file on cAlgo)
 ```
 
 ## 7. Test Strategy
 
-The `Pdhpdl.Tests` project links pure source files directly (no cAlgo). This refactor
-adds two link groups and two test classes:
+The `Pdhpdl.Tests` project links pure source files directly (no cAlgo) — including the pure
+data types in `Models/`, but never `CAlgoSymbolModel`. Test files mirror the source folders
+(`Risk/`, `Signals/`, `Orders/`). The refactor adds two test classes:
 
 - `PdhpdlSignalRules` — long/short predicate truth tables.
-- `PdhpdlOrderPlanner` (with a `FakeSymbol : IPdhpdlSymbol`) — volume capping, min/max
-  rejection, and the risk-money cap that was flagged for oversizing.
+- `PdhpdlOrderPlanner` (with a `FakeSymbolModel : IPdhpdlSymbolModel`) — volume capping,
+  min/max rejection, and the risk-money cap that was flagged for oversizing.
 
 ## 8. Risks and Trade-offs
 
 - The sizing math is delicate and was previously flagged for oversizing. It is **moved
   verbatim**, not altered — tests are added around it to lock current behavior.
-- Introducing `PdhpdlTradeDirection` + `IPdhpdlSymbol` is a small abstraction, justified
-  solely because it makes the flagged sizing code testable. No ports/adapters framework
-  beyond that is introduced (per project preference for simple C#).
+- Introducing `PdhpdlTradeDirectionModel` + `IPdhpdlSymbolModel` is a small abstraction,
+  justified solely because it makes the flagged sizing code testable. No ports/adapters
+  framework beyond that is introduced (per project preference for simple C#).
