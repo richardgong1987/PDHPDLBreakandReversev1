@@ -17,17 +17,13 @@ public class PdhpdlOrderPlan {
 
     public double StopPrice { get; set; }
 
-    public double Tp1Price { get; set; }
-
-    public double Tp2Price { get; set; }
+    public double TakeProfitPrice { get; set; }
 
     public double RiskPrice { get; set; }
 
     public double StopLossPips { get; set; }
 
-    public double Tp1Pips { get; set; }
-
-    public double Tp2Pips { get; set; }
+    public double TakeProfitPips { get; set; }
 
     public double TotalLots { get; set; }
 
@@ -36,8 +32,6 @@ public class PdhpdlOrderPlan {
     public double NativeRiskVolumeInUnits { get; set; }
 
     public double PriceRiskCappedVolumeInUnits { get; set; }
-
-    public double Tp1CloseVolumeInUnits { get; set; }
 
     public double RiskMoney { get; set; }
 

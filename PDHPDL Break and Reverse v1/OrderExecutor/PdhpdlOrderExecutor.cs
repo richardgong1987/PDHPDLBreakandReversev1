@@ -16,20 +16,17 @@ public class PdhpdlOrderExecutor {
 
     private readonly double _riskPct;
     private readonly int _stopOffsetTicks;
-    private readonly double _tp1R;
-    private readonly double _tp2R;
+    private readonly double _takeProfitR;
     private readonly PdhpdlEntryMode _entryMode;
     private readonly PdhpdlRiskGuard _riskGuard;
 
     private readonly string _timeFrame;
     private readonly PdhpdlTradeCsvLogger _csvLogger;
-    private readonly Dictionary<string, PdhpdlOrderPlan> _pendingPlansByLabel = new();
     private readonly Dictionary<string, string> _pendingCsvIdsByLabel = new();
     private readonly Dictionary<int, string> _positionCsvIds = new();
-    private readonly Dictionary<int, Tp1State> _tp1States = new();
 
     public PdhpdlOrderExecutor(Robot robot, Symbol symbol, string symbolName, string timeFrame, double riskPct, int stopOffsetTicks,
-        double tp1R, double tp2R, PdhpdlEntryMode entryMode, PdhpdlRiskGuard riskGuard, PdhpdlTradeCsvLogger csvLogger) {
+        double takeProfitR, PdhpdlEntryMode entryMode, PdhpdlRiskGuard riskGuard, PdhpdlTradeCsvLogger csvLogger) {
         _robot = robot;
         _symbol = symbol;
         _symbolName = symbolName;
@@ -37,8 +34,7 @@ public class PdhpdlOrderExecutor {
 
         _riskPct = riskPct;
         _stopOffsetTicks = stopOffsetTicks;
-        _tp1R = tp1R;
-        _tp2R = tp2R;
+        _takeProfitR = takeProfitR;
         _entryMode = entryMode;
         _riskGuard = riskGuard;
         _csvLogger = csvLogger;
@@ -57,9 +53,6 @@ public class PdhpdlOrderExecutor {
 
     public void ManageOpenPositions() {
         CloseExposureBeforeRiskWindow();
-
-        foreach (Position position in _robot.Positions.Where(IsStrategyPosition).ToArray())
-            TryCloseTp1(position);
     }
 
     public void ExecuteIfSignal(PdhpdlSignal signal) {
@@ -138,24 +131,16 @@ public class PdhpdlOrderExecutor {
 
         if (!string.IsNullOrWhiteSpace(closeRecordId))
             _robot.Print("*****CSV close record added. Id: {0}, ProfitLoss: {1}", closeRecordId, args.Position.NetProfit);
-
-        _tp1States.Remove(args.Position.Id);
     }
 
     private void OnPositionOpened(PositionOpenedEventArgs args) {
         if (args == null || args.Position == null)
             return;
 
-        if (!_pendingPlansByLabel.TryGetValue(args.Position.Label, out PdhpdlOrderPlan plan))
-            return;
-
         if (_pendingCsvIdsByLabel.TryGetValue(args.Position.Label, out string csvId)) {
             _positionCsvIds[args.Position.Id] = csvId;
             _pendingCsvIdsByLabel.Remove(args.Position.Label);
         }
-
-        RegisterTp1State(args.Position, plan);
-        _pendingPlansByLabel.Remove(args.Position.Label);
     }
 
     private bool IsStrategyPosition(Position position) {
@@ -165,58 +150,6 @@ public class PdhpdlOrderExecutor {
 
     private bool IsStrategyPendingOrder(PendingOrder order) {
         return order.SymbolName == _symbolName && !string.IsNullOrWhiteSpace(order.Label) && order.Label.StartsWith(LabelPrefix + "_");
-    }
-
-    private void RegisterTp1State(Position position, PdhpdlOrderPlan plan) {
-        if (position == null)
-            return;
-
-        _tp1States[position.Id] = new Tp1State {
-            TargetPrice = plan.Tp1Price, CloseVolumeInUnits = plan.Tp1CloseVolumeInUnits, IsClosed = false
-        };
-    }
-
-    private void TryCloseTp1(Position position) {
-        if (!_tp1States.TryGetValue(position.Id, out Tp1State state))
-            return;
-
-        if (state.IsClosed)
-            return;
-
-        if (!IsTp1Reached(position, state.TargetPrice))
-            return;
-
-        double closeVolume = Math.Min(state.CloseVolumeInUnits, position.VolumeInUnits);
-        closeVolume = _symbol.NormalizeVolumeInUnits(closeVolume, RoundingMode.Down);
-
-        if (closeVolume < _symbol.VolumeInUnitsMin) {
-            _robot.Print("*****TP1 skipped | Close volume too small. Position: {0}, CloseVolume: {1}", position.Id, closeVolume);
-            state.IsClosed = true;
-            return;
-        }
-
-        TradeResult result = _robot.ClosePosition(position, closeVolume);
-
-        if (!result.IsSuccessful) {
-            _robot.Print("*****TP1 partial close failed | Position: {0}, Error: {1}", position.Id, result.Error);
-            return;
-        }
-
-        state.IsClosed = true;
-        string csvId = GetPositionCsvId(position);
-        string tp1RecordId = _csvLogger.AppendTp1(position, closeVolume, csvId, _symbolName, _timeFrame, _robot.Server.Time);
-
-        if (!string.IsNullOrWhiteSpace(tp1RecordId))
-            _robot.Print("*****CSV TP1 record added. Id: {0}, Volume: {1}", tp1RecordId, closeVolume);
-
-        _robot.Print("*****TP1 partial close succeeded | Position: {0}, Volume: {1}", position.Id, closeVolume);
-    }
-
-    private static bool IsTp1Reached(Position position, double targetPrice) {
-        if (position.TradeType == TradeType.Buy)
-            return position.CurrentPrice >= targetPrice;
-
-        return position.CurrentPrice <= targetPrice;
     }
 
     private PdhpdlOrderPlan CreatePlan(PdhpdlSignal signal) {
@@ -230,21 +163,18 @@ public class PdhpdlOrderExecutor {
         double entry;
         double stop;
         double riskPrice;
-        double tp1;
-        double tp2;
+        double takeProfit;
 
         if (tradeType == TradeType.Buy) {
             stop = signal.Low - stopOffset;
             entry = GetEntryPrice(closeEntry, stop, tradeType);
             riskPrice = entry - stop;
-            tp1 = entry + _tp1R * riskPrice;
-            tp2 = entry + _tp2R * riskPrice;
+            takeProfit = entry + _takeProfitR * riskPrice;
         } else {
             stop = signal.High + stopOffset;
             entry = GetEntryPrice(closeEntry, stop, tradeType);
             riskPrice = stop - entry;
-            tp1 = entry - _tp1R * riskPrice;
-            tp2 = entry - _tp2R * riskPrice;
+            takeProfit = entry - _takeProfitR * riskPrice;
         }
 
         if (_riskGuard.TryGetRiskPriceRejectReason(riskPrice, out string rejectReason)) {
@@ -253,8 +183,7 @@ public class PdhpdlOrderExecutor {
         }
 
         double stopLossPips = riskPrice / _symbol.PipSize;
-        double tp1Pips = Math.Abs(tp1 - entry) / _symbol.PipSize;
-        double tp2Pips = Math.Abs(tp2 - entry) / _symbol.PipSize;
+        double takeProfitPips = Math.Abs(takeProfit - entry) / _symbol.PipSize;
 
         double riskMoney = _riskGuard.CalculateRiskMoney(_robot.Account.Equity, _riskPct);
 
@@ -289,13 +218,6 @@ public class PdhpdlOrderExecutor {
             return plan;
         }
 
-        double tp1CloseVolumeInUnits = _symbol.NormalizeVolumeInUnits(totalVolumeInUnits / 2.0, RoundingMode.Down);
-
-        if (tp1CloseVolumeInUnits < _symbol.VolumeInUnitsMin) {
-            plan.RejectReason = $"TP1 close volume is too small. Tp1CloseVolume={tp1CloseVolumeInUnits}, Min={_symbol.VolumeInUnitsMin}";
-            return plan;
-        }
-
         double estimatedRiskMoney = _symbol.AmountRisked(totalVolumeInUnits, stopLossPips);
 
         string side = tradeType == TradeType.Buy ? "L" : "S";
@@ -306,17 +228,14 @@ public class PdhpdlOrderExecutor {
         plan.IsMarketOrder = _entryMode == PdhpdlEntryMode.Close;
         plan.EntryPrice = entry;
         plan.StopPrice = stop;
-        plan.Tp1Price = tp1;
-        plan.Tp2Price = tp2;
+        plan.TakeProfitPrice = takeProfit;
         plan.RiskPrice = riskPrice;
         plan.StopLossPips = stopLossPips;
-        plan.Tp1Pips = tp1Pips;
-        plan.Tp2Pips = tp2Pips;
+        plan.TakeProfitPips = takeProfitPips;
         plan.TotalLots = totalVolumeInUnits / _symbol.LotSize;
         plan.TotalVolumeInUnits = totalVolumeInUnits;
         plan.NativeRiskVolumeInUnits = nativeRiskVolumeInUnits;
         plan.PriceRiskCappedVolumeInUnits = priceRiskCappedVolumeInUnits;
-        plan.Tp1CloseVolumeInUnits = tp1CloseVolumeInUnits;
         plan.RiskMoney = riskMoney;
         plan.EstimatedRiskMoney = estimatedRiskMoney;
         plan.Label = $"{LabelPrefix}_{side}";
@@ -353,10 +272,10 @@ public class PdhpdlOrderExecutor {
 
     private void ExecutePlan(PdhpdlOrderPlan plan) {
         _robot.Print(
-            "*****Order plan | Side: {0}, EntryMode: {1}, Entry: {2}, Stop: {3}, TP1: {4}, TP2: {5}, RiskPrice: {6}, StopLossPips: {7}, RiskMoney: {8}, EstimatedRiskMoney: {9}, NativeVolumeUnits: {10}, PriceRiskCappedVolumeUnits: {11}, Lots: {12}, TotalVolumeUnits: {13}, Tp1CloseVolumeUnits: {14}",
-            plan.TradeType, plan.EntryMode, plan.EntryPrice, plan.StopPrice, plan.Tp1Price, plan.Tp2Price, plan.RiskPrice,
+            "*****Order plan | Side: {0}, EntryMode: {1}, Entry: {2}, Stop: {3}, TakeProfit: {4}, RiskPrice: {5}, StopLossPips: {6}, RiskMoney: {7}, EstimatedRiskMoney: {8}, NativeVolumeUnits: {9}, PriceRiskCappedVolumeUnits: {10}, Lots: {11}, TotalVolumeUnits: {12}",
+            plan.TradeType, plan.EntryMode, plan.EntryPrice, plan.StopPrice, plan.TakeProfitPrice, plan.RiskPrice,
             plan.StopLossPips, plan.RiskMoney, plan.EstimatedRiskMoney, plan.NativeRiskVolumeInUnits, plan.PriceRiskCappedVolumeInUnits,
-            plan.TotalLots, plan.TotalVolumeInUnits, plan.Tp1CloseVolumeInUnits);
+            plan.TotalLots, plan.TotalVolumeInUnits);
 
         TradeResult result = ExecuteOrder(plan);
 
@@ -368,7 +287,6 @@ public class PdhpdlOrderExecutor {
         _robot.Print("*****Order submitted | Label: {0}", plan.Label);
 
         if (_entryMode == PdhpdlEntryMode.Close) {
-            RegisterTp1State(result.Position, plan);
             string csvId = _csvLogger.AppendEntry(plan, result.Position, _symbolName, _timeFrame);
 
             if (!string.IsNullOrWhiteSpace(csvId)) {
@@ -376,7 +294,6 @@ public class PdhpdlOrderExecutor {
                 _robot.Print("*****CSV trade record added. Path: {0}", _csvLogger.FilePath);
             }
         } else {
-            _pendingPlansByLabel[plan.Label] = plan;
             string csvId = _csvLogger.AppendPendingEntry(plan, result.PendingOrder, _symbolName, _timeFrame);
 
             if (!string.IsNullOrWhiteSpace(csvId)) {
@@ -389,11 +306,11 @@ public class PdhpdlOrderExecutor {
     private TradeResult ExecuteOrder(PdhpdlOrderPlan plan) {
         if (_entryMode == PdhpdlEntryMode.Close) {
             return _robot.ExecuteMarketOrder(plan.TradeType, _symbolName, plan.TotalVolumeInUnits, plan.Label, plan.StopLossPips,
-                plan.Tp2Pips, EntryComment);
+                plan.TakeProfitPips, EntryComment);
         }
 
         return _robot.PlaceLimitOrder(plan.TradeType, _symbolName, plan.TotalVolumeInUnits, plan.EntryPrice, plan.Label, plan.StopLossPips,
-            plan.Tp2Pips, ProtectionType.Relative, null, EntryComment);
+            plan.TakeProfitPips, ProtectionType.Relative, null, EntryComment);
     }
 
     private string GetPositionCsvId(Position position) {

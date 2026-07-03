@@ -25,11 +25,8 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("最小止损价格距离", DefaultValue = 5.0, MinValue = 0.0, Step = 0.1)]
     public double MinRiskPrice { get; set; }
 
-    [Parameter("第一止盈目标", DefaultValue = 2.0, MinValue = 0.5, MaxValue = 20.0, Step = 0.1)]
-    public double Tp1R { get; set; }
-
-    [Parameter("第二止盈目标", DefaultValue = 4.0, MinValue = 0.5, MaxValue = 20.0, Step = 0.1)]
-    public double Tp2R { get; set; }
+    [Parameter("止盈目标", DefaultValue = 2.0, MinValue = 0.5, MaxValue = 20.0, Step = 0.1)]
+    public double TakeProfitR { get; set; }
 
     [Parameter("回撤开仓模式", DefaultValue = PdhpdlEntryMode.Close)]
     public PdhpdlEntryMode EntryMode { get; set; }
@@ -92,7 +89,7 @@ public class PDHPDLBreakandReversev1 : Robot {
 
         var riskGuard = new PdhpdlRiskGuard(riskGuardConfig);
 
-        _orderExecutor = new PdhpdlOrderExecutor(this, Symbol, SymbolName, Bars.TimeFrame.ToString(), RiskPct, StopOffsetTicks, Tp1R, Tp2R,
+        _orderExecutor = new PdhpdlOrderExecutor(this, Symbol, SymbolName, Bars.TimeFrame.ToString(), RiskPct, StopOffsetTicks, TakeProfitR,
             EntryMode, riskGuard, _csvLogger);
 
         Print("*****PDH/PDL step painter started. DaysToDraw: {0}", daysToDraw);

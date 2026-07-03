@@ -43,8 +43,7 @@ public class PdhpdlTradeCsvLogger {
             EntryTime = position.EntryTime,
             EntryPrice = position.EntryPrice,
             StopPrice = position.StopLoss ?? plan.StopPrice,
-            Tp1Price = plan.Tp1Price,
-            Tp2Price = plan.Tp2Price,
+            TakeProfitPrice = plan.TakeProfitPrice,
             RiskPrice = Math.Abs(position.EntryPrice - (position.StopLoss ?? plan.StopPrice)),
             VolumeInUnits = position.VolumeInUnits,
             PositionId = position.Id.ToString(),
@@ -78,8 +77,7 @@ public class PdhpdlTradeCsvLogger {
             EntryTime = order.SubmittedTime,
             EntryPrice = order.TargetPrice,
             StopPrice = plan.StopPrice,
-            Tp1Price = plan.Tp1Price,
-            Tp2Price = plan.Tp2Price,
+            TakeProfitPrice = plan.TakeProfitPrice,
             RiskPrice = plan.RiskPrice,
             VolumeInUnits = order.VolumeInUnits,
             PendingOrderId = csvId
@@ -110,45 +108,10 @@ public class PdhpdlTradeCsvLogger {
             EntryTime = position.EntryTime,
             EntryPrice = position.EntryPrice,
             StopPrice = 0.0,
-            Tp1Price = 0.0,
-            Tp2Price = 0.0,
+            TakeProfitPrice = 0.0,
             RiskPrice = 0.0,
             VolumeInUnits = position.VolumeInUnits,
             CloseReason = closeReason,
-            ProfitLoss = position.NetProfit,
-            CloseTime = serverTime.ToString("yyyy-MM-dd HH:mm:ss"),
-            PositionId = position.Id.ToString(),
-            DealId = GetCloseDealId(position)
-        };
-
-        Append(record);
-        return record.Id;
-    }
-
-    public string AppendTp1(Position position, double closeVolumeInUnits, string csvId, string symbolName, string timeFrame, DateTime serverTime) {
-        if (position == null)
-            return "";
-
-        var record = new PdhpdlTradeCsvRecord {
-            Id = $"{csvId}-TP1",
-            Side = position.TradeType == TradeType.Buy ? "B" : "S",
-            KeyLevel = "",
-            Signal = "partial-close",
-            CloseEntryResult = "",
-            Pullback25Result = "",
-            Pullback382Result = "",
-            Pullback50Result = "",
-            Comment = "TP1部分止盈",
-            Symbol = symbolName,
-            TimeFrame = timeFrame,
-            EntryTime = position.EntryTime,
-            EntryPrice = position.EntryPrice,
-            StopPrice = 0.0,
-            Tp1Price = 0.0,
-            Tp2Price = 0.0,
-            RiskPrice = 0.0,
-            VolumeInUnits = closeVolumeInUnits,
-            CloseReason = "TP1",
             ProfitLoss = position.NetProfit,
             CloseTime = serverTime.ToString("yyyy-MM-dd HH:mm:ss"),
             PositionId = position.Id.ToString(),
@@ -168,8 +131,8 @@ public class PdhpdlTradeCsvLogger {
             Escape(record.Pullback50Result), Escape(record.Comment), Escape(record.Symbol), Escape(record.TimeFrame),
             Escape(record.EntryTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)),
             Escape(record.EntryPrice.ToString(CultureInfo.InvariantCulture)),
-            Escape(record.StopPrice.ToString(CultureInfo.InvariantCulture)), Escape(record.Tp1Price.ToString(CultureInfo.InvariantCulture)),
-            Escape(record.Tp2Price.ToString(CultureInfo.InvariantCulture)), Escape(record.RiskPrice.ToString(CultureInfo.InvariantCulture)),
+            Escape(record.StopPrice.ToString(CultureInfo.InvariantCulture)),
+            Escape(record.TakeProfitPrice.ToString(CultureInfo.InvariantCulture)), Escape(record.RiskPrice.ToString(CultureInfo.InvariantCulture)),
             Escape(record.VolumeInUnits.ToString(CultureInfo.InvariantCulture)), Escape(record.CloseReason),
             Escape(record.ProfitLoss.ToString(CultureInfo.InvariantCulture)), Escape(record.CloseTime), Escape(record.PendingOrderId),
             Escape(record.PositionId), Escape(record.DealId));
@@ -200,7 +163,7 @@ public class PdhpdlTradeCsvLogger {
 
     private static string BuildHeader() {
         return string.Join(",", "编号", "多空", "关键位", "信号", "收线入场", "回撤25入场", "回撤38.2入场", "回撤50入场", "备注", "交易品种", "时间周期", "入场时间", "入场价格",
-            "止损价格", "第一止盈价格", "第二止盈价格", "风险价格距离", "下单数量", "平仓原因", "平仓盈亏", "平仓时间", "挂单ID", "持仓ID", "成交ID");
+            "止损价格", "止盈价格", "风险价格距离", "下单数量", "平仓原因", "平仓盈亏", "平仓时间", "挂单ID", "持仓ID", "成交ID");
     }
 
     private static string Escape(string value) {
@@ -230,7 +193,7 @@ public class PdhpdlTradeCsvLogger {
 
     private static string GetCloseRecordId(string csvId, PositionCloseReason reason) {
         if (reason == PositionCloseReason.TakeProfit)
-            return $"{csvId}-TP2";
+            return $"{csvId}-TP";
 
         return $"{csvId}-{GetCloseReasonCode(reason)}";
     }

@@ -31,9 +31,7 @@ public class PdhpdlTradeCsvRecord {
 
     public double StopPrice { get; set; }
 
-    public double Tp1Price { get; set; }
-
-    public double Tp2Price { get; set; }
+    public double TakeProfitPrice { get; set; }
 
     public double RiskPrice { get; set; }
 
