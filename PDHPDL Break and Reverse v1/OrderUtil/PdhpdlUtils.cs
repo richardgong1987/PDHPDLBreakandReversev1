@@ -14,15 +14,24 @@ public class PdhpdlUtils {
         return Math.Max(2, days + 2);
     }
 
-    public static bool IsFalseBreakUp(double high, double close, double pdh, double open) {
+    public static bool IsSortSignal(double high, double close, double pdh, double open) {
+        return IsFalseBreakUp(high, close, pdh, open);
+    }
+
+    public static bool IsLongSignal(double low, double close, double pdl, double open) {
+        return IsFalseBreakDown(low, close, pdl, open);
+    }
+
+    private static bool IsFalseBreakUp(double high, double close, double pdh, double open) {
         return high > pdh && Math.Max(open, close) < pdh;
     }
 
-    public static bool IsFalseBreakDown(double low, double close, double pdl, double open) {
+
+    private static bool IsFalseBreakDown(double low, double close, double pdl, double open) {
         return low < pdl && Math.Min(open, close) > pdl;
     }
 
-    public static bool TryGetPreviousDayLevels(Bars dailyBars, out double pdh, out double pdl) {
+    private static bool TryGetPreviousDayLevels(Bars dailyBars, out double pdh, out double pdl) {
         pdh = double.NaN;
         pdl = double.NaN;
 
@@ -56,8 +65,8 @@ public class PdhpdlUtils {
         double close = bars.ClosePrices[closedBarIndex];
         double open = bars.OpenPrices[closedBarIndex];
 
-        bool shortSignal = IsFalseBreakUp(high, close, pdh, open);
-        bool longSignal = IsFalseBreakDown(low, close, pdl, open);
+        bool shortSignal = IsSortSignal(high, close, pdh, open);
+        bool longSignal = IsLongSignal(low, close, pdl, open);
 
         signal.HasData = true;
         signal.BarIndex = closedBarIndex;
