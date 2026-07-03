@@ -160,6 +160,32 @@ The residual after the currency fix is only the safety factor and integer roundi
 not otherwise compensate. If a run wants realized loss
 centered exactly on 1%, that would be an explicit opt-in knob, not the default.
 
+### 12.1 Residual loss distribution — why the tails are irreducible
+
+Measured on the currency-correct run (89 stop-outs, `RiskSafetyFactor` 0.9):
+
+| stat | value |
+| --- | --- |
+| mean, median loss / entry equity | ~0.95% |
+| range | 0.82% – 1.13% |
+| within 0.90%–1.10% | 81% (72/89) |
+
+The band is centered on target; **the tails are not sizing bugs** and cannot be narrowed by
+sizing:
+
+- **High tail (2 trades > 1.10%)** — stop-loss slippage. Trade 123: stop planned at 4553.38,
+  filled at 4555.55 (+2.15 pts / +22% past the 9.70 stop). Intended risk was 0.92% and the size
+  (13 units) was exactly correct; the market ran through the stop. `RiskSafetyFactor` is the
+  buffer that keeps such overruns near 1% instead of higher.
+- **Low tail (15 trades < 0.90%)** — integer-lot granularity on wide-stop trades. A far stop
+  (e.g. riskPrice 33) makes 0.9% worth only ~3 whole units; 3 = 0.83%, 4 = 1.11%, and
+  nearest-rounding picks the closer. Fractional lots are not tradable.
+
+`RiskSafetyFactor` **shifts the center** of the band (it does not narrow it): 0.9 lands realized
+at ~0.95% (it already absorbs the ~6% average exit slippage); ~0.95 centers it on 1.0% but
+fattens the high tail. The spread itself is set by integer lots (down) and market-stop slippage
+(up) — do **not** change the sizing math to chase it.
+
 ## 13. Trade-log reset
 
 The CSV at `~/Documents/pdhpdl-trades.csv` is a single fixed, append-only file. Without a reset
