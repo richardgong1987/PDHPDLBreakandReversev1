@@ -3,11 +3,10 @@ using System;
 namespace cAlgo.Robots;
 
 // Turns a signal into a sized, validated order plan. Pure: it depends only on the
-// IPdhpdlSymbol port and PdhpdlRiskGuard, never on cAlgo, so it is unit tested.
+// IPdhpdlSymbolModel port and PdhpdlRiskGuard, never on cAlgo, so it is unit tested.
 //
-// Sizing takes the smaller of two volumes and never risks more than the budget:
-//   - the broker's proportional-risk volume for the stop distance, and
-//   - risk money / price risk (a hard cap in account currency).
+// Sizing: volume = riskMoney / riskPrice, rounded to the nearest tradable step, so a
+// stop-out loses as close to the risk budget (e.g. 1% of equity) as the step allows.
 public class PdhpdlOrderPlanner {
     public const string LabelPrefix = "PDHPDL_V1";
 
@@ -43,17 +42,20 @@ public class PdhpdlOrderPlanner {
         double takeProfitPips = Math.Abs(takeProfit - entry) / _symbolModel.PipSize;
         double riskMoney = _riskGuard.CalculateRiskMoney(accountEquity, _riskPct);
 
-        double nativeRiskVolume = _symbolModel.NormalizeVolumeInUnits(_symbolModel.VolumeForProportionalRisk(_riskPct, stopLossPips));
-        double priceRiskCappedVolume = _symbolModel.NormalizeVolumeInUnits(riskMoney / riskPrice);
-        double totalVolume = _symbolModel.NormalizeVolumeInUnits(Math.Min(nativeRiskVolume, priceRiskCappedVolume));
+        // Volume whose loss at the stop equals the risk budget (units * riskPrice = riskMoney),
+        // snapped to the nearest tradable step so the realized loss lands as close to the budget
+        // as the step allows. Rounding down here (the old behavior) systematically under-risked,
+        // badly so for small positions; nearest rounding centers realized risk on the budget.
+        double idealVolume = riskMoney / riskPrice;
+        double totalVolume = _symbolModel.NormalizeVolumeInUnits(idealVolume);
 
-        if (TryGetVolumeRejectReason(totalVolume, nativeRiskVolume, priceRiskCappedVolume, riskPrice, riskMoney, out rejectReason)) {
+        if (TryGetVolumeRejectReason(totalVolume, out rejectReason)) {
             planModel.RejectReason = rejectReason;
             return planModel;
         }
 
         FillPlan(planModel, directionModel, entry, stop, takeProfit, riskPrice, stopLossPips, takeProfitPips, totalVolume,
-            nativeRiskVolume, priceRiskCappedVolume, accountEquity, riskMoney);
+            accountEquity, riskMoney);
         return planModel;
     }
 
@@ -75,13 +77,11 @@ public class PdhpdlOrderPlanner {
         }
     }
 
-    private bool TryGetVolumeRejectReason(double totalVolume, double nativeRiskVolume, double priceRiskCappedVolume,
-        double riskPrice, double riskMoney, out string rejectReason) {
+    private bool TryGetVolumeRejectReason(double totalVolume, out string rejectReason) {
         rejectReason = "";
 
         if (totalVolume < _symbolModel.VolumeInUnitsMin) {
-            rejectReason =
-                $"Calculated volume is too small. TotalVolume={totalVolume}, NativeVolume={nativeRiskVolume}, PriceRiskCappedVolume={priceRiskCappedVolume}, Min={_symbolModel.VolumeInUnitsMin}";
+            rejectReason = $"Calculated volume is below broker minimum. TotalVolume={totalVolume}, Min={_symbolModel.VolumeInUnitsMin}";
             return true;
         }
 
@@ -90,20 +90,11 @@ public class PdhpdlOrderPlanner {
             return true;
         }
 
-        double cappedRiskMoney = totalVolume * riskPrice;
-
-        if (cappedRiskMoney > riskMoney) {
-            rejectReason =
-                $"Calculated volume exceeds risk limit. RiskMoney={riskMoney}, CappedRiskMoney={cappedRiskMoney}, TotalVolume={totalVolume}";
-            return true;
-        }
-
         return false;
     }
 
     private void FillPlan(PdhpdlOrderPlanModel planModel, PdhpdlTradeDirectionModel directionModel, double entry, double stop, double takeProfit,
-        double riskPrice, double stopLossPips, double takeProfitPips, double totalVolume, double nativeRiskVolume,
-        double priceRiskCappedVolume, double accountEquity, double riskMoney) {
+        double riskPrice, double stopLossPips, double takeProfitPips, double totalVolume, double accountEquity, double riskMoney) {
         string side = directionModel == PdhpdlTradeDirectionModel.Long ? "L" : "S";
 
         planModel.IsValid = true;
@@ -118,8 +109,6 @@ public class PdhpdlOrderPlanner {
         planModel.TakeProfitPips = takeProfitPips;
         planModel.TotalLots = totalVolume / _symbolModel.LotSize;
         planModel.TotalVolumeInUnits = totalVolume;
-        planModel.NativeRiskVolumeInUnits = nativeRiskVolume;
-        planModel.PriceRiskCappedVolumeInUnits = priceRiskCappedVolume;
         planModel.AccountEquity = accountEquity;
         planModel.RiskMoney = riskMoney;
         planModel.EstimatedRiskMoney = _symbolModel.AmountRisked(totalVolume, stopLossPips);

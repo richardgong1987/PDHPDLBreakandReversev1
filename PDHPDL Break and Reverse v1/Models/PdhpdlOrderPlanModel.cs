@@ -18,8 +18,6 @@ public class PdhpdlOrderPlanModel {
 
     public double TotalLots { get; set; }
     public double TotalVolumeInUnits { get; set; }
-    public double NativeRiskVolumeInUnits { get; set; }
-    public double PriceRiskCappedVolumeInUnits { get; set; }
 
     public double AccountEquity { get; set; }
     public double RiskMoney { get; set; }

@@ -1,5 +1,10 @@
 # RiskUtil Design
 
+> **Status note.** Sections 3–10 describe the original standalone `RiskUtil.CalcVolumeByRisk`
+> design. That logic now lives in `PdhpdlOrderPlanner` (which sizes against the
+> `IPdhpdlSymbolModel` port); `RiskUtil` today holds only `CalcRiskMoney`. The **current,
+> authoritative sizing rule and its correction** are in §12 — read that first.
+
 ## 1. Business Purpose
 
 Position sizing is the rule that decides *how much* to trade. Trading a fixed lot size ignores
@@ -103,3 +108,54 @@ See `docs/testing.md` for how to run them.
   rounding; acceptable here because under-sizing is the safe direction for risk.
 - **`riskPct` units.** It is a percent (`1.0` = 1%), not a fraction (`0.01`). Mislabeling it
   would size 100× off. Named explicitly in the design and tests to prevent this.
+
+## 12. Sizing correction (current implementation)
+
+**Where:** `PdhpdlOrderPlanner.CreatePlan`. This is the authoritative sizing rule.
+
+**Rule:**
+
+```
+riskMoney   = equity * riskPct / 100            (RiskUtil.CalcRiskMoney, x safety factor)
+idealVolume = riskMoney / riskPrice             (riskPrice = |entry - stop| in price)
+volume      = NormalizeVolumeInUnits(idealVolume)   // nearest tradable step
+reject if volume < VolumeInUnitsMin or > VolumeInUnitsMax
+```
+
+By construction `volume * riskPrice ≈ riskMoney`, so a stop-out loses ≈ `riskPct`% of equity.
+
+**The bug that was fixed.** The earlier version computed *two* volumes — the broker's
+`VolumeForProportionalRisk` and `riskMoney / riskPrice` — took `Math.Min` of them, and rounded
+with `RoundingMode.Down`. Both choices only ever shrink the position, so realized stop-out
+losses came in **well under** the 1% budget. Backtest evidence (XAUUSD M15, 89 stop-outs),
+measured on the clean post-fix run:
+
+| Metric | Before | After |
+| --- | --- | --- |
+| avg realized loss / 1% target | **0.75** | **0.82** |
+| worst single trade (large stop, ~2 units) | **0.41** | **0.82** |
+
+The undersizing was worst for small positions, where `Down`-rounding discards up to a whole
+unit (e.g. ideal 2.13 units → 1, halving the risk). Taking the *nearest* step and dropping the
+redundant `Min`/`VolumeForProportionalRisk` cap centers *intended* risk on the budget.
+
+**Residual gap (~18%, not a sizing bug).** Two effects remain, neither of which sizing should
+chase:
+1. **Execution (~13%).** Entries are market orders; on losing trades the fill/spread makes the
+   realized entry-to-stop loss come in below the planned `riskPrice`. "Risk 1%" is defined as
+   *intended* risk (stop at the planned level) = 1%; realized loss is naturally ≤ that.
+2. **Integer step (~5%).** A wide stop makes 1% only worth ~1–2 units, so nearest-rounding
+   still can't hit the budget exactly (2.13 → 2). Distribution of realized/target after the
+   fix: min 0.55, median 0.82, max 1.02.
+
+Compensating by sizing up (e.g. dividing `riskMoney` by the ~0.87 execution factor) would push
+cleanly-stopped trades over 1%, so it is deliberately not done. If a run wants realized loss
+centered exactly on 1%, that would be an explicit opt-in knob, not the default.
+
+## 13. Trade-log reset
+
+The CSV at `~/Documents/pdhpdl-trades.csv` is a single fixed, append-only file. Without a reset
+every backtest run stacks another full copy of the (deterministic) trades — the raw file grew
+to ~8 copies, mixing pre- and post-fix runs and making it unreadable. `PdhpdlTradeCsvLogger`
+now overwrites the file with a fresh header at construction when `resetOnStart` is true (the
+`启动时清空交易记录CSV` parameter, default on), so the file always reflects the latest run.

@@ -16,11 +16,17 @@ public class PdhpdlTradeCsvLogger {
     private static readonly Encoding CsvEncoding = new UTF8Encoding(true);
     private readonly string _filePath;
 
-    public PdhpdlTradeCsvLogger() {
+    // resetOnStart: overwrite the file with a fresh header so it holds only this run.
+    // The file is fixed and append-only, so without this every backtest run stacks another
+    // copy of the same trades. Turn it off to keep history across runs.
+    public PdhpdlTradeCsvLogger(bool resetOnStart) {
         string documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
         _filePath = Path.Combine(documentsPath, FileName);
 
-        EnsureFileExists();
+        if (resetOnStart)
+            System.IO.File.WriteAllText(_filePath, BuildHeader() + Environment.NewLine, CsvEncoding);
+        else
+            EnsureFileExists();
     }
 
     public string FilePath => _filePath;

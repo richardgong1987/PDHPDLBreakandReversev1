@@ -70,13 +70,14 @@ data types in `Models/`, but never `CAlgoSymbolModel`. Test files mirror the sou
 (`Risk/`, `Signals/`, `Orders/`). The refactor adds two test classes:
 
 - `PdhpdlSignalRules` — long/short predicate truth tables.
-- `PdhpdlOrderPlanner` (with a `FakeSymbolModel : IPdhpdlSymbolModel`) — volume capping,
-  min/max rejection, and the risk-money cap that was flagged for oversizing.
+- `PdhpdlOrderPlanner` (with a `FakeSymbolModel : IPdhpdlSymbolModel`) — sizing to the risk
+  budget and min/max rejection. (The sizing rule itself is documented in `risk-util.md`.)
 
 ## 8. Risks and Trade-offs
 
-- The sizing math is delicate and was previously flagged for oversizing. It is **moved
-  verbatim**, not altered — tests are added around it to lock current behavior.
+- The sizing math is delicate. The refactor first moved it verbatim behind tests; the sizing
+  rule was **later corrected** (see `risk-util.md` §"Sizing correction") because it
+  under-spent the risk budget.
 - Introducing `PdhpdlTradeDirectionModel` + `IPdhpdlSymbolModel` is a small abstraction,
   justified solely because it makes the flagged sizing code testable. No ports/adapters
   framework beyond that is introduced (per project preference for simple C#).

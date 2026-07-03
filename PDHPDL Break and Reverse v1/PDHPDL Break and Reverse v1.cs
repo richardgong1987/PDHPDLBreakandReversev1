@@ -13,6 +13,9 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("展示调试日志", DefaultValue = false)]
     public bool ShowDebugLogs { get; set; }
 
+    [Parameter("启动时清空交易记录CSV", DefaultValue = true)]
+    public bool ResetTradeLogOnStart { get; set; }
+
     [Parameter("每笔交易风险百分比，默认1%", DefaultValue = 1.0, MinValue = 0.1, MaxValue = 10.0, Step = 0.1)]
     public double RiskPct { get; set; }
 
@@ -70,7 +73,7 @@ public class PDHPDLBreakandReversev1 : Robot {
         _signalDetector = new PdhpdlSignalDetector(Bars, dailyBars);
         _signalMarkers = new PdhpdlSignalMarkers(Chart, Symbol.TickSize);
 
-        _csvLogger = new PdhpdlTradeCsvLogger();
+        _csvLogger = new PdhpdlTradeCsvLogger(ResetTradeLogOnStart);
         Print("****CSV logger path: {0}", _csvLogger.FilePath);
 
         var riskGuard = new PdhpdlRiskGuard(BuildRiskGuardConfig());

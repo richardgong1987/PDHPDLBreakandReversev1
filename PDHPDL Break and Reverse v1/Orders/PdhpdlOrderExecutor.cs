@@ -110,9 +110,9 @@ public class PdhpdlOrderExecutor {
 
     private void ExecutePlan(PdhpdlOrderPlanModel planModel) {
         _robot.Print(
-            "*****Order plan | Side: {0}, EntryMode: {1}, Entry: {2}, Stop: {3}, TakeProfit: {4}, RiskPrice: {5}, StopLossPips: {6}, RiskMoney: {7}, EstimatedRiskMoney: {8}, NativeVolumeUnits: {9}, PriceRiskCappedVolumeUnits: {10}, Lots: {11}, TotalVolumeUnits: {12}",
+            "*****Order plan | Side: {0}, EntryMode: {1}, Entry: {2}, Stop: {3}, TakeProfit: {4}, RiskPrice: {5}, StopLossPips: {6}, RiskMoney: {7}, EstimatedRiskMoney: {8}, Lots: {9}, TotalVolumeUnits: {10}",
             planModel.DirectionModel, planModel.EntryModel, planModel.EntryPrice, planModel.StopPrice, planModel.TakeProfitPrice, planModel.RiskPrice,
-            planModel.StopLossPips, planModel.RiskMoney, planModel.EstimatedRiskMoney, planModel.NativeRiskVolumeInUnits, planModel.PriceRiskCappedVolumeInUnits,
+            planModel.StopLossPips, planModel.RiskMoney, planModel.EstimatedRiskMoney,
             planModel.TotalLots, planModel.TotalVolumeInUnits);
 
         TradeResult result = SubmitOrder(planModel);

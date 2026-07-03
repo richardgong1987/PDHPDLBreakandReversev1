@@ -9,7 +9,7 @@ namespace Pdhpdl.Tests.Orders {
         // Short: stop = High + 0.15, risk = stop - entry.
 
         [Fact]
-        public void sizes_long_close_entry_and_caps_volume_by_risk_money() {
+        public void sizes_long_close_entry_to_spend_the_full_risk_budget() {
             PdhpdlOrderPlanner planner = CreatePlanner(PdhpdlEntryModel.Close);
             PdhpdlSignal signal = LongSignal(close: 100.0, low: 98.0, high: 101.0);
 
@@ -24,12 +24,12 @@ namespace Pdhpdl.Tests.Orders {
             Assert.Equal(104.30, plan.TakeProfitPrice, precision: 6);
             Assert.Equal(21.5, plan.StopLossPips, precision: 6);
 
-            // riskMoney = 10000 * 1% = 100; priceRiskCap = floor(100 / 2.15) = 46 < native 1000.
-            Assert.Equal(1000.0, plan.NativeRiskVolumeInUnits, precision: 6);
-            Assert.Equal(46.0, plan.PriceRiskCappedVolumeInUnits, precision: 6);
-            Assert.Equal(46.0, plan.TotalVolumeInUnits, precision: 6);
-            Assert.Equal(0.46, plan.TotalLots, precision: 6);
-            Assert.True(plan.TotalVolumeInUnits * plan.RiskPrice <= plan.RiskMoney);
+            // riskMoney = 10000 * 1% = 100; idealVolume = 100 / 2.15 = 46.51 -> nearest = 47.
+            // (The old floor-and-take-the-min logic gave 46 or less, under-spending the budget.)
+            Assert.Equal(47.0, plan.TotalVolumeInUnits, precision: 6);
+            Assert.Equal(0.47, plan.TotalLots, precision: 6);
+            // Intended risk lands within one volume step of the budget, not systematically under it.
+            Assert.True(Math.Abs(plan.TotalVolumeInUnits * plan.RiskPrice - plan.RiskMoney) <= plan.RiskPrice);
         }
 
         [Fact]
@@ -62,14 +62,14 @@ namespace Pdhpdl.Tests.Orders {
         }
 
         [Fact]
-        public void rejects_when_capped_volume_is_below_broker_minimum() {
+        public void rejects_when_sized_volume_is_below_broker_minimum() {
             PdhpdlOrderPlanner planner = CreatePlanner(PdhpdlEntryModel.Close, volumeInUnitsMin: 100.0);
             PdhpdlSignal signal = LongSignal(close: 100.0, low: 98.0, high: 101.0);
 
             PdhpdlOrderPlanModel plan = planner.CreatePlan(signal, accountEquity: 10000.0);
 
             Assert.False(plan.IsValid);
-            Assert.Contains("too small", plan.RejectReason);
+            Assert.Contains("below broker minimum", plan.RejectReason);
         }
 
         [Fact]
@@ -90,8 +90,7 @@ namespace Pdhpdl.Tests.Orders {
                 PipSize = 0.1,
                 LotSize = 100.0,
                 VolumeInUnitsMin = volumeInUnitsMin,
-                VolumeInUnitsMax = 1_000_000.0,
-                ProportionalRiskVolume = 1000.0
+                VolumeInUnitsMax = 1_000_000.0
             };
             var guard = new PdhpdlRiskGuard(new PdhpdlRiskGuardConfigModel { RiskSafetyFactor = 1.0, MinRiskPrice = minRiskPrice });
             return new PdhpdlOrderPlanner(symbol, guard, stopOffsetTicks: 15, takeProfitR: 2.0, entryModel, riskPct: 1.0);
@@ -105,17 +104,16 @@ namespace Pdhpdl.Tests.Orders {
             return new PdhpdlSignal { HasData = true, IsShortSignal = true, Close = close, Low = low, High = high };
         }
 
-        // Deterministic stand-in for a cTrader Symbol: volumes floor to whole units.
+        // Deterministic stand-in for a cTrader Symbol: volume step is one whole unit,
+        // rounded to nearest (matching RoundingMode.ToNearest in the real adapter).
         private sealed class FakeSymbolModel : IPdhpdlSymbolModel {
             public double TickSize { get; set; }
             public double PipSize { get; set; }
             public double LotSize { get; set; }
             public double VolumeInUnitsMin { get; set; }
             public double VolumeInUnitsMax { get; set; }
-            public double ProportionalRiskVolume { get; set; }
 
-            public double NormalizeVolumeInUnits(double volumeInUnits) => Math.Floor(volumeInUnits);
-            public double VolumeForProportionalRisk(double riskPct, double stopLossPips) => ProportionalRiskVolume;
+            public double NormalizeVolumeInUnits(double volumeInUnits) => Math.Round(volumeInUnits, MidpointRounding.AwayFromZero);
             public double AmountRisked(double volumeInUnits, double stopLossPips) => volumeInUnits;
         }
     }

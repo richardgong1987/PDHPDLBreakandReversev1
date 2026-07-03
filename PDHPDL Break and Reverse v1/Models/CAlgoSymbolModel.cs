@@ -3,8 +3,8 @@ using cAlgo.API.Internals;
 
 namespace cAlgo.Robots;
 
-// Adapts the real cTrader Symbol to IPdhpdlSymbol. Rounding and risk basis are fixed
-// here (round volume down, risk measured against equity) so the port stays cAlgo-free.
+// Adapts the real cTrader Symbol to IPdhpdlSymbolModel. Volume is rounded to the nearest
+// tradable step so a stop-out risks as close to the budget as the step allows.
 public class CAlgoSymbolModel : IPdhpdlSymbolModel {
     private readonly Symbol _symbol;
 
@@ -19,11 +19,7 @@ public class CAlgoSymbolModel : IPdhpdlSymbolModel {
     public double VolumeInUnitsMax => _symbol.VolumeInUnitsMax;
 
     public double NormalizeVolumeInUnits(double volumeInUnits) {
-        return _symbol.NormalizeVolumeInUnits(volumeInUnits, RoundingMode.Down);
-    }
-
-    public double VolumeForProportionalRisk(double riskPct, double stopLossPips) {
-        return _symbol.VolumeForProportionalRisk(ProportionalAmountType.Equity, riskPct, stopLossPips, RoundingMode.Down);
+        return _symbol.NormalizeVolumeInUnits(volumeInUnits, RoundingMode.ToNearest);
     }
 
     public double AmountRisked(double volumeInUnits, double stopLossPips) {
