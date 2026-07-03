@@ -25,3 +25,6 @@ packages/
 
 # cTrader / generated files
 *.algo
+# Local backtest config & secrets (auto-test.sh)
+scripts/auto-test.env
+*.pwd
