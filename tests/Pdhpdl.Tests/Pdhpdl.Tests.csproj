@@ -12,16 +12,23 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="2.5.6" />
   </ItemGroup>
 
-  <!-- Link the pure source files directly instead of referencing the cBot project,
-       so tests stay free of the cTrader.Automate / cAlgo.API dependency.
-       Only cAlgo-free files may be linked here. -->
-  <ItemGroup>
+  <!-- Unit tests for the strategy's pure (cAlgo-free) logic. The classes under test are
+       LINKED in below (never a ProjectReference) so the tests never pull in the
+       cTrader.Automate / cAlgo.API dependency. Only cAlgo-free files may be linked here.
+       Test files mirror these folders: Risk/, Signals/, Orders/. -->
+  <ItemGroup Label="Risk under test">
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Risk\RiskUtil.cs" Link="Risk\RiskUtil.cs" />
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Risk\PdhpdlRiskGuard.cs" Link="Risk\PdhpdlRiskGuard.cs" />
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Risk\PdhpdlRiskGuardConfig.cs" Link="Risk\PdhpdlRiskGuardConfig.cs" />
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Risk\NewsBlackoutWindow.cs" Link="Risk\NewsBlackoutWindow.cs" />
+  </ItemGroup>
+
+  <ItemGroup Label="Signals under test">
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Signals\PdhpdlSignal.cs" Link="Signals\PdhpdlSignal.cs" />
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Signals\PdhpdlSignalRules.cs" Link="Signals\PdhpdlSignalRules.cs" />
+  </ItemGroup>
+
+  <ItemGroup Label="Orders under test">
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Orders\PdhpdlTradeDirection.cs" Link="Orders\PdhpdlTradeDirection.cs" />
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Orders\PdhpdlEntryMode.cs" Link="Orders\PdhpdlEntryMode.cs" />
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Orders\PdhpdlOrderPlan.cs" Link="Orders\PdhpdlOrderPlan.cs" />

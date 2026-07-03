@@ -82,8 +82,8 @@ step, etc.) enter as plain `double` parameters supplied by the caller.
 
 ## 10. Test Strategy
 
-Pure domain unit tests with xUnit in `tests/RiskUtil.Tests`. The test project links
-`Util/RiskUtil.cs` directly (`<Compile Include>`) instead of referencing the cBot project, so
+Pure domain unit tests with xUnit in `tests/Pdhpdl.Tests`. The test project links
+`Risk/RiskUtil.cs` directly (`<Compile Include>`) instead of referencing the cBot project, so
 tests never load `cTrader.Automate`. Coverage:
 
 - Each helper in isolation (`FloorToStep`, `Clamp`, `CalcRiskMoney`, `CalcLossPerLot`,

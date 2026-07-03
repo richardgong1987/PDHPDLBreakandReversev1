@@ -62,7 +62,7 @@ OrderLogger/ PdhpdlTradeCsvLogger, PdhpdlTradeCsvRecord
 
 ## 7. Test Strategy
 
-The `RiskUtil.Tests` project links pure source files directly (no cAlgo). This refactor
+The `Pdhpdl.Tests` project links pure source files directly (no cAlgo). This refactor
 adds two link groups and two test classes:
 
 - `PdhpdlSignalRules` — long/short predicate truth tables.

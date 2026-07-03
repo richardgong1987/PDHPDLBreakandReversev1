@@ -2,7 +2,7 @@ using System;
 using cAlgo.Robots;
 using Xunit;
 
-namespace RiskUtil.Tests {
+namespace Pdhpdl.Tests.Risk {
     public class PdhpdlRiskGuardTests {
         [Fact]
         public void blocks_new_orders_during_daily_no_order_window() {

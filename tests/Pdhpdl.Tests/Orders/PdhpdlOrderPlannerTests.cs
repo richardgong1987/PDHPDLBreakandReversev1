@@ -2,7 +2,7 @@ using System;
 using cAlgo.Robots;
 using Xunit;
 
-namespace RiskUtil.Tests {
+namespace Pdhpdl.Tests.Orders {
     public class PdhpdlOrderPlannerTests {
         // A signal at Close 100 with a 2-point stop distance and a 15-tick (0.15) offset.
         // Long:  stop = Low - 0.15,  risk = entry - stop.

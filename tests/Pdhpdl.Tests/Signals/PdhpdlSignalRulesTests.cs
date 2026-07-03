@@ -1,7 +1,7 @@
 using cAlgo.Robots;
 using Xunit;
 
-namespace RiskUtil.Tests {
+namespace Pdhpdl.Tests.Signals {
     public class PdhpdlSignalRulesTests {
         // pdh = 110, pdl = 90 in every case below.
         private const double Pdh = 110.0;

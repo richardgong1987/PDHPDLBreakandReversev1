@@ -12,7 +12,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
 
 SOLUTION="PDHPDL Break and Reverse v1.sln"
-TEST_PROJECT="tests/RiskUtil.Tests/RiskUtil.Tests.csproj"
+TEST_PROJECT="tests/Pdhpdl.Tests/Pdhpdl.Tests.csproj"
 
 echo "==> Building cBot ($SOLUTION)"
 dotnet build "$SOLUTION" -c Release

@@ -1,7 +1,7 @@
 # Testing Guide
 
-Pure, framework-independent logic (e.g. `RiskUtil`) is unit-tested with **xUnit** under
-`tests/`. The cBot itself is not unit-tested here — it is validated in cTrader's backtester.
+Pure, framework-independent logic is unit-tested with **xUnit** under `tests/Pdhpdl.Tests`.
+The cBot itself is not unit-tested here — it is validated in cTrader's backtester.
 
 ## Why the test project is separate
 
@@ -9,6 +9,20 @@ Pure, framework-independent logic (e.g. `RiskUtil`) is unit-tested with **xUnit*
 - It is **not** part of `PDHPDL Break and Reverse v1.sln`, so cTrader never tries to build it.
 - It **links** pure source files via `<Compile Include>` instead of referencing the cBot
   project, so tests never pull in the `cTrader.Automate` / cAlgo.API dependency.
+
+## Layout
+
+Test files mirror the source folders, one test class per class under test:
+
+```
+tests/Pdhpdl.Tests/
+  Risk/     RiskUtilTests.cs, PdhpdlRiskGuardTests.cs
+  Signals/  PdhpdlSignalRulesTests.cs
+  Orders/   PdhpdlOrderPlannerTests.cs
+```
+
+Each namespace mirrors its folder (`Pdhpdl.Tests.Risk`, `.Signals`, `.Orders`), so the test
+explorer groups tests by the area they cover.
 
 ## Prerequisites
 
@@ -32,41 +46,42 @@ anywhere — it resolves the repo root itself:
 To run only the tests, from the repository root:
 
 ```bash
-dotnet test "tests/RiskUtil.Tests/RiskUtil.Tests.csproj"
+dotnet test "tests/Pdhpdl.Tests/Pdhpdl.Tests.csproj"
 ```
 
 Expected tail of the output:
 
 ```text
-Passed!  - Failed: 0, Passed: 27, Skipped: 0, Total: 27
+Passed!  - Failed: 0, Passed: 24, Skipped: 0, Total: 24
 ```
 
 ## Useful variations
 
 ```bash
 # More detail per test
-dotnet test "tests/RiskUtil.Tests/RiskUtil.Tests.csproj" -v normal
+dotnet test "tests/Pdhpdl.Tests/Pdhpdl.Tests.csproj" -v normal
 
 # List the test names without running them
-dotnet test "tests/RiskUtil.Tests/RiskUtil.Tests.csproj" --list-tests
+dotnet test "tests/Pdhpdl.Tests/Pdhpdl.Tests.csproj" --list-tests
 
 # Run one test class
-dotnet test "tests/RiskUtil.Tests/RiskUtil.Tests.csproj" \
-  --filter "FullyQualifiedName~CalcVolumeByRiskTests"
+dotnet test "tests/Pdhpdl.Tests/Pdhpdl.Tests.csproj" \
+  --filter "FullyQualifiedName~PdhpdlOrderPlannerTests"
 
 # Run one test method by name
-dotnet test "tests/RiskUtil.Tests/RiskUtil.Tests.csproj" \
-  --filter "Name=returns_zero_when_stop_equals_entry"
+dotnet test "tests/Pdhpdl.Tests/Pdhpdl.Tests.csproj" \
+  --filter "Name=sizes_short_close_entry_geometry"
 ```
 
 ## Adding tests for new logic
 
 1. Keep the new logic pure (no `cAlgo.API`, no I/O, no `DateTime.Now`).
-2. If it lives in a new file, link it in `tests/RiskUtil.Tests/RiskUtil.Tests.csproj`:
+2. Put the test in the folder that matches the source area (`Risk/`, `Signals/`, `Orders/`),
+   in a class named after the unit under test (e.g. `PdhpdlOrderPlannerTests`), and name each
+   test by behavior (e.g. `rejects_when_capped_volume_is_below_broker_minimum`).
+3. If the class under test lives in a new file, link it in the matching `ItemGroup` of
+   `tests/Pdhpdl.Tests/Pdhpdl.Tests.csproj`:
 
    ```xml
-   <Compile Include="..\..\PDHPDL Break and Reverse v1\Util\YourClass.cs" Link="YourClass.cs" />
+   <Compile Include="..\..\PDHPDL Break and Reverse v1\Orders\YourClass.cs" Link="Orders\YourClass.cs" />
    ```
-
-3. Add a test class named after the unit under test; name tests by behavior, e.g.
-   `rejects_settlement_before_trade_date`.

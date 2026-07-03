@@ -48,7 +48,7 @@ Pure (framework-independent) helpers are unit-tested with xUnit under `tests/`:
 
 ```bash
 ./scripts/test.sh                                       # build cBot + run all tests
-dotnet test "tests/RiskUtil.Tests/RiskUtil.Tests.csproj"  # tests only
+dotnet test "tests/Pdhpdl.Tests/Pdhpdl.Tests.csproj"      # tests only
 ```
 
 The test project is intentionally **not** part of the `.sln` (which cTrader builds) and
