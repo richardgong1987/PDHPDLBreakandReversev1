@@ -15,20 +15,19 @@ public class PdhpdlUtils {
     }
 
     public static bool IsSortSignal(double high, double low, double open, double close, double pdh, double pdl) {
-        return IsFalseBreakUp(high, close, pdh, open);
+        // 1. K线在PDH下方，当日第一次触及PDH，并且收线价格低于PDH，收线进场开空单。
+        bool cond1 = high > pdh && pdh > Math.Max(open, close);
+        // 2. K线在PDL下方，当日第一次触及PDL，并且收线价格低于PDL，收线进场开空单。
+        bool cond2 = high > pdl && pdl > Math.Max(open, close);
+        return cond1 || cond2;
     }
 
     public static bool IsLongSignal(double high, double low, double open, double close, double pdh, double pdl) {
-        return IsFalseBreakDown(low, close, pdl, open);
-    }
-
-    private static bool IsFalseBreakUp(double high, double close, double pdh, double open) {
-        return high > pdh && Math.Max(open, close) < pdh;
-    }
-
-
-    private static bool IsFalseBreakDown(double low, double close, double pdl, double open) {
-        return low < pdl && Math.Min(open, close) > pdl;
+        // - 1. K线在PDH上方，当日第一次触及PDH，并且收线价格高于PDH，收线进场开多单。
+        bool cond1 = pdh > low && Math.Min(open, close) > pdh;
+        //- 2.  K线在PDL上方，当日第一次触及PDL，并且收线价格高于PDL，收线进场开多单。
+        bool cond2 = pdl > low && Math.Min(open, close) > pdl;
+        return cond1 || cond2;
     }
 
     private static bool TryGetPreviousDayLevels(Bars dailyBars, out double pdh, out double pdl) {
