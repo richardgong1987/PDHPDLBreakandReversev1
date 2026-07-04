@@ -6,30 +6,30 @@ namespace cAlgo.Robots;
 // Reads the last fully closed bar plus the previous day's levels and applies
 // PdhpdlSignalRules. OnBar fires when a new bar opens, so the closed bar is Count - 2.
 public class PdhpdlSignalDetector {
-    private readonly Bars _bars;
+    private readonly Bars _chartBars;
     private readonly Bars _dailyBars;
 
-    public PdhpdlSignalDetector(Bars bars, Bars dailyBars) {
-        _bars = bars;
+    public PdhpdlSignalDetector(Bars chartBars, Bars dailyBars) {
+        _chartBars = chartBars;
         _dailyBars = dailyBars;
     }
 
     public PdhpdlSignal DetectOnClosedBar() {
         PdhpdlSignal signal = new();
 
-        if (_bars.Count < 2 || !TryGetPreviousDayLevels(out double pdh, out double pdl))
+        if (_chartBars.Count < 2 || !TryGetPreviousDayLevels(out double pdh, out double pdl))
             return signal;
 
-        int closedBarIndex = _bars.Count - 2;
+        int closedBarIndex = _chartBars.Count - 2;
 
-        double high = _bars.HighPrices[closedBarIndex];
-        double low = _bars.LowPrices[closedBarIndex];
-        double open = _bars.OpenPrices[closedBarIndex];
-        double close = _bars.ClosePrices[closedBarIndex];
+        double high = _chartBars.HighPrices[closedBarIndex];
+        double low = _chartBars.LowPrices[closedBarIndex];
+        double open = _chartBars.OpenPrices[closedBarIndex];
+        double close = _chartBars.ClosePrices[closedBarIndex];
 
         signal.HasData = true;
         signal.BarIndex = closedBarIndex;
-        signal.BarTime = _bars.OpenTimes[closedBarIndex];
+        signal.BarTime = _chartBars.OpenTimes[closedBarIndex];
         signal.High = high;
         signal.Low = low;
         signal.Close = close;

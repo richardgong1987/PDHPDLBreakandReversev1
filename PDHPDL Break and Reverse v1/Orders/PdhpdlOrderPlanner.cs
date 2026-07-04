@@ -49,14 +49,14 @@ public class PdhpdlOrderPlanner {
         // XAUUSD was sized ~15% too small, so realized losses fell short of the budget.
         double lossPerUnit = stopLossPips * _symbolModel.PipValue;
         double idealVolume = lossPerUnit > 0.0 ? riskMoney / lossPerUnit : 0.0;
-        double totalVolume = _symbolModel.NormalizeVolumeInUnits(idealVolume);
+        double volume = _symbolModel.NormalizeVolumeInUnits(idealVolume);
 
-        if (TryGetVolumeRejectReason(totalVolume, out rejectReason)) {
+        if (TryGetVolumeRejectReason(volume, out rejectReason)) {
             planModel.RejectReason = rejectReason;
             return planModel;
         }
 
-        FillPlan(planModel, directionModel, entry, stop, takeProfit, riskPrice, stopLossPips, takeProfitPips, totalVolume,
+        FillPlan(planModel, directionModel, entry, stop, takeProfit, riskPrice, stopLossPips, takeProfitPips, volume,
             accountEquity, riskMoney);
         return planModel;
     }
@@ -79,16 +79,16 @@ public class PdhpdlOrderPlanner {
         }
     }
 
-    private bool TryGetVolumeRejectReason(double totalVolume, out string rejectReason) {
+    private bool TryGetVolumeRejectReason(double volume, out string rejectReason) {
         rejectReason = "";
 
-        if (totalVolume < _symbolModel.VolumeInUnitsMin) {
-            rejectReason = $"Calculated volume is below broker minimum. TotalVolume={totalVolume}, Min={_symbolModel.VolumeInUnitsMin}";
+        if (volume < _symbolModel.VolumeInUnitsMin) {
+            rejectReason = $"Calculated volume is below broker minimum. Volume={volume}, Min={_symbolModel.VolumeInUnitsMin}";
             return true;
         }
 
-        if (totalVolume > _symbolModel.VolumeInUnitsMax) {
-            rejectReason = $"Calculated volume is above broker maximum. TotalVolume={totalVolume}, Max={_symbolModel.VolumeInUnitsMax}";
+        if (volume > _symbolModel.VolumeInUnitsMax) {
+            rejectReason = $"Calculated volume is above broker maximum. Volume={volume}, Max={_symbolModel.VolumeInUnitsMax}";
             return true;
         }
 
@@ -96,7 +96,7 @@ public class PdhpdlOrderPlanner {
     }
 
     private void FillPlan(PdhpdlOrderPlanModel planModel, PdhpdlTradeDirectionModel directionModel, double entry, double stop, double takeProfit,
-        double riskPrice, double stopLossPips, double takeProfitPips, double totalVolume, double accountEquity, double riskMoney) {
+        double riskPrice, double stopLossPips, double takeProfitPips, double volume, double accountEquity, double riskMoney) {
         string side = directionModel == PdhpdlTradeDirectionModel.Long ? "L" : "S";
 
         planModel.IsValid = true;
@@ -109,11 +109,11 @@ public class PdhpdlOrderPlanner {
         planModel.RiskPrice = riskPrice;
         planModel.StopLossPips = stopLossPips;
         planModel.TakeProfitPips = takeProfitPips;
-        planModel.TotalLots = totalVolume / _symbolModel.LotSize;
-        planModel.TotalVolumeInUnits = totalVolume;
+        planModel.Lots = volume / _symbolModel.LotSize;
+        planModel.VolumeInUnits = volume;
         planModel.AccountEquity = accountEquity;
         planModel.RiskMoney = riskMoney;
-        planModel.EstimatedRiskMoney = _symbolModel.AmountRisked(totalVolume, stopLossPips);
+        planModel.EstimatedRiskMoney = _symbolModel.AmountRisked(volume, stopLossPips);
         planModel.Label = $"{LabelPrefix}_{side}";
     }
 

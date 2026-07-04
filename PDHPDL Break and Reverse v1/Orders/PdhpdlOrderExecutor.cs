@@ -110,10 +110,10 @@ public class PdhpdlOrderExecutor {
 
     private void ExecutePlan(PdhpdlOrderPlanModel planModel) {
         _robot.Print(
-            "*****Order plan | Side: {0}, EntryMode: {1}, Entry: {2}, Stop: {3}, TakeProfit: {4}, RiskPrice: {5}, StopLossPips: {6}, RiskMoney: {7}, EstimatedRiskMoney: {8}, Lots: {9}, TotalVolumeUnits: {10}",
+            "*****Order plan | Side: {0}, EntryMode: {1}, Entry: {2}, Stop: {3}, TakeProfit: {4}, RiskPrice: {5}, StopLossPips: {6}, RiskMoney: {7}, EstimatedRiskMoney: {8}, Lots: {9}, VolumeUnits: {10}",
             planModel.DirectionModel, planModel.EntryModel, planModel.EntryPrice, planModel.StopPrice, planModel.TakeProfitPrice, planModel.RiskPrice,
             planModel.StopLossPips, planModel.RiskMoney, planModel.EstimatedRiskMoney,
-            planModel.TotalLots, planModel.TotalVolumeInUnits);
+            planModel.Lots, planModel.VolumeInUnits);
 
         TradeResult result = SubmitOrder(planModel);
 
@@ -134,11 +134,11 @@ public class PdhpdlOrderExecutor {
         TradeType tradeType = ToTradeType(planModel.DirectionModel);
 
         if (planModel.IsMarketOrder) {
-            return _robot.ExecuteMarketOrder(tradeType, _symbolName, planModel.TotalVolumeInUnits, planModel.Label, planModel.StopLossPips,
+            return _robot.ExecuteMarketOrder(tradeType, _symbolName, planModel.VolumeInUnits, planModel.Label, planModel.StopLossPips,
                 planModel.TakeProfitPips, EntryComment);
         }
 
-        return _robot.PlaceLimitOrder(tradeType, _symbolName, planModel.TotalVolumeInUnits, planModel.EntryPrice, planModel.Label, planModel.StopLossPips,
+        return _robot.PlaceLimitOrder(tradeType, _symbolName, planModel.VolumeInUnits, planModel.EntryPrice, planModel.Label, planModel.StopLossPips,
             planModel.TakeProfitPips, ProtectionType.Relative, null, EntryComment);
     }
 

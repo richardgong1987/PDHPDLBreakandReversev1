@@ -26,10 +26,10 @@ namespace Pdhpdl.Tests.Orders {
 
             // riskMoney = 10000 * 1% = 100; idealVolume = 100 / 2.15 = 46.51 -> nearest = 47.
             // (The old floor-and-take-the-min logic gave 46 or less, under-spending the budget.)
-            Assert.Equal(47.0, plan.TotalVolumeInUnits, precision: 6);
-            Assert.Equal(0.47, plan.TotalLots, precision: 6);
+            Assert.Equal(47.0, plan.VolumeInUnits, precision: 6);
+            Assert.Equal(0.47, plan.Lots, precision: 6);
             // Intended risk lands within one volume step of the budget, not systematically under it.
-            Assert.True(Math.Abs(plan.TotalVolumeInUnits * plan.RiskPrice - plan.RiskMoney) <= plan.RiskPrice);
+            Assert.True(Math.Abs(plan.VolumeInUnits * plan.RiskPrice - plan.RiskMoney) <= plan.RiskPrice);
         }
 
         [Fact]
@@ -44,9 +44,9 @@ namespace Pdhpdl.Tests.Orders {
 
             Assert.True(plan.IsValid);
             // riskMoney 100; lossPerUnit = stopLossPips 21.5 * pipValue 0.0855 = 1.83825; ideal 54.4 -> 54.
-            Assert.Equal(54.0, plan.TotalVolumeInUnits, precision: 6);
+            Assert.Equal(54.0, plan.VolumeInUnits, precision: 6);
             // Account-currency risk of the sized position lands within one step of the budget.
-            double accountCurrencyRisk = plan.TotalVolumeInUnits * plan.StopLossPips * 0.0855;
+            double accountCurrencyRisk = plan.VolumeInUnits * plan.StopLossPips * 0.0855;
             Assert.True(Math.Abs(accountCurrencyRisk - plan.RiskMoney) <= plan.StopLossPips * 0.0855);
         }
 

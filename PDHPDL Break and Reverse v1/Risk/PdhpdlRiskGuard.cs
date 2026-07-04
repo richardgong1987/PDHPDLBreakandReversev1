@@ -60,7 +60,7 @@ public class PdhpdlRiskGuard {
     }
 
     public double CalculateRiskMoney(double equity, double riskPct) {
-        double proportionalRiskMoney = RiskUtil.CalcRiskMoney(equity, riskPct);
+        double proportionalRiskMoney = RiskUtil.CalculateRiskMoney(equity, riskPct);
         double safetyFactor = Math.Max(0.1, Math.Min(_configModel.RiskSafetyFactor, 1.0));
 
         return proportionalRiskMoney * safetyFactor;

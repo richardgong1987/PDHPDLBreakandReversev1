@@ -16,8 +16,8 @@ public class PdhpdlOrderPlanModel {
     public double StopLossPips { get; set; }
     public double TakeProfitPips { get; set; }
 
-    public double TotalLots { get; set; }
-    public double TotalVolumeInUnits { get; set; }
+    public double Lots { get; set; }
+    public double VolumeInUnits { get; set; }
 
     public double AccountEquity { get; set; }
     public double RiskMoney { get; set; }
