@@ -20,8 +20,7 @@ Behavior classes live beside the feature they serve; all data types live in `Mod
 - `Orders/` — `PdhpdlOrderPlanner` (pure sizing/geometry, unit tested) talks to the broker
   only through the `IPdhpdlSymbolModel` port; `PdhpdlOrderExecutor` gates on risk/exposure,
   submits orders, and tracks CSV row ids.
-- `Risk/` — `PdhpdlRiskGuard` (time/news/weekend windows + risk-money, pure, unit tested),
-  `RiskUtil`.
+- `Risk/` — `PdhpdlRiskGuard` (time/news/weekend windows + risk-money, pure, unit tested).
 - `LineDrawer/` — `PdhpdlLines`, `PdhpdlSignalMarkers` (chart drawing).
 - `OrderLogger/` — `PdhpdlTradeCsvLogger`.
 - `Models/` — data types: `PdhpdlOrderPlanModel`, `PdhpdlTradeDirectionModel`,

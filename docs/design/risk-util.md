@@ -1,9 +1,10 @@
-# RiskUtil Design
+# Position Sizing Design (formerly RiskUtil)
 
 > **Status note.** Sections 3–10 describe the original standalone `RiskUtil.CalcVolumeByRisk`
-> design. That logic now lives in `PdhpdlOrderPlanner` (which sizes against the
-> `IPdhpdlSymbolModel` port); `RiskUtil` today holds only `CalcRiskMoney`. The **current,
-> authoritative sizing rule and its correction** are in §12 — read that first.
+> design, which has since been superseded and removed. Position sizing now lives in
+> `PdhpdlOrderPlanner` (against the `IPdhpdlSymbolModel` port); the risk-money calculation was
+> merged into `PdhpdlRiskGuard.CalculateRiskMoney`, and the `RiskUtil` class no longer exists.
+> The **current, authoritative sizing rule and its correction** are in §12 — read that first.
 
 ## 1. Business Purpose
 
@@ -116,7 +117,7 @@ See `docs/testing.md` for how to run them.
 **Rule:**
 
 ```
-riskMoney   = equity * riskPct / 100            (RiskUtil.CalcRiskMoney, x safety factor)
+riskMoney   = equity * riskPct / 100            (PdhpdlRiskGuard.CalculateRiskMoney, x safety factor)
 stopLossPips = riskPrice / pipSize              (riskPrice = |entry - stop| in price)
 lossPerUnit = stopLossPips * pipValue           (pipValue = account-currency value of a pip)
 idealVolume = riskMoney / lossPerUnit

@@ -55,7 +55,7 @@ Pure classes never import `cAlgo.API`. The planner talks to the broker only thro
 ```
 Signals/     PdhpdlSignalRules (pure), PdhpdlSignalDetector, PdhpdlSignal (data)
 Orders/      PdhpdlOrderPlanner (pure), PdhpdlOrderExecutor
-Risk/        RiskUtil, PdhpdlRiskGuard (both pure)
+Risk/        PdhpdlRiskGuard (pure)
 LineDrawer/  PdhpdlLines, PdhpdlSignalMarkers
 OrderLogger/ PdhpdlTradeCsvLogger
 Models/      PdhpdlOrderPlanModel, PdhpdlTradeDirectionModel, PdhpdlEntryModel,

@@ -59,10 +59,14 @@ public class PdhpdlRiskGuard {
         return false;
     }
 
+    // Risk money is the account currency you accept losing on one trade: a percentage of
+    // equity (e.g. 1% of 10000 = 100), scaled by the safety factor. Non-positive inputs risk 0.
     public double CalculateRiskMoney(double equity, double riskPct) {
-        double proportionalRiskMoney = RiskUtil.CalculateRiskMoney(equity, riskPct);
-        double safetyFactor = Math.Max(0.1, Math.Min(_configModel.RiskSafetyFactor, 1.0));
+        if (equity <= 0.0 || riskPct <= 0.0)
+            return 0.0;
 
+        double proportionalRiskMoney = equity * riskPct / 100.0;
+        double safetyFactor = Math.Max(0.1, Math.Min(_configModel.RiskSafetyFactor, 1.0));
         return proportionalRiskMoney * safetyFactor;
     }
 

@@ -66,6 +66,17 @@ namespace Pdhpdl.Tests.Risk {
             Assert.Equal(45.0, guard.CalculateRiskMoney(5000.0, 1.0), precision: 10);
         }
 
+        [Theory]
+        [InlineData(0.0, 1.0)]
+        [InlineData(-1.0, 1.0)]
+        [InlineData(20000.0, 0.0)]
+        [InlineData(20000.0, -1.0)]
+        public void risk_money_is_zero_for_non_positive_inputs(double equity, double riskPct) {
+            PdhpdlRiskGuard guard = CreateGuard();
+
+            Assert.Equal(0.0, guard.CalculateRiskMoney(equity, riskPct));
+        }
+
         [Fact]
         public void rejects_too_small_risk_price() {
             PdhpdlRiskGuard guard = CreateGuard();

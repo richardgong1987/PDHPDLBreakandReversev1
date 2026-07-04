@@ -17,7 +17,6 @@
        cTrader.Automate / cAlgo.API dependency. Only cAlgo-free files may be linked here.
        Test files mirror these folders: Risk/, Signals/, Orders/. -->
   <ItemGroup Label="Risk under test">
-    <Compile Include="..\..\PDHPDL Break and Reverse v1\Risk\RiskUtil.cs" Link="Risk\RiskUtil.cs" />
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Risk\PdhpdlRiskGuard.cs" Link="Risk\PdhpdlRiskGuard.cs" />
   </ItemGroup>
 
