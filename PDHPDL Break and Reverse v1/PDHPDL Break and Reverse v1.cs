@@ -10,9 +10,6 @@ namespace cAlgo.Robots;
 public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("线的粗细度", DefaultValue = 3)] public int LineThickness { get; set; }
 
-    [Parameter("展示调试日志", DefaultValue = false)]
-    public bool ShowDebugLogs { get; set; }
-
     [Parameter("启动时清空交易记录CSV", DefaultValue = true)]
     public bool ResetTradeLogOnStart { get; set; }
 
@@ -58,6 +55,11 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("五星数据空仓时间段", DefaultValue = "")]
     public string NewsBlackoutWindows { get; set; }
 
+    [Parameter("展示调试日志", DefaultValue = false)]
+    public bool ShowDebugLogs { get; set; }
+
+    [Parameter("debug调试", DefaultValue = false)]
+    public bool IsDebug { get; set; }
 
     private PdhpdlLines _pdhpdlLines;
     private PdhpdlSignalDetector _signalDetector;
@@ -66,6 +68,13 @@ public class PDHPDLBreakandReversev1 : Robot {
     private PdhpdlTradeCsvLogger _csvLogger;
 
     protected override void OnStart() {
+        if (IsDebug) {
+            bool result = System.Diagnostics.Debugger.Launch();
+            if (!result) {
+                Print("Debugger launch failed");
+            }
+        }
+
         _pdhpdlLines = new PdhpdlLines(Chart, MarketData, SymbolName, Bars, LineThickness);
         _pdhpdlLines.Draw();
 
