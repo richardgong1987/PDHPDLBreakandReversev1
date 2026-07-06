@@ -61,6 +61,9 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("debug调试", DefaultValue = false)]
     public bool IsDebug { get; set; }
 
+    [Parameter("输出文件名", DefaultValue = "pdhpdl-trades.csv")]
+    public string FileName { get; set; }
+
     private PdhpdlLines _pdhpdlLines;
     private PdhpdlSignalDetector _signalDetector;
     private PdhpdlSignalMarkers _signalMarkers;
@@ -82,13 +85,12 @@ public class PDHPDLBreakandReversev1 : Robot {
         _signalDetector = new PdhpdlSignalDetector(Bars, dailyBars);
         _signalMarkers = new PdhpdlSignalMarkers(Chart, Symbol.TickSize);
 
-        _csvLogger = new PdhpdlTradeCsvLogger(ResetTradeLogOnStart);
+        _csvLogger = new PdhpdlTradeCsvLogger(ResetTradeLogOnStart, FileName);
         Print("****CSV logger path: {0}", _csvLogger.FilePath);
 
         var riskGuard = new PdhpdlRiskGuard(BuildRiskGuardConfig());
         var planner = new PdhpdlOrderPlanner(new CAlgoSymbolModel(Symbol), riskGuard, StopOffsetTicks, TakeProfitR, EntryModel, RiskPct);
         _orderExecutor = new PdhpdlOrderExecutor(this, SymbolName, Bars.TimeFrame.ToString(), planner, riskGuard, _csvLogger);
-
         Print("*****PDH/PDL Break and Reverse started.");
     }
 
@@ -145,5 +147,6 @@ public class PDHPDLBreakandReversev1 : Robot {
         _orderExecutor?.Stop();
         _signalMarkers?.Clear();
         _pdhpdlLines?.Clear();
+        Stop();
     }
 }

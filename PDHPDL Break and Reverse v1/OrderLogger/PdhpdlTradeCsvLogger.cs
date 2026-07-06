@@ -8,7 +8,6 @@ using cAlgo.API.Internals;
 namespace cAlgo.Robots;
 
 public class PdhpdlTradeCsvLogger {
-    private const string FileName = "pdhpdl-trades.csv";
     private const int CurrentColumnCount = 25;
     private const int OldColumnCountBeforeAccountEquity = 23;
     private const int OldColumnCountBeforeSingleTakeProfit = 24;
@@ -16,10 +15,13 @@ public class PdhpdlTradeCsvLogger {
     private static readonly Encoding CsvEncoding = new UTF8Encoding(true);
     private readonly string _filePath;
 
+    private string FileName;
+
     // resetOnStart: overwrite the file with a fresh header so it holds only this run.
     // The file is fixed and append-only, so without this every backtest run stacks another
     // copy of the same trades. Turn it off to keep history across runs.
-    public PdhpdlTradeCsvLogger(bool resetOnStart) {
+    public PdhpdlTradeCsvLogger(bool resetOnStart, string fileName) {
+        FileName = fileName;
         string documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
         _filePath = Path.Combine(documentsPath, FileName);
 
@@ -147,9 +149,10 @@ public class PdhpdlTradeCsvLogger {
         if (recordModel == null)
             return;
 
-        string line = string.Join(",", Escape(recordModel.Id), Escape(recordModel.Side), Escape(recordModel.KeyLevel), Escape(recordModel.Signal),
-            Escape(recordModel.CloseEntryResult), Escape(recordModel.Pullback25Result), Escape(recordModel.Pullback382Result),
-            Escape(recordModel.Pullback50Result), Escape(recordModel.Comment), Escape(recordModel.Symbol), Escape(recordModel.TimeFrame),
+        string line = string.Join(",", Escape(recordModel.Id), Escape(recordModel.Side), Escape(recordModel.KeyLevel),
+            Escape(recordModel.Signal), Escape(recordModel.CloseEntryResult), Escape(recordModel.Pullback25Result),
+            Escape(recordModel.Pullback382Result), Escape(recordModel.Pullback50Result), Escape(recordModel.Comment),
+            Escape(recordModel.Symbol), Escape(recordModel.TimeFrame),
             Escape(recordModel.EntryTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)),
             Escape(recordModel.EntryPrice.ToString(CultureInfo.InvariantCulture)),
             Escape(recordModel.StopPrice.ToString(CultureInfo.InvariantCulture)),
@@ -157,8 +160,8 @@ public class PdhpdlTradeCsvLogger {
             Escape(recordModel.RiskPrice.ToString(CultureInfo.InvariantCulture)),
             Escape(recordModel.VolumeInUnits.ToString(CultureInfo.InvariantCulture)), Escape(recordModel.CloseReason),
             Escape(FormatOptionalNumber(recordModel.EntryAccountEquity)), Escape(FormatOptionalNumber(recordModel.CloseAccountEquity)),
-            Escape(recordModel.ProfitLoss.ToString(CultureInfo.InvariantCulture)), Escape(recordModel.CloseTime), Escape(recordModel.PendingOrderId),
-            Escape(recordModel.PositionId), Escape(recordModel.DealId));
+            Escape(recordModel.ProfitLoss.ToString(CultureInfo.InvariantCulture)), Escape(recordModel.CloseTime),
+            Escape(recordModel.PendingOrderId), Escape(recordModel.PositionId), Escape(recordModel.DealId));
         System.IO.File.AppendAllText(_filePath, line + Environment.NewLine, CsvEncoding);
     }
 
