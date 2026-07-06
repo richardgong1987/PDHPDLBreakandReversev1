@@ -209,6 +209,9 @@ def build_command(task):
         f"--balance={BALANCE}",
         "--environment-variables",
         "--full-access",
+        # backtest 跑完后不会自己退出（进程会空转），--exit-on-stop 让它结束，
+        # 否则 subprocess.run 永远等待，批量无法进入下一条。
+        "--exit-on-stop",
     ]
 
     for name, value in CBOT_FIXED_PARAMS.items():
