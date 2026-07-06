@@ -32,8 +32,8 @@ from numbers_parser import Document
 
 AUTH_TOKEN = "knS14gR_Zq2rqoes-NVEw9gvmOaj1fZ4m8AjsN5cgrw"
 CTRADER_BIN = "/Applications/cTrader.app/Contents/MacOS/cTrader.Mac"
-ALGO_PATH = "/Users/hanjingong/cAlgo/Sources/Robots/PDHPDL Break and Reverse v1.algo"
-CONDITIONS_FILE = Path(__file__).resolve().parent / "backtest/conditions.numbers"
+ALGO_PATH = "/Users/hg/cAlgo/Sources/Robots/PDHPDL Break and Reverse v1.algo"
+CONDITIONS_FILE = Path(__file__).resolve().parent / "backtester/conditions.numbers"
 
 # 回测数据模式与初始资金（如需匹配图形界面回测，请调整成一致的值）
 DATA_MODE = "m1"
