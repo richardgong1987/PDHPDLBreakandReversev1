@@ -147,6 +147,5 @@ public class PDHPDLBreakandReversev1 : Robot {
         _orderExecutor?.Stop();
         _signalMarkers?.Clear();
         _pdhpdlLines?.Clear();
-        Stop();
     }
 }
