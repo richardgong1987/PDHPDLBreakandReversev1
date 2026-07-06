@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
 
-cd /Users/hg/cAlgo/Sources/Robots/PDHPDL-Break-and-Reverse-v1
+cd /Users/hg/cAlgo/Sources/Robots/PDHPDL-Break-and-Reverse-v1/scripts
 
 python3 run_conditions.py
