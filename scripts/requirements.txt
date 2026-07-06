@@ -1,0 +1,5 @@
+# run_conditions.py 的 Python 依赖
+# 安装： pip install -r scripts/requirements.txt
+
+# 读取 conditions.numbers（Apple Numbers 表格）
+numbers-parser>=4.18.5
