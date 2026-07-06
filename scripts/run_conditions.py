@@ -21,6 +21,7 @@
 任务按顺序执行：等当前回测跑完，再执行下一条。
 """
 
+import argparse
 import subprocess
 import sys
 from datetime import date, datetime
@@ -28,16 +29,61 @@ from pathlib import Path
 
 from numbers_parser import Document
 
-# --- 固定配置 ---------------------------------------------------------------
+# --- 路径与环境配置 ---------------------------------------------------------
+#
+# 账户、路径、鉴权等“环境相关”配置不写死在脚本里，而是从 .env 文件读取，
+# 这样同一个脚本用不同 env 文件即可切换环境：
+#     python3 run_conditions.py                          # 默认读 scripts/.env
+#     python3 run_conditions.py --env-file scripts/.env-prod   # 读生产配置
 
-AUTH_TOKEN = "knS14gR_Zq2rqoes-NVEw9gvmOaj1fZ4m8AjsN5cgrw"
-CTRADER_BIN = "/Applications/cTrader.app/Contents/MacOS/cTrader.Mac"
-ALGO_PATH = "/Users/hanjingong/cAlgo/Sources/Robots/PDHPDL Break and Reverse v1.algo"
-CONDITIONS_FILE = Path(__file__).resolve().parent / "backtester/conditions.numbers"
+SCRIPTS_DIR = Path(__file__).resolve().parent
+DEFAULT_ENV_FILE = SCRIPTS_DIR / ".env"
+CONDITIONS_FILE = SCRIPTS_DIR / "backtester/conditions.numbers"
 
-# 回测数据模式与初始资金（如需匹配图形界面回测，请调整成一致的值）
-DATA_MODE = "m1"
-BALANCE = "10000"
+# .env 必填项；DATA_MODE / BALANCE 选填，未填用默认值
+REQUIRED_ENV_KEYS = ["AUTH_TOKEN", "CTRADER_BIN", "ALGO_PATH", "CTID", "ACCOUNT"]
+DEFAULT_DATA_MODE = "m1"
+DEFAULT_BALANCE = "10000"
+
+
+class Config:
+    """从 .env 文件读入的环境相关配置（账户、路径、鉴权、回测资金/数据模式）。"""
+
+    def __init__(self, values):
+        self.auth_token = values["AUTH_TOKEN"]
+        self.ctrader_bin = values["CTRADER_BIN"]
+        self.algo_path = values["ALGO_PATH"]
+        self.ctid = values["CTID"]
+        self.account = values["ACCOUNT"]
+        self.data_mode = values.get("DATA_MODE") or DEFAULT_DATA_MODE
+        self.balance = values.get("BALANCE") or DEFAULT_BALANCE
+
+
+def parse_env_file(env_file):
+    """把 .env 文件解析成 key->value 字典（忽略空行与 # 注释，去掉两侧引号）。"""
+    if not env_file.exists():
+        raise FileNotFoundError(
+            f"找不到环境配置文件：{env_file}\n"
+            "请复制 scripts/.env.example 为 .env（或 .env-prod）并填好里面的值。"
+        )
+    values = {}
+    for raw_line in env_file.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        values[key.strip()] = value.strip().strip('"').strip("'")
+    return values
+
+
+def load_config(env_file):
+    values = parse_env_file(env_file)
+    missing = [key for key in REQUIRED_ENV_KEYS if not values.get(key)]
+    if missing:
+        raise ValueError(
+            f"环境配置文件 {env_file} 缺少必填项：" + "、".join(missing)
+        )
+    return Config(values)
 
 # 回撤开仓模式的名称 -> cBot 的 EntryModel 数值
 ENTRY_MODEL_CODES = {
@@ -82,10 +128,6 @@ CBOT_FIXED_PARAMS = {
     "ShowDebugLogs": "False",
     "IsDebug": "False",
 }
-
-# cTrader 账户/连接参数
-CTID = "richardgong1988@gmail.com"
-ACCOUNT = "5846740"
 
 
 class ConditionRow:
@@ -191,22 +233,22 @@ def read_condition_rows(conditions_file):
     return tasks
 
 
-def build_command(task):
+def build_command(task, config):
     """把一条任务翻译成完整的 cTrader backtest 命令。"""
     command = [
         "env",
-        f"CTRADER_CLI_AUTHTOKEN={AUTH_TOKEN}",
-        CTRADER_BIN,
+        f"CTRADER_CLI_AUTHTOKEN={config.auth_token}",
+        config.ctrader_bin,
         "backtest",
-        ALGO_PATH,
-        f"--ctid={CTID}",
-        f"--account={ACCOUNT}",
+        config.algo_path,
+        f"--ctid={config.ctid}",
+        f"--account={config.account}",
         f"--symbol={task.symbol}",
         f"--period={task.period}",
         f"--start={task.start_date}",
         f"--end={task.end_date}",
-        f"--data-mode={DATA_MODE}",
-        f"--balance={BALANCE}",
+        f"--data-mode={config.data_mode}",
+        f"--balance={config.balance}",
         "--environment-variables",
         "--full-access",
         # backtest 跑完后不会自己退出（进程会空转），--exit-on-stop 让它结束，
@@ -223,19 +265,34 @@ def build_command(task):
     return command
 
 
-def run_task(task, index, total):
+def run_task(task, index, total, config):
     print(
         f"\n[{index}/{total}] 回测 {task.file_name} "
         f"({task.start_date} -> {task.end_date})",
         flush=True,
     )
-    result = subprocess.run(build_command(task))
+    result = subprocess.run(build_command(task, config))
     status = "完成" if result.returncode == 0 else f"失败(退出码 {result.returncode})"
     print(f"[{index}/{total}] {status}", flush=True)
     return result.returncode
 
 
-def main():
+def parse_args(argv):
+    parser = argparse.ArgumentParser(
+        description="按 conditions.numbers 计划表逐条运行 cTrader 历史回测。"
+    )
+    parser.add_argument(
+        "--env-file",
+        default=str(DEFAULT_ENV_FILE),
+        help="环境配置文件路径（默认 scripts/.env；生产用 --env-file scripts/.env-prod）",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv=None):
+    args = parse_args(argv)
+    config = load_config(Path(args.env_file))
+
     tasks = read_condition_rows(CONDITIONS_FILE)
     if not tasks:
         print("计划表中没有有效任务。")
@@ -243,7 +300,7 @@ def main():
 
     print(f"共 {len(tasks)} 条回测任务，将按顺序逐条执行。")
     for index, task in enumerate(tasks, start=1):
-        run_task(task, index, len(tasks))
+        run_task(task, index, len(tasks), config)
 
     print("\n全部回测执行完毕。")
     return 0

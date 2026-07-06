@@ -2,4 +2,4 @@
 
 cd /Users/hg/cAlgo/Sources/Robots/PDHPDL-Break-and-Reverse-v1/scripts/
 
-python3 run_conditions.prod.py
+python3 scripts/run_conditions.py --env-file scripts/.env-prod

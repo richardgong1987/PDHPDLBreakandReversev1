@@ -13,18 +13,35 @@ pip install -r scripts/requirements.txt
 
 > 包名是 `numbers-parser`（连字符），代码里 `import numbers_parser`（下划线），是同一个包。
 
+## 环境配置（.env）
+
+账户、路径、鉴权等环境相关配置放在 `.env` 文件里，脚本不再写死，也不用为不同
+环境复制脚本——只维护 env 文件即可：
+
+```bash
+cp scripts/.env.example scripts/.env        # 首次：生成开发配置并填值
+```
+
+必填项：`AUTH_TOKEN`、`CTRADER_BIN`、`ALGO_PATH`、`CTID`、`ACCOUNT`；
+选填：`DATA_MODE`（默认 `m1`）、`BALANCE`（默认 `10000`）。
+
+`.env` 和 `.env-prod` 含鉴权 token，已在 `.gitignore` 里忽略，不会提交；
+只有 `.env.example` 模板会进版本库。
+
 ## 使用步骤
 
-1. 用 Numbers 打开 `scripts/conditions.numbers`，按需增删行、改参数。
+1. 用 Numbers 打开 `backtester/conditions.numbers`，按需增删行、改参数。
 2. 运行：
 
    ```bash
-   python3 scripts/run_conditions.py
+   python3 scripts/run_conditions.py                          # 默认读 scripts/.env
+   python3 scripts/run_conditions.py --env-file scripts/.env-prod   # 用生产配置
    ```
 
 3. 脚本按顺序逐条回测，每条结果 CSV 生成在 `~/Documents/`。
 
-运行前会先做校验（缺列、日期格式非法）并明确报错，不会带着错误配置去跑。
+运行前会先做校验（env 缺文件/缺必填项、计划表缺列、日期格式非法）并明确报错，
+不会带着错误配置去跑。
 
 ## 计划表（conditions.numbers）列说明
 
@@ -61,14 +78,17 @@ pip install -r scripts/requirements.txt
 
 例：`XAUUSD-h1-Close-0-2.csv`。文件写到 `~/Documents/`（由 cBot 自身的日志器决定路径）。
 
-## 可调固定项（脚本顶部常量）
+## 可调项
 
-在 `run_conditions.py` 开头可以改：
+环境相关（在 `.env` / `.env-prod` 里改）：
 
+- `AUTH_TOKEN` / `CTRADER_BIN` / `ALGO_PATH` / `CTID` / `ACCOUNT`（账户、路径、鉴权）
 - `BALANCE`（初始资金，默认 `10000`）
 - `DATA_MODE`（回测数据模式，默认 `m1`；可选 `open`、`m1-csv`）
-- `CBOT_FIXED_PARAMS`（RiskPct、StopOffsetTicks 等所有非计划表覆盖的 cBot 参数）
-- `AUTH_TOKEN` / `CTID` / `ACCOUNT`（账户与鉴权）
+
+策略参数（在 `run_conditions.py` 的 `CBOT_FIXED_PARAMS` 里改）：
+
+- RiskPct、StopOffsetTicks、各时段小时等所有“非计划表覆盖”的 cBot 参数。
 
 ## 关键设计说明
 
