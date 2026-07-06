@@ -133,11 +133,11 @@ public class PdhpdlOrderPlanner {
 
     private double GetPullbackRatio() {
         switch (_entryModel) {
-            case PdhpdlEntryModel.Pullback25:
+            case PdhpdlEntryModel.Pb25:
                 return 0.25;
-            case PdhpdlEntryModel.Pullback382:
+            case PdhpdlEntryModel.Pb382:
                 return 0.382;
-            case PdhpdlEntryModel.Pullback50:
+            case PdhpdlEntryModel.Pb50:
                 return 0.50;
             default:
                 return 0.0;
