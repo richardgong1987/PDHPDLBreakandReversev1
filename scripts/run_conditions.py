@@ -120,13 +120,25 @@ class ConditionRow:
 
 
 def format_backtest_date(value, column_name):
-    """把计划表里的日期单元格格式化成 cTrader 需要的 DD/MM/YYYY。"""
+    """把计划表里的日期单元格格式化成 cTrader 需要的 DD/MM/YYYY。
+
+    计划表要求填 DD/MM/YYYY。为避免非法日期（如月份>12）被直接送进 cTrader
+    才报错，这里先校验：Numbers 日期格按 DD/MM/YYYY 输出；文本必须能按
+    DD/MM/YYYY 解析，否则明确指出是哪一列格式不对。
+    """
     if isinstance(value, (datetime, date)):
         return value.strftime("%d/%m/%Y")
     text = str(value).strip()
     if not text:
         raise ValueError(f"计划表列「{column_name}」为空，请填写回测日期。")
-    return text
+    try:
+        parsed = datetime.strptime(text, "%d/%m/%Y")
+    except ValueError:
+        raise ValueError(
+            f"计划表列「{column_name}」的日期 {text!r} 不是合法的 DD/MM/YYYY 格式，"
+            "请按 日/月/年 填写（例如 01/06/2026）。"
+        )
+    return parsed.strftime("%d/%m/%Y")
 
 
 def resolve_column_indexes(header_row):
