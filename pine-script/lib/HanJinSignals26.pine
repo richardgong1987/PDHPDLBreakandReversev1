@@ -31,7 +31,7 @@ export pinbar(simple float longFrac = 0.667, simple float shortFrac = 0.2, simpl
     bear = not na(up) and up >= longFrac and (not strict or lo <= shortFrac)
     bull ? "BUY" : bear ? "SELL" : na
 
-// ─── ② Engulfing ──────────────────────────────────────────────────
+// ─── ② Engulfing 吞没──────────────────────────────────────────────────
 export engulf() =>
     pBh = math.max(open[1], close[1])
     pBl = math.min(open[1], close[1])
@@ -41,7 +41,7 @@ export engulf() =>
     dir = bodyDirAt(0)
     ok and dir > 0 ? "BUY" : ok and dir < 0 ? "SELL" : na
 
-// ─── ③ Fractal — returns [topSide, botSide] ───────────────────────
+// ─── ③ Fractal — returns [topSide, botSide] 顶底分型───────────────────────
 // Strict structural fractal (NOT a pivot): middle candle must dominate both
 // neighbours on BOTH the high line AND the low line — inverted-V / V on all 4.
 //   bar[2]=left  bar[1]=middle  bar[0]=right confirmation
@@ -49,13 +49,14 @@ export fractal() =>
     top = high[1] > high[2] and high[1] > high[0] and low[1] > low[2] and low[1] > low[0]
     bot = low[1] < low[2] and low[1] < low[0] and high[1] < high[2] and high[1] < high[0]
     [top ? "SELL" : na, bot ? "BUY" : na]
-// ─── ④ Harami + ④b Double Harami — returns [single, double] ──────
+
+// ─── ④ Harami + ④b Double Harami — returns [single, double] 孕线──────
 export harami() =>
     h0 = contains(1, 0)
     h1 = contains(2, 1)
     [h0 ? reverseOf(1) : na, (h0 and h1) ? reverseOf(2) : na]
 
-// ─── ⑤ Big Body ───────────────────────────────────────────────────
+// ─── ⑤ Big Body 大实体K线───────────────────────────────────────────────────
 export bigbody(simple float minFrac = 0.7) =>
     bf  = bodyFrac()
     dir = bodyDirAt(0)
