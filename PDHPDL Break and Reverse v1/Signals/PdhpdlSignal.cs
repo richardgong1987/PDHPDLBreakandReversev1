@@ -22,4 +22,6 @@ public class PdhpdlSignal {
     public bool IsLongSignal { get; set; }
 
     public bool IsShortSignal { get; set; }
+
+    public string Name { get; set; }
 }
