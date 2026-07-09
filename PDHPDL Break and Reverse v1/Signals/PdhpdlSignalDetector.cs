@@ -35,25 +35,18 @@ public class PdhpdlSignalDetector {
         signal.Close = close;
         signal.Pdh = pdh;
         signal.Pdl = pdl;
-        signal.IsShortSignal = IsShortSignal(high, open, close, pdh, pdl);
-        signal.IsLongSignal = IsLongSignal(low, open, close, pdh, pdl);
+        signal.IsShortSignal = IsShortSignal(high, open, close, pdh, pdl, out string shortLabel);
+        signal.IsLongSignal = IsLongSignal(low, open, close, pdh, pdl, out string longLabel);
+
+        if (signal.IsShortSignal) {
+            signal.Label = shortLabel;
+        }
+
+        if (signal.IsLongSignal) {
+            signal.Label = longLabel;
+        }
 
         return signal;
-    }
-
-    public static bool IsShortSignal(double high, double open, double close, double pdh, double pdl) {
-        double body = Math.Max(open, close);
-        bool rejectedFromPdh = high > pdh && pdh > body;
-        bool rejectedFromPdl = high > pdl && pdl > body;
-        return rejectedFromPdh || rejectedFromPdl;
-    }
-
-    // Long: the bar pierced a level (PDH or PDL) but closed back above it.
-    public static bool IsLongSignal(double low, double open, double close, double pdh, double pdl) {
-        double body = Math.Min(open, close);
-        bool rejectedFromPdh = pdh > low && body > pdh;
-        bool rejectedFromPdl = pdl > low && body > pdl;
-        return rejectedFromPdh || rejectedFromPdl;
     }
 
     private bool TryGetPreviousDayLevels(out double pdh, out double pdl) {
@@ -67,5 +60,23 @@ public class PdhpdlSignalDetector {
         pdh = _dailyBars.HighPrices[previousDailyIndex];
         pdl = _dailyBars.LowPrices[previousDailyIndex];
         return true;
+    }
+
+    public static bool IsShortSignal(double high, double open, double close, double pdh, double pdl, out string label) {
+        label = null;
+        double body = Math.Max(open, close);
+        bool rejectedFromPdh = high > pdh && pdh > body;
+        bool rejectedFromPdl = high > pdl && pdl > body;
+        return rejectedFromPdh || rejectedFromPdl;
+    }
+
+    // Long: the bar pierced a level (PDH or PDL) but closed back above it.
+    public static bool IsLongSignal(double low, double open, double close, double pdh, double pdl, out string label) {
+        label = null;
+        double body = Math.Min(open, close);
+        bool rejectedFromPdh = pdh > low && body > pdh;
+        bool rejectedFromPdl = pdl > low && body > pdl;
+
+        return rejectedFromPdh || rejectedFromPdl;
     }
 }
