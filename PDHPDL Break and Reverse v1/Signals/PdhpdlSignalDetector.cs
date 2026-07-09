@@ -3,8 +3,8 @@ using cAlgo.API;
 
 namespace cAlgo.Robots;
 
-// Reads the last fully closed bar plus the previous day's levels and applies
-// PdhpdlSignalRules. OnBar fires when a new bar opens, so the closed bar is Count - 2.
+// Reads the last fully closed bar plus the previous day's levels and applies the
+// PDH/PDL false-breakout rules. OnBar fires when a new bar opens, so the closed bar is Count - 2.
 public class PdhpdlSignalDetector {
     private readonly Bars _chartBars;
     private readonly Bars _dailyBars;

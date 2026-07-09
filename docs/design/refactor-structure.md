@@ -16,8 +16,7 @@ fixed risk budget, place it through cTrader, and record the trade to CSV.
 
 | Concern | Type | cAlgo-coupled? | Testable? |
 | --- | --- | --- | --- |
-| Signal rules (`high/low/close` vs `PDH/PDL`) | `PdhpdlSignalRules` (pure) | no | yes |
-| Read bars into a signal | `PdhpdlSignalDetector` | yes (reads `Bars`) | no |
+| Read bars + apply PDH/PDL rules into a signal | `PdhpdlSignalDetector` | yes (reads `Bars`) | no |
 | Position sizing / order geometry | `PdhpdlOrderPlanner` (pure) | no | yes |
 | Symbol facts the planner needs | `IPdhpdlSymbolModel` port | no | fakeable |
 | Real cTrader symbol | `CAlgoSymbolModel` adapter | yes | n/a |
@@ -30,7 +29,7 @@ fixed risk budget, place it through cTrader, and record the trade to CSV.
 
 ```
 Robot (composition root)
-  -> PdhpdlSignalDetector -> PdhpdlSignalRules (pure)
+  -> PdhpdlSignalDetector (applies PDH/PDL rules)
   -> PdhpdlOrderExecutor  -> PdhpdlOrderPlanner (pure) -> IPdhpdlSymbolModel (port)
                           -> PdhpdlRiskGuard (pure)     ^-- CAlgoSymbolModel (adapter)
                           -> PdhpdlTradeCsvLogger
@@ -53,7 +52,7 @@ Pure classes never import `cAlgo.API`. The planner talks to the broker only thro
 ## 6. Folder Layout
 
 ```
-Signals/     PdhpdlSignalRules (pure), PdhpdlSignalDetector, PdhpdlSignal (data)
+Signals/     PdhpdlSignalDetector, PdhpdlSignal (data)
 Orders/      PdhpdlOrderPlanner (pure), PdhpdlOrderExecutor
 Risk/        PdhpdlRiskGuard (pure)
 LineDrawer/  PdhpdlLines, PdhpdlSignalMarkers
@@ -67,9 +66,8 @@ Models/      PdhpdlOrderPlanModel, PdhpdlTradeDirectionModel, PdhpdlEntryModel,
 
 The `Pdhpdl.Tests` project links pure source files directly (no cAlgo) — including the pure
 data types in `Models/`, but never `CAlgoSymbolModel`. Test files mirror the source folders
-(`Risk/`, `Signals/`, `Orders/`). The refactor adds two test classes:
+(`Risk/`, `Signals/`, `Orders/`). The refactor adds a test class:
 
-- `PdhpdlSignalRules` — long/short predicate truth tables.
 - `PdhpdlOrderPlanner` (with a `FakeSymbolModel : IPdhpdlSymbolModel`) — sizing to the risk
   budget and min/max rejection. (The sizing rule itself is documented in `risk-util.md`.)
 

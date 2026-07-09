@@ -22,7 +22,6 @@
 
   <ItemGroup Label="Signals under test">
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Signals\PdhpdlSignal.cs" Link="Signals\PdhpdlSignal.cs" />
-    <Compile Include="..\..\PDHPDL Break and Reverse v1\Signals\PdhpdlSignalRules.cs" Link="Signals\PdhpdlSignalRules.cs" />
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Signals\HanJinSignals26.cs" Link="Signals\HanJinSignals26.cs" />
   </ItemGroup>
 

@@ -17,7 +17,7 @@ Test files mirror the source folders, one test class per class under test:
 ```
 tests/Pdhpdl.Tests/
   Risk/     PdhpdlRiskGuardTests.cs
-  Signals/  PdhpdlSignalRulesTests.cs
+  Signals/  HanJinSignals26Tests.cs
   Orders/   PdhpdlOrderPlannerTests.cs
 ```
 

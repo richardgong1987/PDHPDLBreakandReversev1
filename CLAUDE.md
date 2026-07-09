@@ -15,8 +15,8 @@ Robot lifecycle shell that wires the pieces together (the composition root).
 Behavior classes live beside the feature they serve; all data types live in `Models/`
 (suffixed `Model`):
 
-- `Signals/` — `PdhpdlSignalRules` (pure long/short predicates, unit tested),
-  `PdhpdlSignalDetector` (reads the closed bar + previous-day levels), `PdhpdlSignal` (data).
+- `Signals/` — `PdhpdlSignalDetector` (reads the closed bar + previous-day levels and applies
+  the PDH/PDL false-breakout predicates), `PdhpdlSignal` (data).
 - `Orders/` — `PdhpdlOrderPlanner` (pure sizing/geometry, unit tested) talks to the broker
   only through the `IPdhpdlSymbolModel` port; `PdhpdlOrderExecutor` gates on risk/exposure,
   submits orders, and tracks CSV row ids.
