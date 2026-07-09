@@ -67,7 +67,7 @@ namespace Pdhpdl.Tests.Orders {
 
         [Fact]
         public void pullback_entry_moves_entry_toward_stop_and_places_limit_order() {
-            PdhpdlOrderPlanner planner = CreatePlanner(PdhpdlEntryModel.Pullback50);
+            PdhpdlOrderPlanner planner = CreatePlanner(PdhpdlEntryModel.Pb50);
             PdhpdlSignal signal = LongSignal(close: 100.0, low: 98.0, high: 101.0);
 
             PdhpdlOrderPlanModel plan = planner.CreatePlan(signal, accountEquity: 10000.0);
