@@ -120,26 +120,26 @@ public class PDHPDLBreakandReversev1 : Robot {
     }
 
     private void HandleClosedBarSignal() {
-        PdhpdlSignal signal = _signalDetector.DetectOnClosedBar();
+        PdhpdlSignalModel signalModel = _signalDetector.DetectOnClosedBar();
 
-        if (!signal.HasData)
+        if (!signalModel.HasData)
             return;
 
         if (ShowDebugLogs) {
-            Print("*****Bar closed | Time: {0}, High: {1}, Low: {2}, Close: {3}, PDH: {4}, PDL: {5}", signal.BarTime, signal.High,
-                signal.Low, signal.Close, signal.Pdh, signal.Pdl);
+            Print("*****Bar closed | Time: {0}, High: {1}, Low: {2}, Close: {3}, PDH: {4}, PDL: {5}", signalModel.BarTime, signalModel.High,
+                signalModel.Low, signalModel.Close, signalModel.Pdh, signalModel.Pdl);
         }
 
-        if (signal.IsLongSignal) {
-            Print("*****LONG trigger | Time: {0}, Low: {1}, Close: {2}, PDL: {3}", signal.BarTime, signal.Low, signal.Close, signal.Pdl);
+        if (signalModel.IsLongSignal) {
+            Print("*****LONG trigger | Time: {0}, Low: {1}, Close: {2}, PDL: {3}", signalModel.BarTime, signalModel.Low, signalModel.Close, signalModel.Pdl);
         }
 
-        if (signal.IsShortSignal) {
-            Print("*****SHORT trigger | Time: {0}, High: {1}, Close: {2}, PDH: {3}", signal.BarTime, signal.High, signal.Close, signal.Pdh);
+        if (signalModel.IsShortSignal) {
+            Print("*****SHORT trigger | Time: {0}, High: {1}, Close: {2}, PDH: {3}", signalModel.BarTime, signalModel.High, signalModel.Close, signalModel.Pdh);
         }
 
-        _signalMarkers.Draw(signal);
-        _orderExecutor.ExecuteIfSignal(signal);
+        _signalMarkers.Draw(signalModel);
+        _orderExecutor.ExecuteIfSignal(signalModel);
     }
 
     protected override void OnStop() {

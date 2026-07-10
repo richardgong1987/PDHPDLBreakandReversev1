@@ -27,11 +27,11 @@ public class PdhpdlOrderPlanner {
         _riskPct = riskPct;
     }
 
-    public PdhpdlOrderPlanModel CreatePlan(PdhpdlSignal signal, double accountEquity) {
+    public PdhpdlOrderPlanModel CreatePlan(PdhpdlSignalModel signalModel, double accountEquity) {
         PdhpdlOrderPlanModel planModel = new();
 
-        PdhpdlTradeDirectionModel directionModel = signal.IsLongSignal ? PdhpdlTradeDirectionModel.Long : PdhpdlTradeDirectionModel.Short;
-        FillGeometry(signal, directionModel, out double entry, out double stop, out double riskPrice, out double takeProfit);
+        PdhpdlTradeDirectionModel directionModel = signalModel.IsLongSignal ? PdhpdlTradeDirectionModel.Long : PdhpdlTradeDirectionModel.Short;
+        FillGeometry(signalModel, directionModel, out double entry, out double stop, out double riskPrice, out double takeProfit);
 
         if (_riskGuard.TryGetRiskPriceRejectReason(riskPrice, out string rejectReason)) {
             planModel.RejectReason = rejectReason;
@@ -61,18 +61,18 @@ public class PdhpdlOrderPlanner {
         return planModel;
     }
 
-    private void FillGeometry(PdhpdlSignal signal, PdhpdlTradeDirectionModel directionModel, out double entry, out double stop,
+    private void FillGeometry(PdhpdlSignalModel signalModel, PdhpdlTradeDirectionModel directionModel, out double entry, out double stop,
         out double riskPrice, out double takeProfit) {
-        double closeEntry = signal.Close;
+        double closeEntry = signalModel.Close;
         double stopOffset = _symbolModel.TickSize * _stopOffsetTicks;
 
         if (directionModel == PdhpdlTradeDirectionModel.Long) {
-            stop = signal.Low - stopOffset;
+            stop = signalModel.Low - stopOffset;
             entry = GetEntryPrice(closeEntry, stop, directionModel);
             riskPrice = entry - stop;
             takeProfit = entry + _takeProfitR * riskPrice;
         } else {
-            stop = signal.High + stopOffset;
+            stop = signalModel.High + stopOffset;
             entry = GetEntryPrice(closeEntry, stop, directionModel);
             riskPrice = stop - entry;
             takeProfit = entry - _takeProfitR * riskPrice;

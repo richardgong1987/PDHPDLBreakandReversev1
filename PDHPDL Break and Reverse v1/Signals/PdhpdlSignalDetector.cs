@@ -14,11 +14,11 @@ public class PdhpdlSignalDetector {
         _dailyBars = dailyBars;
     }
 
-    public PdhpdlSignal DetectOnClosedBar() {
-        PdhpdlSignal signal = new();
+    public PdhpdlSignalModel DetectOnClosedBar() {
+        PdhpdlSignalModel signalModel = new();
 
         if (_chartBars.Count < 2 || !TryGetPreviousDayLevels(out double pdh, out double pdl))
-            return signal;
+            return signalModel;
 
         int closedBarIndex = _chartBars.Count - 2;
 
@@ -27,20 +27,20 @@ public class PdhpdlSignalDetector {
         double open = _chartBars.OpenPrices[closedBarIndex];
         double close = _chartBars.ClosePrices[closedBarIndex];
 
-        signal.HasData = true;
-        signal.BarIndex = closedBarIndex;
-        signal.BarTime = _chartBars.OpenTimes[closedBarIndex];
-        signal.Open = open;
-        signal.Close = close;
-        signal.High = high;
-        signal.Low = low;
-        signal.Pdh = pdh;
-        signal.Pdl = pdl;
+        signalModel.HasData = true;
+        signalModel.BarIndex = closedBarIndex;
+        signalModel.BarTime = _chartBars.OpenTimes[closedBarIndex];
+        signalModel.Open = open;
+        signalModel.Close = close;
+        signalModel.High = high;
+        signalModel.Low = low;
+        signalModel.Pdh = pdh;
+        signalModel.Pdl = pdl;
 
-        signal.IsShortSignal = IsShortSignal(signal);
-        signal.IsLongSignal = IsLongSignal(signal);
+        signalModel.IsShortSignal = IsShortSignal(signalModel);
+        signalModel.IsLongSignal = IsLongSignal(signalModel);
 
-        return signal;
+        return signalModel;
     }
 
     private bool TryGetPreviousDayLevels(out double pdh, out double pdl) {
@@ -90,7 +90,7 @@ public class PdhpdlSignalDetector {
     止损：信号K线的极值点+50点的容错
     止盈：2R
      */
-    public static bool IsShortSignal(PdhpdlSignal pdhpdlSignal) {
+    public static bool IsShortSignal(PdhpdlSignalModel pdhpdlSignalModel) {
         /*
             一. 假突破/反转
                PDH开仓条件（空单）
@@ -105,9 +105,9 @@ public class PdhpdlSignalDetector {
                看跌信号的收线价格一定要低于PDL
          */
 
-        CandleModel bar = new(open: pdhpdlSignal.Open, high: pdhpdlSignal.High, low: pdhpdlSignal.Low, close: pdhpdlSignal.Close);
+        CandleModel bar = new(open: pdhpdlSignalModel.Open, high: pdhpdlSignalModel.High, low: pdhpdlSignalModel.Low, close: pdhpdlSignalModel.Close);
 
-        SignalSideModel signalSideModel = PinBarShort(pdhpdlSignal, bar);
+        SignalSideModel signalSideModel = PinBarShort(pdhpdlSignalModel, bar);
 
 
         // label = null;
@@ -118,13 +118,13 @@ public class PdhpdlSignalDetector {
         return false;
     }
 
-    private static SignalSideModel PinBarShort(PdhpdlSignal pdhpdlSignal, CandleModel bar) {
+    private static SignalSideModel PinBarShort(PdhpdlSignalModel pdhpdlSignalModel, CandleModel bar) {
         SignalSideModel signalSideModel = HanJinSignals26.Pinbar(bar);
         return signalSideModel;
     }
 
     // Long: the bar pierced a level (PDH or PDL) but closed back above it.
-    public static bool IsLongSignal(PdhpdlSignal pdhpdlSignal) {
+    public static bool IsLongSignal(PdhpdlSignalModel pdhpdlSignalModel) {
         /**
          *
          一. 假突破/反转

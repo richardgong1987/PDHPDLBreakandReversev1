@@ -49,11 +49,11 @@ public class PdhpdlOrderExecutor {
         CloseExposureBeforeRiskWindow();
     }
 
-    public void ExecuteIfSignal(PdhpdlSignal signal) {
-        if (signal == null || !signal.HasData)
+    public void ExecuteIfSignal(PdhpdlSignalModel signalModel) {
+        if (signalModel == null || !signalModel.HasData)
             return;
 
-        if (!signal.IsLongSignal && !signal.IsShortSignal)
+        if (!signalModel.IsLongSignal && !signalModel.IsShortSignal)
             return;
 
         if (_riskGuard.ShouldBlockNewOrder(_robot.Server.Time)) {
@@ -71,7 +71,7 @@ public class PdhpdlOrderExecutor {
             return;
         }
 
-        PdhpdlOrderPlanModel planModel = _planner.CreatePlan(signal, _robot.Account.Equity);
+        PdhpdlOrderPlanModel planModel = _planner.CreatePlan(signalModel, _robot.Account.Equity);
 
         if (!planModel.IsValid) {
             _robot.Print("*****Order rejected | Reason: {0}", planModel.RejectReason);

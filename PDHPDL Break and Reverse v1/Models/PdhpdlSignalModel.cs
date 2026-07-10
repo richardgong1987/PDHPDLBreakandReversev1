@@ -2,7 +2,7 @@ using System;
 
 namespace cAlgo.Robots;
 
-public class PdhpdlSignal {
+public class PdhpdlSignalModel {
     public bool HasData { get; set; }
 
     public DateTime BarTime { get; set; }
