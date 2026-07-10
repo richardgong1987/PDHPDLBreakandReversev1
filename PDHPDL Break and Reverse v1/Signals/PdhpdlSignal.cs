@@ -15,6 +15,8 @@ public class PdhpdlSignal {
 
     public double Close { get; set; }
 
+    public double Open { get; set; }
+
     public double Pdh { get; set; }
 
     public double Pdl { get; set; }
