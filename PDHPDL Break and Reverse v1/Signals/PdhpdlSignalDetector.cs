@@ -126,12 +126,14 @@ public class PdhpdlSignalDetector {
             // (1).假突破/反转
             if (current.High > signalModel.Pdh && signalModel.Pdh > current.BodyTop) {
                 signalModel.Label = "S_Pin_1";
+                signalModel.SL = current.High;
                 return true;
             }
 
             // (2).真突破/延续
             if (signalModel.Pdl > current.Low && signalModel.Pdl > current.BodyBottom) {
                 signalModel.Label = "S_Pin_2";
+                signalModel.SL = current.High;
                 return true;
             }
         }
@@ -140,12 +142,14 @@ public class PdhpdlSignalDetector {
             // (1).假突破/反转
             if (current.High > signalModel.Pdh && signalModel.Pdh > current.BodyTop) {
                 signalModel.Label = "S_Eng_1";
+                signalModel.SL = current.High;
                 return true;
             }
 
             // (2).真突破/延续
             if (signalModel.Pdl > current.Low && signalModel.Pdl > current.BodyBottom) {
                 signalModel.Label = "S_Eng_2";
+                signalModel.SL = current.High;
                 return true;
             }
         }
@@ -154,12 +158,14 @@ public class PdhpdlSignalDetector {
             // (1).假突破/反转
             if (signalModel.Pdh > current.BodyTop) {
                 signalModel.Label = "S_Top_1";
+                signalModel.SL = current.High;
                 return true;
             }
 
             // (2).真突破/延续
             if (signalModel.Pdl > current.Low && signalModel.Pdl > previous.BodyTop) {
                 signalModel.Label = "S_Top_2";
+                signalModel.SL = current.High;
                 return true;
             }
         }
@@ -187,12 +193,54 @@ public class PdhpdlSignalDetector {
 
          */
 
-        // label = null;
-        // double body = Math.Min(open, close);
-        // bool rejectedFromPdh = pdh > low && body > pdh;
-        // bool rejectedFromPdl = pdl > low && body > pdl;
+        if (scanResult.Pinbar == SignalSideModel.Buy) {
+            // (1).假突破/反转
+            if (current.High > signalModel.Pdh && signalModel.Pdh > current.BodyTop) {
+                signalModel.Label = "S_Pin_1";
+                signalModel.SL = current.Low;
+                return true;
+            }
 
-        // return rejectedFromPdh || rejectedFromPdl;
+            // (2).真突破/延续
+            if (signalModel.Pdl > current.Low && signalModel.Pdl > current.BodyBottom) {
+                signalModel.Label = "S_Pin_2";
+                signalModel.SL = current.Low;
+                return true;
+            }
+        }
+
+        if (scanResult.Engulf == SignalSideModel.Buy) {
+            // (1).假突破/反转
+            if (current.High > signalModel.Pdh && signalModel.Pdh > current.BodyTop) {
+                signalModel.Label = "S_Eng_1";
+                signalModel.SL = current.Low;
+                return true;
+            }
+
+            // (2).真突破/延续
+            if (signalModel.Pdl > current.Low && signalModel.Pdl > current.BodyBottom) {
+                signalModel.Label = "S_Eng_2";
+                signalModel.SL = current.Low;
+                return true;
+            }
+        }
+
+        if (scanResult.FractalTop == SignalSideModel.Buy) {
+            // (1).假突破/反转
+            if (signalModel.Pdh > current.BodyTop) {
+                signalModel.Label = "S_Top_1";
+                signalModel.SL = current.Low;
+                return true;
+            }
+
+            // (2).真突破/延续
+            if (signalModel.Pdl > current.Low && signalModel.Pdl > previous.BodyTop) {
+                signalModel.Label = "S_Top_2";
+                signalModel.SL = current.Low;
+                return true;
+            }
+        }
+
         return false;
     }
 }
