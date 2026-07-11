@@ -24,8 +24,8 @@ public class PdhpdlOrderExecutor {
     private readonly Dictionary<int, string> _positionCsvIds = new();
     private readonly Dictionary<int, double> _positionEntryEquities = new();
 
-    public PdhpdlOrderExecutor(Robot robot, string symbolName, string timeFrame, PdhpdlOrderPlanner planner,
-        PdhpdlRiskGuard riskGuard, PdhpdlTradeCsvLogger csvLogger) {
+    public PdhpdlOrderExecutor(Robot robot, string symbolName, string timeFrame, PdhpdlOrderPlanner planner, PdhpdlRiskGuard riskGuard,
+        PdhpdlTradeCsvLogger csvLogger) {
         _robot = robot;
         _symbolName = symbolName;
         _timeFrame = timeFrame;
@@ -49,36 +49,36 @@ public class PdhpdlOrderExecutor {
         CloseExposureBeforeRiskWindow();
     }
 
-    public void ExecuteIfSignal(PdhpdlSignalModel signalModel) {
+    public bool ExecuteIfSignal(PdhpdlSignalModel signalModel) {
         if (signalModel == null || !signalModel.HasData)
-            return;
+            return false;
 
         if (!signalModel.IsLongSignal && !signalModel.IsShortSignal)
-            return;
+            return false;
 
         if (_riskGuard.ShouldBlockNewOrder(_robot.Server.Time)) {
             _robot.Print("*****Order skipped | Risk guard blocked new order. Time: {0}", _robot.Server.Time);
-            return;
+            return false;
         }
 
         if (HasOpenSymbolPosition()) {
             _robot.Print("*****Order skipped | Existing position found on symbol: {0}", _symbolName);
-            return;
+            return false;
         }
 
         if (HasOpenSymbolPendingOrder()) {
             _robot.Print("*****Order skipped | Existing pending order found on symbol: {0}", _symbolName);
-            return;
+            return false;
         }
 
         PdhpdlOrderPlanModel planModel = _planner.CreatePlan(signalModel, _robot.Account.Equity);
 
         if (!planModel.IsValid) {
             _robot.Print("*****Order rejected | Reason: {0}", planModel.RejectReason);
-            return;
+            return false;
         }
 
-        ExecutePlan(planModel);
+        return ExecutePlan(planModel);
     }
 
     private bool HasOpenSymbolPosition() {
@@ -108,26 +108,27 @@ public class PdhpdlOrderExecutor {
         }
     }
 
-    private void ExecutePlan(PdhpdlOrderPlanModel planModel) {
+    private bool ExecutePlan(PdhpdlOrderPlanModel planModel) {
         _robot.Print(
             "*****Order plan | Side: {0}, EntryMode: {1}, Entry: {2}, Stop: {3}, TakeProfit: {4}, RiskPrice: {5}, StopLossPips: {6}, RiskMoney: {7}, EstimatedRiskMoney: {8}, Lots: {9}, VolumeUnits: {10}",
-            planModel.DirectionModel, planModel.EntryModel, planModel.EntryPrice, planModel.StopPrice, planModel.TakeProfitPrice, planModel.RiskPrice,
-            planModel.StopLossPips, planModel.RiskMoney, planModel.EstimatedRiskMoney,
-            planModel.Lots, planModel.VolumeInUnits);
+            planModel.DirectionModel, planModel.EntryModel, planModel.EntryPrice, planModel.StopPrice, planModel.TakeProfitPrice,
+            planModel.RiskPrice, planModel.StopLossPips, planModel.RiskMoney, planModel.EstimatedRiskMoney, planModel.Lots,
+            planModel.VolumeInUnits);
 
         TradeResult result = SubmitOrder(planModel);
 
         if (!result.IsSuccessful) {
             _robot.Print("*****Order failed | Error: {0}", result.Error);
-            return;
+            return false;
         }
 
         _robot.Print("*****Order submitted | Label: {0}", planModel.Label);
 
-        if (planModel.IsMarketOrder)
-            RecordMarketEntry(planModel, result.Position);
-        else
-            RecordPendingEntry(planModel, result.PendingOrder);
+        if (planModel.IsMarketOrder) {
+            return RecordMarketEntry(planModel, result.Position);
+        }
+
+        return RecordPendingEntry(planModel, result.PendingOrder);
     }
 
     private TradeResult SubmitOrder(PdhpdlOrderPlanModel planModel) {
@@ -138,30 +139,32 @@ public class PdhpdlOrderExecutor {
                 planModel.TakeProfitPips, EntryComment);
         }
 
-        return _robot.PlaceLimitOrder(tradeType, _symbolName, planModel.VolumeInUnits, planModel.EntryPrice, planModel.Label, planModel.StopLossPips,
-            planModel.TakeProfitPips, ProtectionType.Relative, null, EntryComment);
+        return _robot.PlaceLimitOrder(tradeType, _symbolName, planModel.VolumeInUnits, planModel.EntryPrice, planModel.Label,
+            planModel.StopLossPips, planModel.TakeProfitPips, ProtectionType.Relative, null, EntryComment);
     }
 
-    private void RecordMarketEntry(PdhpdlOrderPlanModel planModel, Position position) {
+    private bool RecordMarketEntry(PdhpdlOrderPlanModel planModel, Position position) {
         string csvId = _csvLogger.AppendEntry(planModel, position, _symbolName, _timeFrame);
 
         if (string.IsNullOrWhiteSpace(csvId))
-            return;
+            return false;
 
         _positionCsvIds[position.Id] = csvId;
         _positionEntryEquities[position.Id] = planModel.AccountEquity;
         _robot.Print("*****CSV trade record added. Path: {0}", _csvLogger.FilePath);
+        return true;
     }
 
-    private void RecordPendingEntry(PdhpdlOrderPlanModel planModel, PendingOrder order) {
+    private bool RecordPendingEntry(PdhpdlOrderPlanModel planModel, PendingOrder order) {
         string csvId = _csvLogger.AppendPendingEntry(planModel, order, _symbolName, _timeFrame);
 
         if (string.IsNullOrWhiteSpace(csvId))
-            return;
+            return false;
 
         _pendingCsvIdsByLabel[order.Label] = csvId;
         _pendingEntryEquitiesByLabel[order.Label] = planModel.AccountEquity;
         _robot.Print("*****CSV pending order record added. Id: {0}, Path: {1}", csvId, _csvLogger.FilePath);
+        return true;
     }
 
     private void OnPositionOpened(PositionOpenedEventArgs args) {
@@ -201,8 +204,7 @@ public class PdhpdlOrderExecutor {
     }
 
     private bool IsStrategyPendingOrder(PendingOrder order) {
-        return order.SymbolName == _symbolName && !string.IsNullOrWhiteSpace(order.Label) &&
-               order.Label.StartsWith(StrategyLabelPrefix);
+        return order.SymbolName == _symbolName && !string.IsNullOrWhiteSpace(order.Label) && order.Label.StartsWith(StrategyLabelPrefix);
     }
 
     private string GetPositionCsvId(Position position) {

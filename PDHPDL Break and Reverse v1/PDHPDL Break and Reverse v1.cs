@@ -140,8 +140,10 @@ public class PDHPDLBreakandReversev1 : Robot {
                 signalModel.Close, signalModel.Pdh);
         }
 
-        _signalMarkers.Draw(signalModel);
-        _orderExecutor.ExecuteIfSignal(signalModel);
+
+        if (_orderExecutor.ExecuteIfSignal(signalModel)) {
+            _signalMarkers.Draw(signalModel);
+        }
     }
 
     protected override void OnStop() {
