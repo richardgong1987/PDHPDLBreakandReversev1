@@ -4,14 +4,14 @@ using Xunit;
 
 namespace Pdhpdl.Tests.Orders {
     public class PdhpdlOrderPlannerTests {
-        // A signal at Close 100 with a 2-point stop distance and a 15-tick (0.15) offset.
-        // Long:  stop = Low - 0.15,  risk = entry - stop.
-        // Short: stop = High + 0.15, risk = stop - entry.
+        // A signal at Close 100 with a 15-tick (0.15) offset applied to the detector's SL price.
+        // Long:  stop = SL - 0.15,  risk = entry - stop.
+        // Short: stop = SL + 0.15,  risk = stop - entry.
 
         [Fact]
         public void sizes_long_close_entry_to_spend_the_full_risk_budget() {
             PdhpdlOrderPlanner planner = CreatePlanner(PdhpdlEntryModel.Close);
-            PdhpdlSignal signal = LongSignal(close: 100.0, low: 98.0, high: 101.0);
+            PdhpdlSignalModel signal = LongSignal(close: 100.0, low: 98.0, high: 101.0);
 
             PdhpdlOrderPlanModel plan = planner.CreatePlan(signal, accountEquity: 10000.0);
 
@@ -38,7 +38,7 @@ namespace Pdhpdl.Tests.Orders {
             // The old formula (riskMoney / riskPrice) ignored this and sized 47; the currency-correct
             // volume is larger so the loss measured in the account currency still equals the budget.
             PdhpdlOrderPlanner planner = CreatePlanner(PdhpdlEntryModel.Close, pipValue: 0.0855);
-            PdhpdlSignal signal = LongSignal(close: 100.0, low: 98.0, high: 101.0);
+            PdhpdlSignalModel signal = LongSignal(close: 100.0, low: 98.0, high: 101.0);
 
             PdhpdlOrderPlanModel plan = planner.CreatePlan(signal, accountEquity: 10000.0);
 
@@ -53,7 +53,7 @@ namespace Pdhpdl.Tests.Orders {
         [Fact]
         public void sizes_short_close_entry_geometry() {
             PdhpdlOrderPlanner planner = CreatePlanner(PdhpdlEntryModel.Close);
-            PdhpdlSignal signal = ShortSignal(close: 100.0, low: 99.0, high: 101.0);
+            PdhpdlSignalModel signal = ShortSignal(close: 100.0, low: 99.0, high: 101.0);
 
             PdhpdlOrderPlanModel plan = planner.CreatePlan(signal, accountEquity: 10000.0);
 
@@ -68,7 +68,7 @@ namespace Pdhpdl.Tests.Orders {
         [Fact]
         public void pullback_entry_moves_entry_toward_stop_and_places_limit_order() {
             PdhpdlOrderPlanner planner = CreatePlanner(PdhpdlEntryModel.Pb50);
-            PdhpdlSignal signal = LongSignal(close: 100.0, low: 98.0, high: 101.0);
+            PdhpdlSignalModel signal = LongSignal(close: 100.0, low: 98.0, high: 101.0);
 
             PdhpdlOrderPlanModel plan = planner.CreatePlan(signal, accountEquity: 10000.0);
 
@@ -82,7 +82,7 @@ namespace Pdhpdl.Tests.Orders {
         [Fact]
         public void rejects_when_sized_volume_is_below_broker_minimum() {
             PdhpdlOrderPlanner planner = CreatePlanner(PdhpdlEntryModel.Close, volumeInUnitsMin: 100.0);
-            PdhpdlSignal signal = LongSignal(close: 100.0, low: 98.0, high: 101.0);
+            PdhpdlSignalModel signal = LongSignal(close: 100.0, low: 98.0, high: 101.0);
 
             PdhpdlOrderPlanModel plan = planner.CreatePlan(signal, accountEquity: 10000.0);
 
@@ -93,7 +93,7 @@ namespace Pdhpdl.Tests.Orders {
         [Fact]
         public void rejects_when_risk_price_is_below_minimum() {
             PdhpdlOrderPlanner planner = CreatePlanner(PdhpdlEntryModel.Close, minRiskPrice: 5.0);
-            PdhpdlSignal signal = LongSignal(close: 100.0, low: 98.0, high: 101.0);
+            PdhpdlSignalModel signal = LongSignal(close: 100.0, low: 98.0, high: 101.0);
 
             PdhpdlOrderPlanModel plan = planner.CreatePlan(signal, accountEquity: 10000.0);
 
@@ -117,12 +117,14 @@ namespace Pdhpdl.Tests.Orders {
             return new PdhpdlOrderPlanner(symbol, guard, stopOffsetTicks: 15, takeProfitR: 2.0, entryModel, riskPct: 1.0);
         }
 
-        private static PdhpdlSignal LongSignal(double close, double low, double high) {
-            return new PdhpdlSignal { HasData = true, IsLongSignal = true, Close = close, Low = low, High = high };
+        private static PdhpdlSignalModel LongSignal(double close, double low, double high) {
+            // Longs stop below the signal; the detector's SL price is the bar low.
+            return new PdhpdlSignalModel { HasData = true, IsLongSignal = true, Close = close, Low = low, High = high, SL = low };
         }
 
-        private static PdhpdlSignal ShortSignal(double close, double low, double high) {
-            return new PdhpdlSignal { HasData = true, IsShortSignal = true, Close = close, Low = low, High = high };
+        private static PdhpdlSignalModel ShortSignal(double close, double low, double high) {
+            // Shorts stop above the signal; the detector's SL price is the bar high.
+            return new PdhpdlSignalModel { HasData = true, IsShortSignal = true, Close = close, Low = low, High = high, SL = high };
         }
 
         // Deterministic stand-in for a cTrader Symbol: volume step is one whole unit,

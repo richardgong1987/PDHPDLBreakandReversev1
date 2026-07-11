@@ -21,7 +21,6 @@
   </ItemGroup>
 
   <ItemGroup Label="Signals under test">
-    <Compile Include="..\..\PDHPDL Break and Reverse v1\Signals\PdhpdlSignal.cs" Link="Signals\PdhpdlSignal.cs" />
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Signals\HanJinSignals26.cs" Link="Signals\HanJinSignals26.cs" />
   </ItemGroup>
 
@@ -36,6 +35,7 @@
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Models\NewsBlackoutWindowModel.cs" Link="Models\NewsBlackoutWindowModel.cs" />
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Models\PdhpdlTradeDirectionModel.cs" Link="Models\PdhpdlTradeDirectionModel.cs" />
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Models\PdhpdlEntryModel.cs" Link="Models\PdhpdlEntryModel.cs" />
+    <Compile Include="..\..\PDHPDL Break and Reverse v1\Models\PdhpdlSignalModel.cs" Link="Models\PdhpdlSignalModel.cs" />
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Models\PdhpdlOrderPlanModel.cs" Link="Models\PdhpdlOrderPlanModel.cs" />
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Models\IPdhpdlSymbolModel.cs" Link="Models\IPdhpdlSymbolModel.cs" />
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Models\SignalSideModel.cs" Link="Models\SignalSideModel.cs" />

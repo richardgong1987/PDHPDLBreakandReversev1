@@ -66,13 +66,15 @@ public class PdhpdlOrderPlanner {
         double closeEntry = signalModel.Close;
         double stopOffset = _symbolModel.TickSize * _stopOffsetTicks;
 
+        // Stop base comes straight from the signal's SL price (the pattern-specific level the
+        // detector chose), then a directional offset buffers it past that level.
         if (directionModel == PdhpdlTradeDirectionModel.Long) {
-            stop = signalModel.Low - stopOffset;
+            stop = signalModel.SL - stopOffset;
             entry = GetEntryPrice(closeEntry, stop, directionModel);
             riskPrice = entry - stop;
             takeProfit = entry + _takeProfitR * riskPrice;
         } else {
-            stop = signalModel.High + stopOffset;
+            stop = signalModel.SL + stopOffset;
             entry = GetEntryPrice(closeEntry, stop, directionModel);
             riskPrice = stop - entry;
             takeProfit = entry - _takeProfitR * riskPrice;
