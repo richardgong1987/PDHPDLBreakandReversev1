@@ -53,8 +53,8 @@ public class PdhpdlSignalDetector {
         signalModel.Pdh = pdh;
         signalModel.Pdl = pdl;
 
-        signalModel.IsShortSignal = IsShortSignal(signalModel, scanResult, current, previous, earlier);
-        signalModel.IsLongSignal = IsLongSignal(signalModel, scanResult, current, previous, earlier);
+        signalModel.IsShortSignal = IsShortSignal(signalModel, scanResult, current, previous);
+        signalModel.IsLongSignal = IsLongSignal(signalModel, scanResult, current, previous);
 
         return signalModel;
     }
@@ -73,7 +73,7 @@ public class PdhpdlSignalDetector {
     }
 
     public static bool IsShortSignal(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current,
-        CandleModel previous, CandleModel earlier) {
+        CandleModel previous) {
         /*
             一. 假突破/反转
 
@@ -166,7 +166,7 @@ public class PdhpdlSignalDetector {
 
     // Long: the bar pierced a level (PDH or PDL) but closed back above it.
     public static bool IsLongSignal(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current,
-        CandleModel previous, CandleModel earlier) {
+        CandleModel previous) {
         /**
          一. 假突破/反转
             PDL开仓条件 （多单）
