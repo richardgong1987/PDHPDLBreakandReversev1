@@ -55,7 +55,7 @@ public class PdhpdlSignalMarkers {
 
         _chart.DrawIcon(iconName, ChartIconType.UpTriangle, signalModel.BarIndex, iconPrice, Color.Lime);
 
-        ChartText text = _chart.DrawText(textName, "L", signalModel.BarIndex, textPrice, Color.Lime);
+        ChartText text = _chart.DrawText(textName, signalModel.Label, signalModel.BarIndex, textPrice, Color.Lime);
 
         ApplyTextStyle(text);
 
@@ -77,7 +77,7 @@ public class PdhpdlSignalMarkers {
 
         _chart.DrawIcon(iconName, ChartIconType.DownTriangle, signalModel.BarIndex, iconPrice, Color.Red);
 
-        ChartText text = _chart.DrawText(textName, "S", signalModel.BarIndex, textPrice, Color.Red);
+        ChartText text = _chart.DrawText(textName, signalModel.Label, signalModel.BarIndex, textPrice, Color.Red);
 
         ApplyTextStyle(text);
 
