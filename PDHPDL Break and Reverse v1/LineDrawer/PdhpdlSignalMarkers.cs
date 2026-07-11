@@ -8,8 +8,8 @@ public class PdhpdlSignalMarkers {
     private const string Prefix = "PDH_PDL_SIGNAL_";
 
     private const int IconOffsetTicks = 120;
-    private const int TextOffsetTicks = 360;
-    private const int TextFontSize = 18;
+    private const int TextOffsetTicks = 480;
+    private const int TextFontSize = 14;
 
     private readonly Chart _chart;
     private readonly double _iconOffset;
