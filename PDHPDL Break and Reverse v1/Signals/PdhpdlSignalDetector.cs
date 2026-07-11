@@ -114,7 +114,7 @@ public class PdhpdlSignalDetector {
             }
 
             // (2).真突破/延续
-            if (signalModel.Pdl > current.Low && signalModel.Pdl > previous.Close && current.High > signalModel.Pdl) {
+            if (signalModel.Pdl > current.Low && signalModel.Pdl > current.Close && current.High > signalModel.Pdl) {
                 signalModel.Label = "S_Top_2";
                 signalModel.SL = previous.High;
                 return true;
@@ -207,7 +207,7 @@ public class PdhpdlSignalDetector {
             }
 
             // (2).真突破/延续
-            if (current.High > signalModel.Pdh && previous.Close > signalModel.Pdh && signalModel.Pdh > current.Low) {
+            if (current.High > signalModel.Pdh && current.Close > signalModel.Pdh && signalModel.Pdh > current.Low) {
                 signalModel.Label = "L_Bot_2";
                 signalModel.SL = previous.Low;
                 return true;
@@ -220,7 +220,7 @@ public class PdhpdlSignalDetector {
     private static bool LongEngulf(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current) {
         if (scanResult.Engulf == SignalSideModel.Buy) {
             // (1).假突破/反转
-            if (signalModel.Pdl > current.Low && signalModel.Close > current.Low && current.High > signalModel.Pdl) {
+            if (signalModel.Pdl > current.Low && current.Close > signalModel.Pdl && current.High > signalModel.Pdl) {
                 signalModel.Label = "L_Eng_1";
                 signalModel.SL = current.Low;
                 return true;
