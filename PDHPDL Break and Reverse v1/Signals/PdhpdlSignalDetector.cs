@@ -20,6 +20,22 @@ public class PdhpdlSignalDetector {
         if (_chartBars.Count < 2 || !TryGetPreviousDayLevels(out double pdh, out double pdl))
             return signalModel;
 
+
+        int currentIndex = _chartBars.Count - 2; // last fully closed bar in OnBar()
+        int previousIndex = currentIndex - 1;
+        int earlierIndex = currentIndex - 2;
+
+        CandleModel current = new(open: _chartBars.OpenPrices[currentIndex], high: _chartBars.HighPrices[currentIndex],
+            low: _chartBars.LowPrices[currentIndex], close: _chartBars.ClosePrices[currentIndex]);
+
+        CandleModel previous = new(open: _chartBars.OpenPrices[previousIndex], high: _chartBars.HighPrices[previousIndex],
+            low: _chartBars.LowPrices[previousIndex], close: _chartBars.ClosePrices[previousIndex]);
+
+        CandleModel earlier = new(open: _chartBars.OpenPrices[earlierIndex], high: _chartBars.HighPrices[earlierIndex],
+            low: _chartBars.LowPrices[earlierIndex], close: _chartBars.ClosePrices[earlierIndex]);
+
+        HanJinSignalScanModel scanResult = HanJinSignals26.Scan(current, previous, earlier);
+
         int closedBarIndex = _chartBars.Count - 2;
 
         double high = _chartBars.HighPrices[closedBarIndex];
@@ -37,8 +53,8 @@ public class PdhpdlSignalDetector {
         signalModel.Pdh = pdh;
         signalModel.Pdl = pdl;
 
-        signalModel.IsShortSignal = IsShortSignal(signalModel);
-        signalModel.IsLongSignal = IsLongSignal(signalModel);
+        signalModel.IsShortSignal = IsShortSignal(signalModel, scanResult, current, previous, earlier);
+        signalModel.IsLongSignal = IsLongSignal(signalModel, scanResult, current, previous, earlier);
 
         return signalModel;
     }
@@ -90,9 +106,11 @@ public class PdhpdlSignalDetector {
     止损：信号K线的极值点+50点的容错
     止盈：2R
      */
-    public static bool IsShortSignal(PdhpdlSignalModel pdhpdlSignalModel) {
+    public static bool IsShortSignal(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current,
+        CandleModel previous, CandleModel earlier) {
         /*
             一. 假突破/反转
+
                PDH开仓条件（空单）
                K线接触到PDH
                出现看跌信号：看跌pinbar、看跌吞没、顶分型、孕线下破。
@@ -104,27 +122,55 @@ public class PdhpdlSignalDetector {
                出现看跌信号：看跌pinbar、看跌吞没、顶分型、孕线下破
                看跌信号的收线价格一定要低于PDL
          */
+        if (scanResult.Pinbar == SignalSideModel.Sell) {
+            // (1).假突破/反转
+            if (current.High > signalModel.Pdh && signalModel.Pdh > current.BodyTop) {
+                signalModel.Label = "S_Pin_1";
+                return true;
+            }
 
-        CandleModel bar = new(open: pdhpdlSignalModel.Open, high: pdhpdlSignalModel.High, low: pdhpdlSignalModel.Low, close: pdhpdlSignalModel.Close);
+            // (2).真突破/延续
+            if (signalModel.Pdl > current.Low && signalModel.Pdl > current.BodyBottom) {
+                signalModel.Label = "S_Pin_2";
+                return true;
+            }
+        }
 
-        SignalSideModel signalSideModel = PinBarShort(pdhpdlSignalModel, bar);
+        if (scanResult.Engulf == SignalSideModel.Sell) {
+            // (1).假突破/反转
+            if (current.High > signalModel.Pdh && signalModel.Pdh > current.BodyTop) {
+                signalModel.Label = "S_Eng_1";
+                return true;
+            }
+
+            // (2).真突破/延续
+            if (signalModel.Pdl > current.Low && signalModel.Pdl > current.BodyBottom) {
+                signalModel.Label = "S_Eng_2";
+                return true;
+            }
+        }
+
+        if (scanResult.FractalTop == SignalSideModel.Sell) {
+            // (1).假突破/反转
+            if (signalModel.Pdh > current.BodyTop) {
+                signalModel.Label = "S_Top_1";
+                return true;
+            }
+
+            // (2).真突破/延续
+            if (signalModel.Pdl > current.Low && signalModel.Pdl > previous.BodyTop) {
+                signalModel.Label = "S_Top_2";
+                return true;
+            }
+        }
 
 
-        // label = null;
-        // double body = Math.Max(open, close);
-        // bool rejectedFromPdh = high > pdh && pdh > body;
-        // bool rejectedFromPdl = high > pdl && pdl > body;
-        // return rejectedFromPdh || rejectedFromPdl;
         return false;
     }
 
-    private static SignalSideModel PinBarShort(PdhpdlSignalModel pdhpdlSignalModel, CandleModel bar) {
-        SignalSideModel signalSideModel = HanJinSignals26.Pinbar(bar);
-        return signalSideModel;
-    }
-
     // Long: the bar pierced a level (PDH or PDL) but closed back above it.
-    public static bool IsLongSignal(PdhpdlSignalModel pdhpdlSignalModel) {
+    public static bool IsLongSignal(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current,
+        CandleModel previous, CandleModel earlier) {
         /**
          *
          一. 假突破/反转

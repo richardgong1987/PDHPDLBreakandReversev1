@@ -26,4 +26,6 @@ public class PdhpdlSignalModel {
     public bool IsShortSignal { get; set; }
 
     public string Label { get; set; }
+
+    public double SL { get; set; }
 }
