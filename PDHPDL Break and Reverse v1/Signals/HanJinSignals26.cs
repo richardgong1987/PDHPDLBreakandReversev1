@@ -52,7 +52,7 @@ public static class HanJinSignals26 {
 
     // ── ② Engulfing 吞没───────────────────────────────────────────────────────────
     public static SignalSideModel Engulf(CandleModel current, CandleModel previous) {
-        bool isEngulfing = current.High >= previous.High && current.Low <= previous.Low && current.BodyTop >= previous.BodyTop &&
+        bool isEngulfing = current.High > previous.High && current.Low < previous.Low && current.BodyTop >= previous.BodyTop &&
                            current.BodyBottom <= previous.BodyBottom;
 
         return isEngulfing ? FollowBody(current.BodyDirection) : SignalSideModel.None;
