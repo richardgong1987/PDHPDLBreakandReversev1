@@ -72,40 +72,6 @@ public class PdhpdlSignalDetector {
         return true;
     }
 
-    /**
-     * PDH/PDL  V1
-
-    一. 假突破/反转
-    PDH开仓条件（空单）
-    K线接触到PDH
-    出现看跌信号：看跌pinbar、看跌吞没、顶分型、孕线下破。
-    看跌信号的收线价格一定要低于PDH
-
-    PDL开仓条件 （多单）
-    K线接触到PDL
-    出现看涨信号：看涨pinbar、看涨吞没、底分型、孕线上破。
-    看涨信号的收线价格一定要高于PDL
-
-
-    二. 真突破/延续
-
-    PDH开仓条件（多单）
-    K线接触到PDH
-    出现看涨信号：看涨pinbar、看涨吞没、底分型、孕线上破。
-    看涨信号的收线价格一定要高于PDH
-
-    PDL开仓条件（空单）
-    K线接触到PDL
-    出现看跌信号：看跌pinbar、看跌吞没、顶分型、孕线下破
-    看跌信号的收线价格一定要低于PDL
-
-
-    三. 风控
-
-    仓位：止损金额为仓位的1%
-    止损：信号K线的极值点+50点的容错
-    止盈：2R
-     */
     public static bool IsShortSignal(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current,
         CandleModel previous, CandleModel earlier) {
         /*
@@ -219,14 +185,14 @@ public class PdhpdlSignalDetector {
 
         if (scanResult.Pinbar == SignalSideModel.Buy) {
             // (1).假突破/反转
-            if (current.High > signalModel.Pdh && signalModel.Pdh > current.BodyTop) {
-                signalModel.Label = "S_Pin_1";
+            if (signalModel.Pdl > current.Low && current.Close > signalModel.Pdl) {
+                signalModel.Label = "L_Pin_1";
                 signalModel.SL = current.Low;
                 return true;
             }
 
             // (2).真突破/延续
-            if (signalModel.Pdl > current.Low && signalModel.Pdl > current.BodyBottom) {
+            if (current.High > signalModel.Pdh && current.Close > signalModel.Pdh) {
                 signalModel.Label = "S_Pin_2";
                 signalModel.SL = current.Low;
                 return true;
