@@ -107,14 +107,14 @@ public class PdhpdlSignalDetector {
         CandleModel previous) {
         if (scanResult.FractalTop == SignalSideModel.Sell) {
             // (1).假突破/反转
-            if (current.High > signalModel.Pdh && signalModel.Pdh > current.Close) {
+            if (current.High > signalModel.Pdh && signalModel.Pdh > current.Close && signalModel.Pdh > previous.Low) {
                 signalModel.Label = "S_Top_1";
                 signalModel.SL = previous.High;
                 return true;
             }
 
             // (2).真突破/延续
-            if (signalModel.Pdl > current.Low && signalModel.Pdl > previous.Close) {
+            if (signalModel.Pdl > current.Low && signalModel.Pdl > previous.Close && current.High > signalModel.Pdl) {
                 signalModel.Label = "S_Top_2";
                 signalModel.SL = previous.High;
                 return true;
@@ -127,14 +127,14 @@ public class PdhpdlSignalDetector {
     private static bool ShortEngulf(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current) {
         if (scanResult.Engulf == SignalSideModel.Sell) {
             // (1).假突破/反转
-            if (current.High > signalModel.Pdh && signalModel.Pdh > current.Close) {
+            if (current.High > signalModel.Pdh && signalModel.Pdh > current.Close && signalModel.Pdh > current.Low) {
                 signalModel.Label = "S_Eng_1";
                 signalModel.SL = current.High;
                 return true;
             }
 
             // (2).真突破/延续
-            if (signalModel.Pdl > current.Low && signalModel.Pdl > current.Close) {
+            if (signalModel.Pdl > current.Low && signalModel.Pdl > current.Close && current.High > signalModel.Pdl) {
                 signalModel.Label = "S_Eng_2";
                 signalModel.SL = current.High;
                 return true;
@@ -147,14 +147,14 @@ public class PdhpdlSignalDetector {
     private static bool ShortPinBar(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current) {
         if (scanResult.Pinbar == SignalSideModel.Sell) {
             // (1).假突破/反转
-            if (current.High > signalModel.Pdh && signalModel.Pdh > current.Close) {
+            if (current.High > signalModel.Pdh && signalModel.Pdh > current.Close && signalModel.Pdh > current.Low) {
                 signalModel.Label = "S_Pin_1";
                 signalModel.SL = current.High;
                 return true;
             }
 
             // (2).真突破/延续
-            if (signalModel.Pdl > current.Low && signalModel.Pdl > current.Close) {
+            if (signalModel.Pdl > current.Low && signalModel.Pdl > current.Close && current.High > signalModel.Pdl) {
                 signalModel.Label = "S_Pin_2";
                 signalModel.SL = current.High;
                 return true;
@@ -240,14 +240,14 @@ public class PdhpdlSignalDetector {
     private static bool LongPinbar(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current) {
         if (scanResult.Pinbar == SignalSideModel.Buy) {
             // (1).假突破/反转
-            if (signalModel.Pdl > current.Low && current.Close > signalModel.Pdl) {
+            if (signalModel.Pdl > current.Low && current.Close > signalModel.Pdl && current.High > signalModel.Pdl) {
                 signalModel.Label = "L_Pin_1";
                 signalModel.SL = current.Low;
                 return true;
             }
 
             // (2).真突破/延续
-            if (current.High > signalModel.Pdh && current.Close > signalModel.Pdh) {
+            if (current.High > signalModel.Pdh && current.Close > signalModel.Pdh && signalModel.Pdh > current.Low) {
                 signalModel.Label = "L_Pin_2";
                 signalModel.SL = current.Low;
                 return true;
