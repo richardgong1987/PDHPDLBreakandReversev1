@@ -19,7 +19,7 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("风险安全系数", DefaultValue = 1.0, MinValue = 0.1, MaxValue = 1.0, Step = 0.05)]
     public double RiskSafetyFactor { get; set; }
 
-    [Parameter("止损偏移点数", DefaultValue = 15, MinValue = 0, MaxValue = 1000)]
+    [Parameter("止损偏移点数", DefaultValue = 50, MinValue = 0, MaxValue = 1000)]
     public int StopOffsetTicks { get; set; }
 
     [Parameter("最小止损价格距离", DefaultValue = 5.0, MinValue = 0.0, Step = 0.1)]
@@ -131,11 +131,13 @@ public class PDHPDLBreakandReversev1 : Robot {
         }
 
         if (signalModel.IsLongSignal) {
-            Print("*****LONG trigger | Time: {0}, Low: {1}, Close: {2}, PDL: {3}", signalModel.BarTime, signalModel.Low, signalModel.Close, signalModel.Pdl);
+            Print("*****LONG trigger | Time: {0}, Low: {1}, Close: {2}, PDL: {3}", signalModel.BarTime, signalModel.Low, signalModel.Close,
+                signalModel.Pdl);
         }
 
         if (signalModel.IsShortSignal) {
-            Print("*****SHORT trigger | Time: {0}, High: {1}, Close: {2}, PDH: {3}", signalModel.BarTime, signalModel.High, signalModel.Close, signalModel.Pdh);
+            Print("*****SHORT trigger | Time: {0}, High: {1}, Close: {2}, PDH: {3}", signalModel.BarTime, signalModel.High,
+                signalModel.Close, signalModel.Pdh);
         }
 
         _signalMarkers.Draw(signalModel);
