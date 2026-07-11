@@ -168,7 +168,6 @@ public class PdhpdlSignalDetector {
     public static bool IsLongSignal(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current,
         CandleModel previous, CandleModel earlier) {
         /**
-         *
          一. 假突破/反转
             PDL开仓条件 （多单）
             K线接触到PDL
@@ -180,9 +179,48 @@ public class PdhpdlSignalDetector {
               K线接触到PDH
              出现看涨信号：看涨pinbar、看涨吞没、底分型、孕线上破。
              看涨信号的收线价格一定要高于PDH
-
          */
 
+        if (LongPinbar(signalModel, scanResult, current)) {
+            return true;
+        }
+
+        if (scanResult.Engulf == SignalSideModel.Buy) {
+            // (1).假突破/反转
+            if (signalModel.Pdl > current.Low && signalModel.Close > current.Low) {
+                signalModel.Label = "L_Eng_1";
+                signalModel.SL = current.Low;
+                return true;
+            }
+
+            // (2).真突破/延续
+            if (current.High > signalModel.Pdh && current.Close > signalModel.Pdh) {
+                signalModel.Label = "L_Eng_2";
+                signalModel.SL = current.Low;
+                return true;
+            }
+        }
+
+        if (scanResult.FractalTop == SignalSideModel.Buy) {
+            // (1).假突破/反转
+            if (signalModel.Pdh > current.BodyTop) {
+                signalModel.Label = "L_Top_1";
+                signalModel.SL = previous.Low;
+                return true;
+            }
+
+            // (2).真突破/延续
+            if (signalModel.Pdl > current.Low && signalModel.Pdl > previous.BodyTop) {
+                signalModel.Label = "L_Top_2";
+                signalModel.SL = previous.Low;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool LongPinbar(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current) {
         if (scanResult.Pinbar == SignalSideModel.Buy) {
             // (1).假突破/反转
             if (signalModel.Pdl > current.Low && current.Close > signalModel.Pdl) {
@@ -193,40 +231,8 @@ public class PdhpdlSignalDetector {
 
             // (2).真突破/延续
             if (current.High > signalModel.Pdh && current.Close > signalModel.Pdh) {
-                signalModel.Label = "S_Pin_2";
+                signalModel.Label = "L_Pin_2";
                 signalModel.SL = current.Low;
-                return true;
-            }
-        }
-
-        if (scanResult.Engulf == SignalSideModel.Buy) {
-            // (1).假突破/反转
-            if (current.High > signalModel.Pdh && signalModel.Pdh > current.BodyTop) {
-                signalModel.Label = "S_Eng_1";
-                signalModel.SL = current.Low;
-                return true;
-            }
-
-            // (2).真突破/延续
-            if (signalModel.Pdl > current.Low && signalModel.Pdl > current.BodyBottom) {
-                signalModel.Label = "S_Eng_2";
-                signalModel.SL = current.Low;
-                return true;
-            }
-        }
-
-        if (scanResult.FractalTop == SignalSideModel.Buy) {
-            // (1).假突破/反转
-            if (signalModel.Pdh > current.BodyTop) {
-                signalModel.Label = "S_Top_1";
-                signalModel.SL = previous.High;
-                return true;
-            }
-
-            // (2).真突破/延续
-            if (signalModel.Pdl > current.Low && signalModel.Pdl > previous.BodyTop) {
-                signalModel.Label = "S_Top_2";
-                signalModel.SL = previous.High;
                 return true;
             }
         }
