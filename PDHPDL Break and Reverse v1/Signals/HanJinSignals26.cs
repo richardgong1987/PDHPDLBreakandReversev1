@@ -15,8 +15,7 @@ public static class HanJinSignals26 {
     public static HanJinSignalScanModel Scan(CandleModel current, CandleModel previous, CandleModel earlier) =>
         Scan(current, previous, earlier, DefaultOptions);
 
-    public static HanJinSignalScanModel Scan(
-        CandleModel current, CandleModel previous, CandleModel earlier,
+    public static HanJinSignalScanModel Scan(CandleModel current, CandleModel previous, CandleModel earlier,
         HanJinSignalOptionsModel options) {
         (SignalSideModel top, SignalSideModel bottom) = Fractal(current, previous, earlier);
         (SignalSideModel single, SignalSideModel doubleHarami) = Harami(current, previous, earlier);
@@ -42,20 +41,19 @@ public static class HanJinSignals26 {
         double upperWick = (bar.High - bar.BodyTop) / bar.Range;
         double lowerWick = (bar.BodyBottom - bar.Low) / bar.Range;
 
-        bool isBull = lowerWick >= options.PinbarLongFraction
-                      && (!options.PinbarStrict || upperWick <= options.PinbarShortFraction);
-        bool isBear = upperWick >= options.PinbarLongFraction
-                      && (!options.PinbarStrict || lowerWick <= options.PinbarShortFraction);
+        // 下引线长。上引线短
+        bool isBull = lowerWick >= options.PinbarLongFraction && (!options.PinbarStrict || upperWick <= options.PinbarShortFraction);
+
+        // 上引线长，下引线短。
+        bool isBear = upperWick >= options.PinbarLongFraction && (!options.PinbarStrict || lowerWick <= options.PinbarShortFraction);
 
         return isBull ? SignalSideModel.Buy : isBear ? SignalSideModel.Sell : SignalSideModel.None;
     }
 
     // ── ② Engulfing ───────────────────────────────────────────────────────────
     public static SignalSideModel Engulf(CandleModel current, CandleModel previous) {
-        bool isEngulfing = current.High >= previous.High
-                           && current.Low <= previous.Low
-                           && current.BodyTop >= previous.BodyTop
-                           && current.BodyBottom <= previous.BodyBottom;
+        bool isEngulfing = current.High >= previous.High && current.Low <= previous.Low && current.BodyTop >= previous.BodyTop &&
+                           current.BodyBottom <= previous.BodyBottom;
 
         return isEngulfing ? FollowBody(current.BodyDirection) : SignalSideModel.None;
     }
@@ -63,28 +61,24 @@ public static class HanJinSignals26 {
     // ── ③ Fractal — returns (Top, Bottom) ─────────────────────────────────────
     // Strict structural fractal: the middle bar (previous, [1]) dominates BOTH neighbours on
     // the high line AND the low line.
-    public static (SignalSideModel Top, SignalSideModel Bottom) Fractal(
-        CandleModel current, CandleModel previous, CandleModel earlier) {
-        bool isTop = previous.High > earlier.High && previous.High > current.High
-                     && previous.Low > earlier.Low && previous.Low > current.Low;
-        bool isBottom = previous.Low < earlier.Low && previous.Low < current.Low
-                        && previous.High < earlier.High && previous.High < current.High;
+    public static (SignalSideModel Top, SignalSideModel Bottom) Fractal(CandleModel current, CandleModel previous, CandleModel earlier) {
+        bool isTop = previous.High > earlier.High && previous.High > current.High && previous.Low > earlier.Low &&
+                     previous.Low > current.Low;
+        bool isBottom = previous.Low < earlier.Low && previous.Low < current.Low && previous.High < earlier.High &&
+                        previous.High < current.High;
 
-        return (
-            isTop ? SignalSideModel.Sell : SignalSideModel.None,
-            isBottom ? SignalSideModel.Buy : SignalSideModel.None);
+        return (isTop ? SignalSideModel.Sell : SignalSideModel.None, isBottom ? SignalSideModel.Buy : SignalSideModel.None);
     }
 
     // ── ④ Harami + double Harami — returns (Single, Double) ────────────────────
-    public static (SignalSideModel Single, SignalSideModel Double) Harami(
-        CandleModel current, CandleModel previous, CandleModel earlier) {
+    public static (SignalSideModel Single, SignalSideModel Double) Harami(CandleModel current, CandleModel previous, CandleModel earlier) {
         bool parentContainsCurrent = Contains(outer: previous, inner: current);
         bool grandparentContainsParent = Contains(outer: earlier, inner: previous);
 
-        SignalSideModel single = parentContainsCurrent
-            ? ReverseBody(previous.BodyDirection) : SignalSideModel.None;
+        SignalSideModel single = parentContainsCurrent ? ReverseBody(previous.BodyDirection) : SignalSideModel.None;
         SignalSideModel doubleHarami = parentContainsCurrent && grandparentContainsParent
-            ? ReverseBody(earlier.BodyDirection) : SignalSideModel.None;
+            ? ReverseBody(earlier.BodyDirection)
+            : SignalSideModel.None;
 
         return (single, doubleHarami);
     }
@@ -97,8 +91,7 @@ public static class HanJinSignals26 {
             return SignalSideModel.None;
 
         double bodyFraction = System.Math.Abs(bar.Close - bar.Open) / bar.Range;
-        return bodyFraction >= options.BigBodyMinFraction
-            ? FollowBody(bar.BodyDirection) : SignalSideModel.None;
+        return bodyFraction >= options.BigBodyMinFraction ? FollowBody(bar.BodyDirection) : SignalSideModel.None;
     }
 
     // ── Internal geometry helpers (mirror the Pine private functions) ──────────
@@ -108,13 +101,9 @@ public static class HanJinSignals26 {
 
     // Continuation: the signal follows the body direction (up -> Buy).
     private static SignalSideModel FollowBody(int bodyDirection) =>
-        bodyDirection > 0 ? SignalSideModel.Buy
-        : bodyDirection < 0 ? SignalSideModel.Sell
-        : SignalSideModel.None;
+        bodyDirection > 0 ? SignalSideModel.Buy : bodyDirection < 0 ? SignalSideModel.Sell : SignalSideModel.None;
 
     // Reversal: the signal opposes the body direction (up -> Sell). Pine's reverseOf.
     private static SignalSideModel ReverseBody(int bodyDirection) =>
-        bodyDirection > 0 ? SignalSideModel.Sell
-        : bodyDirection < 0 ? SignalSideModel.Buy
-        : SignalSideModel.None;
+        bodyDirection > 0 ? SignalSideModel.Sell : bodyDirection < 0 ? SignalSideModel.Buy : SignalSideModel.None;
 }
