@@ -50,13 +50,17 @@ public static class HanJinSignals26 {
         return isBull ? SignalSideModel.Buy : isBear ? SignalSideModel.Sell : SignalSideModel.None;
     }
 
-    // ── ② Engulfing ───────────────────────────────────────────────────────────
+    // ── ② Engulfing 吞没───────────────────────────────────────────────────────────
     public static SignalSideModel Engulf(CandleModel current, CandleModel previous) {
         bool isEngulfing = current.High >= previous.High && current.Low <= previous.Low && current.BodyTop >= previous.BodyTop &&
                            current.BodyBottom <= previous.BodyBottom;
 
         return isEngulfing ? FollowBody(current.BodyDirection) : SignalSideModel.None;
     }
+
+    // Continuation: the signal follows the body direction (up -> Buy).
+    private static SignalSideModel FollowBody(int bodyDirection) =>
+        bodyDirection > 0 ? SignalSideModel.Buy : bodyDirection < 0 ? SignalSideModel.Sell : SignalSideModel.None;
 
     // ── ③ Fractal — returns (Top, Bottom) ─────────────────────────────────────
     // Strict structural fractal: the middle bar (previous, [1]) dominates BOTH neighbours on
@@ -98,10 +102,6 @@ public static class HanJinSignals26 {
     // outer fully brackets inner on both the high and the low line.
     private static bool Contains(CandleModel outer, CandleModel inner) =>
         outer.High >= inner.High && outer.Low <= inner.Low;
-
-    // Continuation: the signal follows the body direction (up -> Buy).
-    private static SignalSideModel FollowBody(int bodyDirection) =>
-        bodyDirection > 0 ? SignalSideModel.Buy : bodyDirection < 0 ? SignalSideModel.Sell : SignalSideModel.None;
 
     // Reversal: the signal opposes the body direction (up -> Sell). Pine's reverseOf.
     private static SignalSideModel ReverseBody(int bodyDirection) =>
