@@ -36,9 +36,11 @@ namespace Pdhpdl.Tests.Risk {
         }
 
         [Fact]
-        public void blocks_weekend_new_orders() {
+        public void allows_saturday_orders_before_cutoff_and_blocks_after_cutoff() {
             PdhpdlRiskGuard guard = CreateGuard();
 
+            Assert.False(guard.ShouldBlockNewOrder(new DateTime(2026, 1, 10, 5, 29, 59)));
+            Assert.True(guard.ShouldBlockNewOrder(new DateTime(2026, 1, 10, 5, 30, 0)));
             Assert.True(guard.ShouldBlockNewOrder(new DateTime(2026, 1, 10, 12, 0, 0)));
             Assert.True(guard.ShouldBlockNewOrder(new DateTime(2026, 1, 11, 12, 0, 0)));
         }

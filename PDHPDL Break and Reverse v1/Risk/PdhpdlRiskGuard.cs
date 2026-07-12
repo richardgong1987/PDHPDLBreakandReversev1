@@ -21,21 +21,17 @@ public class PdhpdlRiskGuard {
         if (IsInNewsBlackout(time))
             return true;
 
-        if (time.DayOfWeek == DayOfWeek.Saturday || time.DayOfWeek == DayOfWeek.Sunday)
+        if (time.DayOfWeek == DayOfWeek.Sunday)
             return true;
 
-        return false;
+        return IsSaturdayForceCloseTime(time);
     }
 
     public bool ShouldForceClose(DateTime time) {
         if (IsInNewsBlackout(time))
             return true;
 
-        if (time.DayOfWeek != DayOfWeek.Saturday)
-            return false;
-
-        int forceCloseMinutes = _configModel.SaturdayForceCloseHour * 60 + _configModel.SaturdayForceCloseMinute;
-        return GetMinutesOfDay(time) >= forceCloseMinutes;
+        return IsSaturdayForceCloseTime(time);
     }
 
     public bool TryGetRiskPriceRejectReason(double riskPrice, out string rejectReason) {
@@ -72,6 +68,14 @@ public class PdhpdlRiskGuard {
         }
 
         return false;
+    }
+
+    private bool IsSaturdayForceCloseTime(DateTime time) {
+        if (time.DayOfWeek != DayOfWeek.Saturday)
+            return false;
+
+        int forceCloseMinutes = _configModel.SaturdayForceCloseHour * 60 + _configModel.SaturdayForceCloseMinute;
+        return GetMinutesOfDay(time) >= forceCloseMinutes;
     }
 
     private static int GetMinutesOfDay(DateTime time) {
