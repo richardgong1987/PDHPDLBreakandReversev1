@@ -23,8 +23,8 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("止损偏移点数", DefaultValue = 50, MinValue = 0, MaxValue = 1000)]
     public int StopOffsetTicks { get; set; }
 
-    [Parameter("最小止损价格距离", DefaultValue = 5.0, MinValue = 0.0, Step = 0.1)]
-    public double MinRiskPrice { get; set; }
+    [Parameter("最小止损点数 (Pips)", DefaultValue = 5.0, MinValue = 0.0, Step = 0.1)]
+    public double MinStopLossPips { get; set; }
 
     [Parameter("止盈目标", DefaultValue = 2.0, MinValue = 0.5, MaxValue = 20.0, Step = 0.1)]
     public double TakeProfitR { get; set; }
@@ -83,7 +83,7 @@ public class PDHPDLBreakandReversev1 : Robot {
     private PdhpdlRiskGuardConfigModel BuildRiskGuardConfig() {
         return new PdhpdlRiskGuardConfigModel {
             RiskSafetyFactor = RiskSafetyFactor,
-            MinRiskPrice = MinRiskPrice,
+            MinStopLossPips = MinStopLossPips,
             SaturdayForceCloseHour = SaturdayForceCloseHour,
             SaturdayForceCloseMinute = SaturdayForceCloseMinute,
             NewsBlackoutWindows = NewsBlackoutWindows

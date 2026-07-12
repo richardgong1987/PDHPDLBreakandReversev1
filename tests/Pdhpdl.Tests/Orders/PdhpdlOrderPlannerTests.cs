@@ -91,29 +91,45 @@ namespace Pdhpdl.Tests.Orders {
         }
 
         [Fact]
-        public void rejects_when_risk_price_is_below_minimum() {
-            PdhpdlOrderPlanner planner = CreatePlanner(PdhpdlEntryModel.Close, minRiskPrice: 5.0);
+        public void rejects_when_stop_loss_pips_are_below_minimum() {
+            PdhpdlOrderPlanner planner = CreatePlanner(PdhpdlEntryModel.Close, minStopLossPips: 22.0);
             PdhpdlSignalModel signal = LongSignal(close: 100.0, low: 98.0, high: 101.0);
 
             PdhpdlOrderPlanModel plan = planner.CreatePlan(signal, accountEquity: 10000.0);
 
             Assert.False(plan.IsValid);
-            Assert.Contains("Risk price is too small", plan.RejectReason);
+            Assert.Contains("Stop loss distance is too small", plan.RejectReason);
+        }
+
+        [Fact]
+        public void accepts_forex_price_distance_when_minimum_is_in_pips() {
+            PdhpdlOrderPlanner planner = CreatePlanner(PdhpdlEntryModel.Close, minStopLossPips: 5.0, pipValue: 0.0001,
+                tickSize: 0.00001, pipSize: 0.0001);
+            PdhpdlSignalModel signal = LongSignal(close: 1.1000, low: 1.0995, high: 1.1002);
+
+            PdhpdlOrderPlanModel plan = planner.CreatePlan(signal, accountEquity: 10000.0);
+
+            Assert.True(plan.IsValid);
+            Assert.Equal(6.5, plan.StopLossPips, precision: 6);
+            Assert.True(plan.RiskPrice < 5.0);
         }
 
         private static PdhpdlOrderPlanner CreatePlanner(PdhpdlEntryModel entryModel, double volumeInUnitsMin = 1.0,
-            double minRiskPrice = 0.0, double pipValue = 0.1) {
+            double minStopLossPips = 0.0, double pipValue = 0.1, double tickSize = 0.01, double pipSize = 0.1) {
             // Default pipValue == pipSize models an instrument quoted in the account currency
             // (one price unit = one currency unit per unit of volume), so volume = riskMoney / riskPrice.
             var symbol = new FakeSymbolModel {
-                TickSize = 0.01,
-                PipSize = 0.1,
+                TickSize = tickSize,
+                PipSize = pipSize,
                 LotSize = 100.0,
                 VolumeInUnitsMin = volumeInUnitsMin,
                 VolumeInUnitsMax = 1_000_000.0,
                 PipValue = pipValue
             };
-            var guard = new PdhpdlRiskGuard(new PdhpdlRiskGuardConfigModel { RiskSafetyFactor = 1.0, MinRiskPrice = minRiskPrice });
+            var guard = new PdhpdlRiskGuard(new PdhpdlRiskGuardConfigModel {
+                RiskSafetyFactor = 1.0,
+                MinStopLossPips = minStopLossPips
+            });
             return new PdhpdlOrderPlanner(symbol, guard, stopOffsetTicks: 15, takeProfitR: 2.0, entryModel, riskPct: 1.0);
         }
 

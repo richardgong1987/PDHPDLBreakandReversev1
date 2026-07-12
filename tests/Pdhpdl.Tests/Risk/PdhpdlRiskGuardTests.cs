@@ -84,18 +84,18 @@ namespace Pdhpdl.Tests.Risk {
         }
 
         [Fact]
-        public void rejects_too_small_risk_price() {
+        public void rejects_too_small_stop_loss_pips() {
             PdhpdlRiskGuard guard = CreateGuard();
 
-            Assert.True(guard.TryGetRiskPriceRejectReason(3.2, out string rejectReason));
-            Assert.Contains("Risk price is too small", rejectReason);
-            Assert.False(guard.TryGetRiskPriceRejectReason(5.0, out _));
+            Assert.True(guard.TryGetStopLossPipsRejectReason(3.2, out string rejectReason));
+            Assert.Contains("Stop loss distance is too small", rejectReason);
+            Assert.False(guard.TryGetStopLossPipsRejectReason(5.0, out _));
         }
 
         private static PdhpdlRiskGuard CreateGuard(string newsBlackoutWindows = "", double riskSafetyFactor = 1.0) {
             return new PdhpdlRiskGuard(new PdhpdlRiskGuardConfigModel {
                 RiskSafetyFactor = riskSafetyFactor,
-                MinRiskPrice = 5.0,
+                MinStopLossPips = 5.0,
                 SaturdayForceCloseHour = 5,
                 SaturdayForceCloseMinute = 30,
                 NewsBlackoutWindows = newsBlackoutWindows

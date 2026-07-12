@@ -34,16 +34,17 @@ public class PdhpdlRiskGuard {
         return IsSaturdayForceCloseTime(time);
     }
 
-    public bool TryGetRiskPriceRejectReason(double riskPrice, out string rejectReason) {
+    public bool TryGetStopLossPipsRejectReason(double stopLossPips, out string rejectReason) {
         rejectReason = "";
 
-        if (riskPrice <= 0.0) {
-            rejectReason = "Risk price is not positive.";
+        if (stopLossPips <= 0.0) {
+            rejectReason = "Stop loss pips is not positive.";
             return true;
         }
 
-        if (_configModel.MinRiskPrice > 0.0 && riskPrice < _configModel.MinRiskPrice) {
-            rejectReason = $"Risk price is too small. RiskPrice={riskPrice}, MinRiskPrice={_configModel.MinRiskPrice}";
+        if (_configModel.MinStopLossPips > 0.0 && stopLossPips < _configModel.MinStopLossPips) {
+            rejectReason =
+                $"Stop loss distance is too small. StopLossPips={stopLossPips}, MinStopLossPips={_configModel.MinStopLossPips}";
             return true;
         }
 

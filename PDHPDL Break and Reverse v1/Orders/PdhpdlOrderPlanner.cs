@@ -32,13 +32,13 @@ public class PdhpdlOrderPlanner {
 
         PdhpdlTradeDirectionModel directionModel = signalModel.IsLongSignal ? PdhpdlTradeDirectionModel.Long : PdhpdlTradeDirectionModel.Short;
         FillGeometry(signalModel, directionModel, out double entry, out double stop, out double riskPrice, out double takeProfit);
+        double stopLossPips = riskPrice / _symbolModel.PipSize;
 
-        if (_riskGuard.TryGetRiskPriceRejectReason(riskPrice, out string rejectReason)) {
+        if (_riskGuard.TryGetStopLossPipsRejectReason(stopLossPips, out string rejectReason)) {
             planModel.RejectReason = rejectReason;
             return planModel;
         }
 
-        double stopLossPips = riskPrice / _symbolModel.PipSize;
         double takeProfitPips = Math.Abs(takeProfit - entry) / _symbolModel.PipSize;
         double riskMoney = _riskGuard.CalculateRiskMoney(accountEquity, _riskPct);
 
