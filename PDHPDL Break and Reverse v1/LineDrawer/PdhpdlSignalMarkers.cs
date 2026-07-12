@@ -8,7 +8,7 @@ public class PdhpdlSignalMarkers {
     private const string Prefix = "PDH_PDL_SIGNAL_";
 
     private const int IconOffsetTicks = 120;
-    private const int TextOffsetTicks = 480;
+    private const int TextOffsetTicks = 320;
     private const int TextFontSize = 8;
 
     private readonly Chart _chart;
@@ -87,7 +87,7 @@ public class PdhpdlSignalMarkers {
 
     private static void ApplyTextStyle(ChartText text) {
         text.FontSize = TextFontSize;
-        text.IsBold = true;
+        text.IsBold = false;
         text.HorizontalAlignment = HorizontalAlignment.Center;
         text.VerticalAlignment = VerticalAlignment.Center;
     }
