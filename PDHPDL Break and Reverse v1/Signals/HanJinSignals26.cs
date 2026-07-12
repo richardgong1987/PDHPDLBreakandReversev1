@@ -76,16 +76,31 @@ public static class HanJinSignals26 {
 
     // ── ④ Harami + double Harami — returns (Single, Double) ────────────────────
     public static (SignalSideModel Single, SignalSideModel Double) Harami(CandleModel current, CandleModel previous, CandleModel earlier) {
-        bool parentContainsCurrent = Contains(outer: previous, inner: current);
+        bool parentContainsCurrent = Contains(outer: earlier, inner: previous);
         bool grandparentContainsParent = Contains(outer: earlier, inner: previous);
 
-        SignalSideModel single = parentContainsCurrent ? ReverseBody(previous.BodyDirection) : SignalSideModel.None;
+        SignalSideModel single = parentContainsCurrent ? HaramiDirection(previous, current) : SignalSideModel.None;
         SignalSideModel doubleHarami = parentContainsCurrent && grandparentContainsParent
-            ? ReverseBody(earlier.BodyDirection)
+            ? HaramiDirection(previous, current)
             : SignalSideModel.None;
 
         return (single, doubleHarami);
     }
+
+    private static SignalSideModel HaramiDirection(CandleModel previous, CandleModel current) {
+        if (previous.High < current.High && previous.Low < current.Low && previous.BodyTop <= current.BodyTop &&
+            previous.BodyBottom <= current.BodyBottom) {
+            return SignalSideModel.Buy;
+        }
+
+        if (previous.High > current.High && previous.Low > current.Low && previous.BodyTop >= current.BodyTop &&
+            previous.BodyBottom >= current.BodyBottom) {
+            return SignalSideModel.Sell;
+        }
+
+        return SignalSideModel.None;
+    }
+
 
     // ── ⑤ Big Body ────────────────────────────────────────────────────────────
     public static SignalSideModel BigBody(CandleModel bar) => BigBody(bar, DefaultOptions);
@@ -101,9 +116,5 @@ public static class HanJinSignals26 {
     // ── Internal geometry helpers (mirror the Pine private functions) ──────────
     // outer fully brackets inner on both the high and the low line.
     private static bool Contains(CandleModel outer, CandleModel inner) =>
-        outer.High >= inner.High && outer.Low <= inner.Low;
-
-    // Reversal: the signal opposes the body direction (up -> Sell). Pine's reverseOf.
-    private static SignalSideModel ReverseBody(int bodyDirection) =>
-        bodyDirection > 0 ? SignalSideModel.Sell : bodyDirection < 0 ? SignalSideModel.Buy : SignalSideModel.None;
+        outer.High > inner.High && outer.Low < inner.Low && outer.BodyTop >= inner.BodyTop && outer.BodyBottom <= inner.BodyBottom;
 }
