@@ -14,40 +14,40 @@ namespace Pdhpdl.Tests.Risk {
         }
 
         [Fact]
-        public void forces_close_during_daily_force_close_window() {
+        public void forces_close_on_saturday_at_or_after_cutoff() {
             PdhpdlRiskGuard guard = CreateGuard();
 
-            Assert.False(guard.ShouldForceClose(new DateTime(2026, 1, 7, 4, 29, 0)));
-            Assert.True(guard.ShouldForceClose(new DateTime(2026, 1, 7, 4, 30, 0)));
-            Assert.True(guard.ShouldForceClose(new DateTime(2026, 1, 7, 7, 59, 0)));
-            Assert.False(guard.ShouldForceClose(new DateTime(2026, 1, 7, 8, 0, 0)));
-        }
-
-        [Fact]
-        public void blocks_friday_trading_and_forces_close_after_friday_cutoff() {
-            PdhpdlRiskGuard guard = CreateGuard();
-
-            Assert.True(guard.ShouldBlockNewOrder(new DateTime(2026, 1, 9, 0, 0, 0)));
-            Assert.False(guard.ShouldForceClose(new DateTime(2026, 1, 9, 3, 29, 0)));
-            Assert.True(guard.ShouldForceClose(new DateTime(2026, 1, 9, 3, 30, 0)));
-        }
-
-        [Fact]
-        public void blocks_weekend_trading_and_forces_close() {
-            PdhpdlRiskGuard guard = CreateGuard();
-
-            Assert.True(guard.ShouldBlockNewOrder(new DateTime(2026, 1, 10, 12, 0, 0)));
+            Assert.False(guard.ShouldForceClose(new DateTime(2026, 1, 10, 5, 29, 59)));
+            Assert.True(guard.ShouldForceClose(new DateTime(2026, 1, 10, 5, 30, 0)));
             Assert.True(guard.ShouldForceClose(new DateTime(2026, 1, 10, 12, 0, 0)));
         }
 
         [Fact]
-        public void blocks_and_forces_close_during_news_blackout() {
+        public void does_not_force_close_on_weekdays_or_sunday() {
+            PdhpdlRiskGuard guard = CreateGuard();
+
+            Assert.False(guard.ShouldForceClose(new DateTime(2026, 1, 7, 4, 30, 0)));
+            Assert.False(guard.ShouldForceClose(new DateTime(2026, 1, 9, 23, 59, 59)));
+            Assert.False(guard.ShouldForceClose(new DateTime(2026, 1, 11, 12, 0, 0)));
+        }
+
+        [Fact]
+        public void blocks_friday_and_weekend_new_orders() {
+            PdhpdlRiskGuard guard = CreateGuard();
+
+            Assert.True(guard.ShouldBlockNewOrder(new DateTime(2026, 1, 9, 0, 0, 0)));
+            Assert.True(guard.ShouldBlockNewOrder(new DateTime(2026, 1, 10, 12, 0, 0)));
+        }
+
+        [Fact]
+        public void blocks_new_orders_and_forces_close_during_news_blackout() {
             PdhpdlRiskGuard guard = CreateGuard("2026-01-08 14:00~2026-01-08 15:00");
 
             Assert.False(guard.ShouldBlockNewOrder(new DateTime(2026, 1, 8, 13, 59, 0)));
             Assert.True(guard.ShouldBlockNewOrder(new DateTime(2026, 1, 8, 14, 0, 0)));
             Assert.True(guard.ShouldForceClose(new DateTime(2026, 1, 8, 14, 30, 0)));
             Assert.False(guard.ShouldBlockNewOrder(new DateTime(2026, 1, 8, 15, 0, 0)));
+            Assert.False(guard.ShouldForceClose(new DateTime(2026, 1, 8, 15, 0, 0)));
         }
 
         [Fact]
@@ -91,12 +91,10 @@ namespace Pdhpdl.Tests.Risk {
                 RiskSafetyFactor = riskSafetyFactor,
                 MinRiskPrice = 5.0,
                 NoNewOrdersStartHour = 4,
-                ForceCloseHour = 4,
-                ForceCloseMinute = 30,
                 ResumeTradingHour = 8,
                 FridayNoNewOrdersStartHour = 0,
-                FridayForceCloseHour = 3,
-                FridayForceCloseMinute = 30,
+                SaturdayForceCloseHour = 5,
+                SaturdayForceCloseMinute = 30,
                 NewsBlackoutWindows = newsBlackoutWindows
             });
         }

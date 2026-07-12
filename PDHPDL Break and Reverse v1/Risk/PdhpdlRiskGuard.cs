@@ -31,16 +31,14 @@ public class PdhpdlRiskGuard {
     }
 
     public bool ShouldForceClose(DateTime time) {
-        if (time.DayOfWeek == DayOfWeek.Saturday || time.DayOfWeek == DayOfWeek.Sunday)
-            return true;
-
-        if (IsFridayForceCloseTime(time))
-            return true;
-
         if (IsInNewsBlackout(time))
             return true;
 
-        return IsInForceCloseWindow(time);
+        if (time.DayOfWeek != DayOfWeek.Saturday)
+            return false;
+
+        int forceCloseMinutes = _configModel.SaturdayForceCloseHour * 60 + _configModel.SaturdayForceCloseMinute;
+        return GetMinutesOfDay(time) >= forceCloseMinutes;
     }
 
     public bool TryGetRiskPriceRejectReason(double riskPrice, out string rejectReason) {
@@ -86,24 +84,9 @@ public class PdhpdlRiskGuard {
         return GetMinutesOfDay(time) >= _configModel.FridayNoNewOrdersStartHour * 60;
     }
 
-    private bool IsFridayForceCloseTime(DateTime time) {
-        if (time.DayOfWeek != DayOfWeek.Friday)
-            return false;
-
-        return GetMinutesOfDay(time) >= _configModel.FridayForceCloseHour * 60 + _configModel.FridayForceCloseMinute;
-    }
-
     private bool IsInNoNewOrderWindow(DateTime time) {
         int currentMinutes = GetMinutesOfDay(time);
         int startMinutes = _configModel.NoNewOrdersStartHour * 60;
-        int resumeMinutes = _configModel.ResumeTradingHour * 60;
-
-        return IsWithinWindow(currentMinutes, startMinutes, resumeMinutes);
-    }
-
-    private bool IsInForceCloseWindow(DateTime time) {
-        int currentMinutes = GetMinutesOfDay(time);
-        int startMinutes = _configModel.ForceCloseHour * 60 + _configModel.ForceCloseMinute;
         int resumeMinutes = _configModel.ResumeTradingHour * 60;
 
         return IsWithinWindow(currentMinutes, startMinutes, resumeMinutes);

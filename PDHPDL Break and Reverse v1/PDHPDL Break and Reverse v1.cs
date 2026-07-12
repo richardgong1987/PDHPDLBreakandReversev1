@@ -35,23 +35,17 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("禁止开仓开始小时", DefaultValue = 4, MinValue = 0, MaxValue = 23)]
     public int NoNewOrdersStartHour { get; set; }
 
-    [Parameter("强制平仓小时", DefaultValue = 4, MinValue = 0, MaxValue = 23)]
-    public int ForceCloseHour { get; set; }
-
-    [Parameter("强制平仓分钟", DefaultValue = 30, MinValue = 0, MaxValue = 59)]
-    public int ForceCloseMinute { get; set; }
-
     [Parameter("恢复开仓小时", DefaultValue = 8, MinValue = 0, MaxValue = 23)]
     public int ResumeTradingHour { get; set; }
 
     [Parameter("周五禁止开仓开始小时", DefaultValue = 0, MinValue = 0, MaxValue = 23)]
     public int FridayNoNewOrdersStartHour { get; set; }
 
-    [Parameter("周五强制平仓小时", DefaultValue = 3, MinValue = 0, MaxValue = 23)]
-    public int FridayForceCloseHour { get; set; }
+    [Parameter("周六强制平仓小时（日本时间）", DefaultValue = 5, MinValue = 0, MaxValue = 23)]
+    public int SaturdayForceCloseHour { get; set; }
 
-    [Parameter("周五强制平仓分钟", DefaultValue = 30, MinValue = 0, MaxValue = 59)]
-    public int FridayForceCloseMinute { get; set; }
+    [Parameter("周六强制平仓分钟（日本时间）", DefaultValue = 30, MinValue = 0, MaxValue = 59)]
+    public int SaturdayForceCloseMinute { get; set; }
 
     [Parameter("五星数据空仓时间段", DefaultValue = "")]
     public string NewsBlackoutWindows { get; set; }
@@ -100,12 +94,10 @@ public class PDHPDLBreakandReversev1 : Robot {
             RiskSafetyFactor = RiskSafetyFactor,
             MinRiskPrice = MinRiskPrice,
             NoNewOrdersStartHour = NoNewOrdersStartHour,
-            ForceCloseHour = ForceCloseHour,
-            ForceCloseMinute = ForceCloseMinute,
             ResumeTradingHour = ResumeTradingHour,
             FridayNoNewOrdersStartHour = FridayNoNewOrdersStartHour,
-            FridayForceCloseHour = FridayForceCloseHour,
-            FridayForceCloseMinute = FridayForceCloseMinute,
+            SaturdayForceCloseHour = SaturdayForceCloseHour,
+            SaturdayForceCloseMinute = SaturdayForceCloseMinute,
             NewsBlackoutWindows = NewsBlackoutWindows
         };
     }
