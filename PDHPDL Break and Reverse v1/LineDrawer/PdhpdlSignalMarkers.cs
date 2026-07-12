@@ -9,7 +9,7 @@ public class PdhpdlSignalMarkers {
 
     private const int IconOffsetTicks = 120;
     private const int TextOffsetTicks = 480;
-    private const int TextFontSize = 14;
+    private const int TextFontSize = 8;
 
     private readonly Chart _chart;
     private readonly double _iconOffset;
