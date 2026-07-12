@@ -78,6 +78,7 @@ public class PdhpdlOrderExecutor {
             return false;
         }
 
+        planModel.SignalName = signalModel.Label;
         return ExecutePlan(planModel);
     }
 

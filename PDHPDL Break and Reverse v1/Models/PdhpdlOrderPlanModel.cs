@@ -24,4 +24,5 @@ public class PdhpdlOrderPlanModel {
     public double EstimatedRiskMoney { get; set; }
 
     public string Label { get; set; } = "";
+    public string SignalName { get; set; } = "";
 }

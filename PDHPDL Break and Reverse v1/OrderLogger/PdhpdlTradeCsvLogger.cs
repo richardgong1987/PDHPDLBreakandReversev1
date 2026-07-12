@@ -41,7 +41,7 @@ public class PdhpdlTradeCsvLogger {
             Id = position.Id.ToString(),
             Side = side,
             KeyLevel = keyLevel,
-            Signal = "false-breakout",
+            Signal = planModel.SignalName,
             CloseEntryResult = GetEntryModeCsvValue(PdhpdlEntryModel.Close, planModel.EntryModel),
             Pullback25Result = GetEntryModeCsvValue(PdhpdlEntryModel.Pb25, planModel.EntryModel),
             Pullback382Result = GetEntryModeCsvValue(PdhpdlEntryModel.Pb382, planModel.EntryModel),
