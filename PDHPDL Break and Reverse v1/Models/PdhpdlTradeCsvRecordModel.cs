@@ -11,13 +11,7 @@ public class PdhpdlTradeCsvRecordModel {
 
     public string Signal { get; set; }
 
-    public string CloseEntryResult { get; set; }
-
-    public string Pullback25Result { get; set; }
-
-    public string Pullback382Result { get; set; }
-
-    public string Pullback50Result { get; set; }
+    public string EntryMode { get; set; }
 
     public string Comment { get; set; }
 

@@ -8,7 +8,8 @@ using cAlgo.API.Internals;
 namespace cAlgo.Robots;
 
 public class PdhpdlTradeCsvLogger {
-    private const int CurrentColumnCount = 26;
+    private const int CurrentColumnCount = 23;
+    private const int PreviousColumnCount = 26;
     private const int OldColumnCountBeforeAccountEquity = 23;
     private const int OldColumnCountBeforeSingleTakeProfit = 24;
     private const int OldColumnCountBeforeClosePrice = 25;
@@ -42,10 +43,7 @@ public class PdhpdlTradeCsvLogger {
             Side = side,
             KeyLevel = keyLevel,
             Signal = planModel.SignalName,
-            CloseEntryResult = GetEntryModeCsvValue(PdhpdlEntryModel.Close, planModel.EntryModel),
-            Pullback25Result = GetEntryModeCsvValue(PdhpdlEntryModel.Pb25, planModel.EntryModel),
-            Pullback382Result = GetEntryModeCsvValue(PdhpdlEntryModel.Pb382, planModel.EntryModel),
-            Pullback50Result = GetEntryModeCsvValue(PdhpdlEntryModel.Pb50, planModel.EntryModel),
+            EntryMode = GetEntryModeCsvValue(planModel.EntryModel),
             Comment = "ENTRY",
             Symbol = symbolName,
             TimeFrame = timeFrame,
@@ -78,10 +76,7 @@ public class PdhpdlTradeCsvLogger {
             Side = side,
             KeyLevel = keyLevel,
             Signal = "false-breakout",
-            CloseEntryResult = GetEntryModeCsvValue(PdhpdlEntryModel.Close, planModel.EntryModel),
-            Pullback25Result = GetEntryModeCsvValue(PdhpdlEntryModel.Pb25, planModel.EntryModel),
-            Pullback382Result = GetEntryModeCsvValue(PdhpdlEntryModel.Pb382, planModel.EntryModel),
-            Pullback50Result = GetEntryModeCsvValue(PdhpdlEntryModel.Pb50, planModel.EntryModel),
+            EntryMode = GetEntryModeCsvValue(planModel.EntryModel),
             Comment = "ENTRY",
             Symbol = symbolName,
             TimeFrame = timeFrame,
@@ -116,10 +111,7 @@ public class PdhpdlTradeCsvLogger {
             Side = position.TradeType == TradeType.Buy ? "B" : "S",
             KeyLevel = "",
             Signal = "close",
-            CloseEntryResult = "",
-            Pullback25Result = "",
-            Pullback382Result = "",
-            Pullback50Result = "",
+            EntryMode = "",
             Comment = position.NetProfit >= 0.0 ? "盈利" : "亏损",
             Symbol = symbolName,
             TimeFrame = timeFrame,
@@ -148,9 +140,8 @@ public class PdhpdlTradeCsvLogger {
             return;
 
         string line = string.Join(",", Escape(recordModel.Id), Escape(recordModel.Side), Escape(recordModel.KeyLevel),
-            Escape(recordModel.Signal), Escape(recordModel.CloseEntryResult), Escape(recordModel.Pullback25Result),
-            Escape(recordModel.Pullback382Result), Escape(recordModel.Pullback50Result), Escape(recordModel.Comment),
-            Escape(recordModel.Symbol), Escape(recordModel.TimeFrame),
+            Escape(recordModel.Signal), Escape(recordModel.EntryMode), Escape(recordModel.Comment), Escape(recordModel.Symbol),
+            Escape(recordModel.TimeFrame),
             Escape(recordModel.EntryTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)),
             Escape(recordModel.EntryPrice.ToString(CultureInfo.InvariantCulture)),
             Escape(FormatOptionalNumber(recordModel.ClosePrice)),
@@ -184,13 +175,13 @@ public class PdhpdlTradeCsvLogger {
         if (hasCurrentHeader && !NeedsRowMigration(lines))
             return;
 
+        MigrateRows(lines, hasCurrentHeader);
         lines[0] = header;
-        MigrateRows(lines);
         System.IO.File.WriteAllLines(_filePath, lines, CsvEncoding);
     }
 
     private static string BuildHeader() {
-        return string.Join(",", "编号", "多空", "关键位", "信号", "收线入场", "回撤25入场", "回撤38.2入场", "回撤50入场", "备注", "交易品种", "时间周期", "入场时间", "入场价格",
+        return string.Join(",", "编号", "多空", "关键位", "信号", "回撤开仓模式", "备注", "交易品种", "时间周期", "入场时间", "入场价格",
             "平仓价格", "止损价格", "止盈价格", "风险价格距离", "下单数量", "平仓原因", "开仓账户权益", "平仓账户权益", "平仓盈亏", "平仓时间", "挂单ID", "持仓ID", "成交ID");
     }
 
@@ -203,54 +194,49 @@ public class PdhpdlTradeCsvLogger {
 
             if (columns.Length != CurrentColumnCount)
                 return true;
-
-            if (IsOldAccountEquityColumnOrder(columns))
-                return true;
-
-            if (IsOldNoEquityCurrentColumnOrder(columns))
-                return true;
         }
 
         return false;
     }
 
-    private static void MigrateRows(string[] lines) {
+    private static void MigrateRows(string[] lines, bool hasCurrentHeader) {
         for (int i = 1; i < lines.Length; i++) {
             if (string.IsNullOrWhiteSpace(lines[i]))
                 continue;
 
             string[] columns = lines[i].Split(',');
 
-            if (columns.Length == OldColumnCountBeforeAccountEquity) {
-                lines[i] = string.Join(",", MigrateOldSingleTakeProfitRow(columns));
+            if (hasCurrentHeader && columns.Length == CurrentColumnCount)
                 continue;
+
+            if (columns.Length == OldColumnCountBeforeAccountEquity)
+                columns = MigrateOldSingleTakeProfitRow(columns);
+
+            else if (columns.Length == OldColumnCountBeforeSingleTakeProfit)
+                columns = MigrateOldTwoTakeProfitRow(columns);
+
+            else if (columns.Length == OldColumnCountBeforeClosePrice) {
+                if (IsOldAccountEquityColumnOrder(columns))
+                    MoveEquityColumnsNearProfitLoss(columns);
+
+                if (IsOldNoEquityCurrentColumnOrder(columns))
+                    MoveProfitLossFromEquityColumn(columns);
+
+                columns = MigrateOldRowBeforeClosePrice(columns);
             }
 
-            if (columns.Length == OldColumnCountBeforeSingleTakeProfit) {
-                lines[i] = string.Join(",", MigrateOldTwoTakeProfitRow(columns));
-                continue;
-            }
-
-            if (columns.Length == OldColumnCountBeforeClosePrice && IsOldAccountEquityColumnOrder(columns)) {
-                MoveEquityColumnsNearProfitLoss(columns);
-            }
-
-            if (columns.Length == OldColumnCountBeforeClosePrice && IsOldNoEquityCurrentColumnOrder(columns)) {
-                MoveProfitLossFromEquityColumn(columns);
-            }
-
-            if (columns.Length == OldColumnCountBeforeClosePrice)
-                lines[i] = string.Join(",", MigrateOldRowBeforeClosePrice(columns));
+            if (columns.Length == PreviousColumnCount)
+                lines[i] = string.Join(",", CollapseEntryModeColumns(columns));
         }
     }
 
     private static bool IsOldAccountEquityColumnOrder(string[] columns) {
-        return columns.Length == CurrentColumnCount && !LooksLikeDateTime(columns[11]) && LooksLikeDateTime(columns[13]);
+        return columns.Length == OldColumnCountBeforeClosePrice && !LooksLikeDateTime(columns[11]) && LooksLikeDateTime(columns[13]);
     }
 
     private static bool IsOldNoEquityCurrentColumnOrder(string[] columns) {
-        return columns.Length == CurrentColumnCount && string.IsNullOrWhiteSpace(columns[19]) && string.IsNullOrWhiteSpace(columns[20]) &&
-               IsNumber(columns[18]);
+        return columns.Length == OldColumnCountBeforeClosePrice && string.IsNullOrWhiteSpace(columns[19]) &&
+               string.IsNullOrWhiteSpace(columns[20]) && IsNumber(columns[18]);
     }
 
     private static bool LooksLikeDateTime(string value) {
@@ -278,7 +264,7 @@ public class PdhpdlTradeCsvLogger {
     }
 
     private static string[] MigrateOldSingleTakeProfitRow(string[] columns) {
-        string[] migrated = CreateEmptyRow();
+        string[] migrated = CreateEmptyPreviousRow();
         Array.Copy(columns, 0, migrated, 0, 13);
         Array.Copy(columns, 13, migrated, 14, 5);
         Array.Copy(columns, 18, migrated, 21, columns.Length - 18);
@@ -286,7 +272,7 @@ public class PdhpdlTradeCsvLogger {
     }
 
     private static string[] MigrateOldTwoTakeProfitRow(string[] columns) {
-        string[] migrated = CreateEmptyRow();
+        string[] migrated = CreateEmptyPreviousRow();
         Array.Copy(columns, 0, migrated, 0, 13);
         migrated[14] = columns[13];
         migrated[15] = columns[14];
@@ -298,19 +284,43 @@ public class PdhpdlTradeCsvLogger {
     }
 
     private static string[] MigrateOldRowBeforeClosePrice(string[] columns) {
-        string[] migrated = CreateEmptyRow();
+        string[] migrated = CreateEmptyPreviousRow();
         Array.Copy(columns, 0, migrated, 0, 13);
         Array.Copy(columns, 13, migrated, 14, columns.Length - 13);
         return migrated;
     }
 
-    private static string[] CreateEmptyRow() {
-        string[] columns = new string[CurrentColumnCount];
+    private static string[] CreateEmptyPreviousRow() {
+        string[] columns = new string[PreviousColumnCount];
 
         for (int i = 0; i < columns.Length; i++)
             columns[i] = "";
 
         return columns;
+    }
+
+    private static string[] CollapseEntryModeColumns(string[] columns) {
+        string[] collapsed = new string[CurrentColumnCount];
+        Array.Copy(columns, 0, collapsed, 0, 4);
+        collapsed[4] = GetLegacyEntryMode(columns);
+        Array.Copy(columns, 8, collapsed, 5, columns.Length - 8);
+        return collapsed;
+    }
+
+    private static string GetLegacyEntryMode(string[] columns) {
+        if (!string.IsNullOrWhiteSpace(columns[4]))
+            return "收线入场";
+
+        if (!string.IsNullOrWhiteSpace(columns[5]))
+            return "回撤25入场";
+
+        if (!string.IsNullOrWhiteSpace(columns[6]))
+            return "回撤38.2入场";
+
+        if (!string.IsNullOrWhiteSpace(columns[7]))
+            return "回撤50入场";
+
+        return "";
     }
 
     private static string FormatOptionalNumber(double value) {
@@ -370,7 +380,16 @@ public class PdhpdlTradeCsvLogger {
         return position.Deals[position.Deals.Count - 1].Id.ToString();
     }
 
-    private static string GetEntryModeCsvValue(PdhpdlEntryModel columnModel, PdhpdlEntryModel selectedModel) {
-        return columnModel == selectedModel ? "ORDER" : "";
+    private static string GetEntryModeCsvValue(PdhpdlEntryModel entryModel) {
+        switch (entryModel) {
+            case PdhpdlEntryModel.Pb25:
+                return "回撤25入场";
+            case PdhpdlEntryModel.Pb382:
+                return "回撤38.2入场";
+            case PdhpdlEntryModel.Pb50:
+                return "回撤50入场";
+            default:
+                return "收线入场";
+        }
     }
 }
