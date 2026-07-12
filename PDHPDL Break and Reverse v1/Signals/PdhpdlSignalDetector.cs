@@ -156,20 +156,34 @@ public class PdhpdlSignalDetector {
 
     private static bool LongHarami(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current,
         CandleModel previous, CandleModel earlier) {
+        /**
+         一. 假突破/反转
+            PDL开仓条件 （多单）
+            K线接触到PDL
+            出现看涨信号：孕线上破。
+            看涨信号的收线价格一定要高于PDL
+
+          二. 真突破/延续
+              PDH开仓条件（多单）
+              K线接触到PDH
+             出现看涨信号：孕线上破。
+             看涨信号的收线价格一定要高于PDH
+         */
+
         if (scanResult.HaramiSingle == SignalSideModel.Buy) {
             // (1).假突破/反转
-            if (Utils.CanA(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdh, current, previous, earlier) &&
-                current.Close < signalModel.Pdh) {
-                signalModel.Label = "S_Harami_1";
-                signalModel.SL = previous.High;
+            if (Utils.CanA(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdl, current, previous, earlier) &&
+                current.Close > signalModel.Pdl) {
+                signalModel.Label = "L_Harami_1";
+                signalModel.SL = previous.Low;
                 return true;
             }
 
             // (2).真突破/延续
-            if (Utils.CanB(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdl, current, previous, earlier) &&
-                current.Close < signalModel.Pdl) {
-                signalModel.Label = "S_Harami_2";
-                signalModel.SL = previous.High;
+            if (Utils.CanB(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdh, current, previous, earlier) &&
+                current.Close > signalModel.Pdh) {
+                signalModel.Label = "L_Harami_2";
+                signalModel.SL = previous.Low;
                 return true;
             }
         }
