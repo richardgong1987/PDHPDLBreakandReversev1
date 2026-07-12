@@ -24,9 +24,6 @@ public class PdhpdlRiskGuard {
         if (time.DayOfWeek == DayOfWeek.Saturday || time.DayOfWeek == DayOfWeek.Sunday)
             return true;
 
-        if (IsFridayNoNewOrderTime(time))
-            return true;
-
         return false;
     }
 
@@ -75,13 +72,6 @@ public class PdhpdlRiskGuard {
         }
 
         return false;
-    }
-
-    private bool IsFridayNoNewOrderTime(DateTime time) {
-        if (time.DayOfWeek != DayOfWeek.Friday)
-            return false;
-
-        return GetMinutesOfDay(time) >= _configModel.FridayNoNewOrdersStartHour * 60;
     }
 
     private static int GetMinutesOfDay(DateTime time) {

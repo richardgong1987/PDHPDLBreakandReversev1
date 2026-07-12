@@ -12,6 +12,9 @@ namespace Pdhpdl.Tests.Risk {
             Assert.False(guard.ShouldBlockNewOrder(new DateTime(2026, 1, 7, 7, 59, 0)));
             Assert.False(guard.ShouldBlockNewOrder(new DateTime(2026, 1, 7, 8, 0, 0)));
             Assert.False(guard.ShouldBlockNewOrder(new DateTime(2026, 1, 7, 16, 30, 0)));
+            Assert.False(guard.ShouldBlockNewOrder(new DateTime(2026, 1, 9, 0, 0, 0)));
+            Assert.False(guard.ShouldBlockNewOrder(new DateTime(2026, 1, 9, 9, 30, 0)));
+            Assert.False(guard.ShouldBlockNewOrder(new DateTime(2026, 1, 9, 23, 59, 59)));
         }
 
         [Fact]
@@ -33,11 +36,11 @@ namespace Pdhpdl.Tests.Risk {
         }
 
         [Fact]
-        public void blocks_friday_and_weekend_new_orders() {
+        public void blocks_weekend_new_orders() {
             PdhpdlRiskGuard guard = CreateGuard();
 
-            Assert.True(guard.ShouldBlockNewOrder(new DateTime(2026, 1, 9, 0, 0, 0)));
             Assert.True(guard.ShouldBlockNewOrder(new DateTime(2026, 1, 10, 12, 0, 0)));
+            Assert.True(guard.ShouldBlockNewOrder(new DateTime(2026, 1, 11, 12, 0, 0)));
         }
 
         [Fact]
@@ -91,7 +94,6 @@ namespace Pdhpdl.Tests.Risk {
             return new PdhpdlRiskGuard(new PdhpdlRiskGuardConfigModel {
                 RiskSafetyFactor = riskSafetyFactor,
                 MinRiskPrice = 5.0,
-                FridayNoNewOrdersStartHour = 0,
                 SaturdayForceCloseHour = 5,
                 SaturdayForceCloseMinute = 30,
                 NewsBlackoutWindows = newsBlackoutWindows
