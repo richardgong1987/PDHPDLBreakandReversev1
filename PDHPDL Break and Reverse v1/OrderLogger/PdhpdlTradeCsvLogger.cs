@@ -8,10 +8,10 @@ using cAlgo.API.Internals;
 namespace cAlgo.Robots;
 
 public class PdhpdlTradeCsvLogger {
-    private const int CurrentColumnCount = 25;
+    private const int CurrentColumnCount = 26;
     private const int OldColumnCountBeforeAccountEquity = 23;
     private const int OldColumnCountBeforeSingleTakeProfit = 24;
-    private const int OldColumnCountWithAccountEquityBeforeProfitLoss = 25;
+    private const int OldColumnCountBeforeClosePrice = 25;
     private static readonly Encoding CsvEncoding = new UTF8Encoding(true);
     private readonly string _filePath;
 
@@ -101,7 +101,7 @@ public class PdhpdlTradeCsvLogger {
     }
 
     public string AppendClose(Position position, PositionCloseReason reason, string csvId, string symbolName, string timeFrame,
-        DateTime serverTime, double entryAccountEquity, double closeAccountEquity) {
+        DateTime serverTime, double closePrice, double entryAccountEquity, double closeAccountEquity) {
         if (position == null)
             return "";
 
@@ -127,6 +127,7 @@ public class PdhpdlTradeCsvLogger {
             CloseAccountEquity = closeAccountEquity,
             EntryTime = position.EntryTime,
             EntryPrice = position.EntryPrice,
+            ClosePrice = closePrice,
             StopPrice = 0.0,
             TakeProfitPrice = 0.0,
             RiskPrice = 0.0,
@@ -152,6 +153,7 @@ public class PdhpdlTradeCsvLogger {
             Escape(recordModel.Symbol), Escape(recordModel.TimeFrame),
             Escape(recordModel.EntryTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)),
             Escape(recordModel.EntryPrice.ToString(CultureInfo.InvariantCulture)),
+            Escape(FormatOptionalNumber(recordModel.ClosePrice)),
             Escape(recordModel.StopPrice.ToString(CultureInfo.InvariantCulture)),
             Escape(recordModel.TakeProfitPrice.ToString(CultureInfo.InvariantCulture)),
             Escape(recordModel.RiskPrice.ToString(CultureInfo.InvariantCulture)),
@@ -189,7 +191,7 @@ public class PdhpdlTradeCsvLogger {
 
     private static string BuildHeader() {
         return string.Join(",", "编号", "多空", "关键位", "信号", "收线入场", "回撤25入场", "回撤38.2入场", "回撤50入场", "备注", "交易品种", "时间周期", "入场时间", "入场价格",
-            "止损价格", "止盈价格", "风险价格距离", "下单数量", "平仓原因", "开仓账户权益", "平仓账户权益", "平仓盈亏", "平仓时间", "挂单ID", "持仓ID", "成交ID");
+            "平仓价格", "止损价格", "止盈价格", "风险价格距离", "下单数量", "平仓原因", "开仓账户权益", "平仓账户权益", "平仓盈亏", "平仓时间", "挂单ID", "持仓ID", "成交ID");
     }
 
     private static bool NeedsRowMigration(string[] lines) {
@@ -229,16 +231,16 @@ public class PdhpdlTradeCsvLogger {
                 continue;
             }
 
-            if (columns.Length == OldColumnCountWithAccountEquityBeforeProfitLoss && IsOldAccountEquityColumnOrder(columns)) {
+            if (columns.Length == OldColumnCountBeforeClosePrice && IsOldAccountEquityColumnOrder(columns)) {
                 MoveEquityColumnsNearProfitLoss(columns);
-                lines[i] = string.Join(",", columns);
-                continue;
             }
 
-            if (columns.Length == CurrentColumnCount && IsOldNoEquityCurrentColumnOrder(columns)) {
+            if (columns.Length == OldColumnCountBeforeClosePrice && IsOldNoEquityCurrentColumnOrder(columns)) {
                 MoveProfitLossFromEquityColumn(columns);
-                lines[i] = string.Join(",", columns);
             }
+
+            if (columns.Length == OldColumnCountBeforeClosePrice)
+                lines[i] = string.Join(",", MigrateOldRowBeforeClosePrice(columns));
         }
     }
 
@@ -277,22 +279,28 @@ public class PdhpdlTradeCsvLogger {
 
     private static string[] MigrateOldSingleTakeProfitRow(string[] columns) {
         string[] migrated = CreateEmptyRow();
-        Array.Copy(columns, 0, migrated, 0, 18);
-        migrated[18] = "";
-        migrated[19] = "";
-        Array.Copy(columns, 18, migrated, 20, columns.Length - 18);
+        Array.Copy(columns, 0, migrated, 0, 13);
+        Array.Copy(columns, 13, migrated, 14, 5);
+        Array.Copy(columns, 18, migrated, 21, columns.Length - 18);
         return migrated;
     }
 
     private static string[] MigrateOldTwoTakeProfitRow(string[] columns) {
         string[] migrated = CreateEmptyRow();
-        Array.Copy(columns, 0, migrated, 0, 15);
-        migrated[15] = columns[16];
-        migrated[16] = columns[17];
-        migrated[17] = columns[18];
-        migrated[18] = "";
-        migrated[19] = "";
-        Array.Copy(columns, 19, migrated, 20, columns.Length - 19);
+        Array.Copy(columns, 0, migrated, 0, 13);
+        migrated[14] = columns[13];
+        migrated[15] = columns[14];
+        migrated[16] = columns[16];
+        migrated[17] = columns[17];
+        migrated[18] = columns[18];
+        Array.Copy(columns, 19, migrated, 21, columns.Length - 19);
+        return migrated;
+    }
+
+    private static string[] MigrateOldRowBeforeClosePrice(string[] columns) {
+        string[] migrated = CreateEmptyRow();
+        Array.Copy(columns, 0, migrated, 0, 13);
+        Array.Copy(columns, 13, migrated, 14, columns.Length - 13);
         return migrated;
     }
 

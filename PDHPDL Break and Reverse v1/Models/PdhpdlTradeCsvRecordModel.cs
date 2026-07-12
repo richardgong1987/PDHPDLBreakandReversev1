@@ -33,6 +33,8 @@ public class PdhpdlTradeCsvRecordModel {
 
     public double EntryPrice { get; set; }
 
+    public double ClosePrice { get; set; }
+
     public double StopPrice { get; set; }
 
     public double TakeProfitPrice { get; set; }

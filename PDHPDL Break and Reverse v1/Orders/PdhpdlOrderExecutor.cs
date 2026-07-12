@@ -189,8 +189,9 @@ public class PdhpdlOrderExecutor {
 
         string csvId = GetPositionCsvId(args.Position);
         double entryEquity = GetPositionEntryEquity(args.Position);
+        double closePrice = GetClosePrice(args.Position);
         string closeRecordId = _csvLogger.AppendClose(args.Position, args.Reason, csvId, _symbolName, _timeFrame, _robot.Server.Time,
-            entryEquity, _robot.Account.Equity);
+            closePrice, entryEquity, _robot.Account.Equity);
 
         _positionCsvIds.Remove(args.Position.Id);
         _positionEntryEquities.Remove(args.Position.Id);
@@ -214,6 +215,22 @@ public class PdhpdlOrderExecutor {
 
     private double GetPositionEntryEquity(Position position) {
         return _positionEntryEquities.TryGetValue(position.Id, out double entryEquity) ? entryEquity : 0.0;
+    }
+
+    private double GetClosePrice(Position position) {
+        HistoricalTrade[] closedTrades = _robot.History.FindByPositionId(position.Id);
+
+        if (closedTrades != null && closedTrades.Length > 0)
+            return closedTrades.OrderByDescending(trade => trade.ClosingTime).First().ClosingPrice;
+
+        for (int i = position.Deals.Count - 1; i >= 0; i--) {
+            Deal deal = position.Deals[i];
+
+            if (deal.PositionImpact == DealPositionImpact.Closing && deal.ExecutionPrice.HasValue)
+                return deal.ExecutionPrice.Value;
+        }
+
+        return 0.0;
     }
 
     private static TradeType ToTradeType(PdhpdlTradeDirectionModel directionModel) {
