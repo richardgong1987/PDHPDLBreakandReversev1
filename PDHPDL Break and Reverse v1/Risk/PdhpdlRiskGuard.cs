@@ -27,7 +27,7 @@ public class PdhpdlRiskGuard {
         if (IsFridayNoNewOrderTime(time))
             return true;
 
-        return IsInNoNewOrderWindow(time);
+        return false;
     }
 
     public bool ShouldForceClose(DateTime time) {
@@ -84,26 +84,8 @@ public class PdhpdlRiskGuard {
         return GetMinutesOfDay(time) >= _configModel.FridayNoNewOrdersStartHour * 60;
     }
 
-    private bool IsInNoNewOrderWindow(DateTime time) {
-        int currentMinutes = GetMinutesOfDay(time);
-        int startMinutes = _configModel.NoNewOrdersStartHour * 60;
-        int resumeMinutes = _configModel.ResumeTradingHour * 60;
-
-        return IsWithinWindow(currentMinutes, startMinutes, resumeMinutes);
-    }
-
     private static int GetMinutesOfDay(DateTime time) {
         return time.Hour * 60 + time.Minute;
-    }
-
-    private static bool IsWithinWindow(int currentMinutes, int startMinutes, int endMinutes) {
-        if (startMinutes == endMinutes)
-            return true;
-
-        if (startMinutes < endMinutes)
-            return currentMinutes >= startMinutes && currentMinutes < endMinutes;
-
-        return currentMinutes >= startMinutes || currentMinutes < endMinutes;
     }
 
     private static List<NewsBlackoutWindowModel> ParseNewsBlackoutWindows(string value) {

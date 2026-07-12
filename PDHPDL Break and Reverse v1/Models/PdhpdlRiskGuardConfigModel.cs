@@ -5,10 +5,6 @@ public class PdhpdlRiskGuardConfigModel {
 
     public double MinRiskPrice { get; set; }
 
-    public int NoNewOrdersStartHour { get; set; }
-
-    public int ResumeTradingHour { get; set; }
-
     public int FridayNoNewOrdersStartHour { get; set; }
 
     public int SaturdayForceCloseHour { get; set; }

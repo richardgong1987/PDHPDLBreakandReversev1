@@ -32,12 +32,6 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("回撤开仓模式", DefaultValue = PdhpdlEntryModel.Close)]
     public PdhpdlEntryModel EntryModel { get; set; }
 
-    [Parameter("禁止开仓开始小时", DefaultValue = 4, MinValue = 0, MaxValue = 23)]
-    public int NoNewOrdersStartHour { get; set; }
-
-    [Parameter("恢复开仓小时", DefaultValue = 8, MinValue = 0, MaxValue = 23)]
-    public int ResumeTradingHour { get; set; }
-
     [Parameter("周五禁止开仓开始小时", DefaultValue = 0, MinValue = 0, MaxValue = 23)]
     public int FridayNoNewOrdersStartHour { get; set; }
 
@@ -93,8 +87,6 @@ public class PDHPDLBreakandReversev1 : Robot {
         return new PdhpdlRiskGuardConfigModel {
             RiskSafetyFactor = RiskSafetyFactor,
             MinRiskPrice = MinRiskPrice,
-            NoNewOrdersStartHour = NoNewOrdersStartHour,
-            ResumeTradingHour = ResumeTradingHour,
             FridayNoNewOrdersStartHour = FridayNoNewOrdersStartHour,
             SaturdayForceCloseHour = SaturdayForceCloseHour,
             SaturdayForceCloseMinute = SaturdayForceCloseMinute,

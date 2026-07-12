@@ -5,12 +5,13 @@ using Xunit;
 namespace Pdhpdl.Tests.Risk {
     public class PdhpdlRiskGuardTests {
         [Fact]
-        public void blocks_new_orders_during_daily_no_order_window() {
+        public void allows_new_orders_on_weekdays_outside_news_blackout() {
             PdhpdlRiskGuard guard = CreateGuard();
 
-            Assert.True(guard.ShouldBlockNewOrder(new DateTime(2026, 1, 7, 4, 0, 0)));
-            Assert.True(guard.ShouldBlockNewOrder(new DateTime(2026, 1, 7, 7, 59, 0)));
+            Assert.False(guard.ShouldBlockNewOrder(new DateTime(2026, 1, 7, 4, 0, 0)));
+            Assert.False(guard.ShouldBlockNewOrder(new DateTime(2026, 1, 7, 7, 59, 0)));
             Assert.False(guard.ShouldBlockNewOrder(new DateTime(2026, 1, 7, 8, 0, 0)));
+            Assert.False(guard.ShouldBlockNewOrder(new DateTime(2026, 1, 7, 16, 30, 0)));
         }
 
         [Fact]
@@ -90,8 +91,6 @@ namespace Pdhpdl.Tests.Risk {
             return new PdhpdlRiskGuard(new PdhpdlRiskGuardConfigModel {
                 RiskSafetyFactor = riskSafetyFactor,
                 MinRiskPrice = 5.0,
-                NoNewOrdersStartHour = 4,
-                ResumeTradingHour = 8,
                 FridayNoNewOrdersStartHour = 0,
                 SaturdayForceCloseHour = 5,
                 SaturdayForceCloseMinute = 30,
