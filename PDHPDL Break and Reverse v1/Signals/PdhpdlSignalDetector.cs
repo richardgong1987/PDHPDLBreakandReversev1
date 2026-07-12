@@ -109,7 +109,7 @@ public class PdhpdlSignalDetector {
         if (scanResult.FractalTop == SignalSideModel.Sell) {
             // (1).假突破/反转
             if (Utils.CanA(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdh, current, previous, earlier) &&
-                current.Close < signalModel.Pdh) {
+                Utils.AnyBarIsShort(current) && current.Close < signalModel.Pdh) {
                 signalModel.Label = "S_Top_1";
                 signalModel.SL = previous.High;
                 return true;
@@ -117,7 +117,7 @@ public class PdhpdlSignalDetector {
 
             // (2).真突破/延续
             if (Utils.CanB(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdl, current, previous, earlier) &&
-                current.Close < signalModel.Pdl) {
+                Utils.AnyBarIsShort(current) && current.Close < signalModel.Pdl) {
                 signalModel.Label = "S_Top_2";
                 signalModel.SL = previous.High;
                 return true;
@@ -207,7 +207,7 @@ public class PdhpdlSignalDetector {
         if (scanResult.FractalBottom == SignalSideModel.Buy) {
             // (1).假突破/反转
             if (Utils.CanA(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdl, current, previous, earlier) &&
-                current.Close > signalModel.Pdl) {
+                Utils.AnyBarIsLong(current) && current.Close > signalModel.Pdl) {
                 signalModel.Label = "L_Bot_1";
                 signalModel.SL = previous.Low;
                 return true;
@@ -215,7 +215,7 @@ public class PdhpdlSignalDetector {
 
             // (2).真突破/延续
             if (Utils.CanB(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdh, current, previous, earlier) &&
-                current.Close > signalModel.Pdh) {
+                Utils.AnyBarIsLong(current) && current.Close > signalModel.Pdh) {
                 signalModel.Label = "L_Bot_2";
                 signalModel.SL = previous.Low;
                 return true;
