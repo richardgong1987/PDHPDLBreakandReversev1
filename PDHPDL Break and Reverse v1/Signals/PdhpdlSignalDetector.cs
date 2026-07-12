@@ -101,6 +101,10 @@ public class PdhpdlSignalDetector {
             return true;
         }
 
+        if (ShortHarami(signalModel, scanResult, current, previous, earlier)) {
+            return true;
+        }
+
         return false;
     }
 
@@ -119,6 +123,52 @@ public class PdhpdlSignalDetector {
             if (Utils.CanB(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdl, current, previous, earlier) &&
                 Utils.AnyBarIsShort(current) && current.Close < signalModel.Pdl) {
                 signalModel.Label = "S_Top_2";
+                signalModel.SL = previous.High;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool ShortHarami(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current,
+        CandleModel previous, CandleModel earlier) {
+        if (scanResult.HaramiSingle == SignalSideModel.Sell) {
+            // (1).假突破/反转
+            if (Utils.CanA(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdh, current, previous, earlier) &&
+                current.Close < signalModel.Pdh) {
+                signalModel.Label = "S_Harami_1";
+                signalModel.SL = previous.High;
+                return true;
+            }
+
+            // (2).真突破/延续
+            if (Utils.CanB(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdl, current, previous, earlier) &&
+                current.Close < signalModel.Pdl) {
+                signalModel.Label = "S_Harami_2";
+                signalModel.SL = previous.High;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool LongHarami(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current,
+        CandleModel previous, CandleModel earlier) {
+        if (scanResult.HaramiSingle == SignalSideModel.Buy) {
+            // (1).假突破/反转
+            if (Utils.CanA(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdh, current, previous, earlier) &&
+                current.Close < signalModel.Pdh) {
+                signalModel.Label = "S_Harami_1";
+                signalModel.SL = previous.High;
+                return true;
+            }
+
+            // (2).真突破/延续
+            if (Utils.CanB(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdl, current, previous, earlier) &&
+                current.Close < signalModel.Pdl) {
+                signalModel.Label = "S_Harami_2";
                 signalModel.SL = previous.High;
                 return true;
             }
@@ -196,6 +246,10 @@ public class PdhpdlSignalDetector {
         }
 
         if (LongBottom(signalModel, scanResult, current, previous, earlier)) {
+            return true;
+        }
+
+        if (LongHarami(signalModel, scanResult, current, previous, earlier)) {
             return true;
         }
 
