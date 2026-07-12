@@ -8,7 +8,8 @@ namespace cAlgo.Robots;
 
 [Robot(TimeZone = TimeZones.TokyoStandardTime, AccessRights = AccessRights.FullAccess, AddIndicators = true)]
 public class PDHPDLBreakandReversev1 : Robot {
-    [Parameter("线的粗细度", DefaultValue = 3)] public int LineThickness { get; set; }
+    [Parameter("策略模式", DefaultValue = StrategyModel.AB)]
+    public StrategyModel Strategy { get; set; }
 
     [Parameter("启动时清空交易记录CSV", DefaultValue = true)]
     public bool ResetTradeLogOnStart { get; set; }
@@ -78,7 +79,7 @@ public class PDHPDLBreakandReversev1 : Robot {
             }
         }
 
-        _pdhpdlLines = new PdhpdlLines(Chart, MarketData, SymbolName, Bars, LineThickness);
+        _pdhpdlLines = new PdhpdlLines(Chart, MarketData, SymbolName, Bars, 3);
         _pdhpdlLines.Draw();
 
         Bars dailyBars = MarketData.GetBars(TimeFrame.Daily, SymbolName);
@@ -120,8 +121,7 @@ public class PDHPDLBreakandReversev1 : Robot {
     }
 
     private void HandleClosedBarSignal() {
-        PdhpdlSignalModel signalModel = _signalDetector.DetectOnClosedBar();
-
+        PdhpdlSignalModel signalModel = _signalDetector.DetectOnClosedBar(Strategy);
         if (!signalModel.HasData)
             return;
 
@@ -139,7 +139,6 @@ public class PDHPDLBreakandReversev1 : Robot {
             Print("*****SHORT trigger | Time: {0}, High: {1}, Close: {2}, PDH: {3}", signalModel.BarTime, signalModel.High,
                 signalModel.Close, signalModel.Pdh);
         }
-
 
         if (_orderExecutor.ExecuteIfSignal(signalModel)) {
             _signalMarkers.Draw(signalModel);
