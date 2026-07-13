@@ -88,13 +88,11 @@ public static class HanJinSignals26 {
     }
 
     private static SignalSideModel HaramiDirection(CandleModel previous, CandleModel current) {
-        if (previous.High < current.High && previous.Low < current.Low && previous.BodyTop <= current.BodyTop &&
-            previous.BodyBottom <= current.BodyBottom) {
+        if (previous.High < current.Close) {
             return SignalSideModel.Buy;
         }
 
-        if (previous.High > current.High && previous.Low > current.Low && previous.BodyTop >= current.BodyTop &&
-            previous.BodyBottom >= current.BodyBottom) {
+        if (previous.Low > current.Close) {
             return SignalSideModel.Sell;
         }
 
