@@ -18,11 +18,11 @@ bodyDirAt(series int off) =>
     close[off] > open[off] ? 1 : close[off] < open[off] ? -1 : 0
 
 contains(series int outer, series int inner) =>
-    high[outer] >= high[inner] and low[outer] <= low[inner]
-
-reverseOf(series int parentOff) =>
-    d = bodyDirAt(parentOff)
-    d > 0 ? "SELL" : d < 0 ? "BUY" : na
+    outerBodyTop = math.max(open[outer], close[outer])
+    outerBodyBottom = math.min(open[outer], close[outer])
+    innerBodyTop = math.max(open[inner], close[inner])
+    innerBodyBottom = math.min(open[inner], close[inner])
+    high[outer] > high[inner] and low[outer] < low[inner] and outerBodyTop >= innerBodyTop and outerBodyBottom <= innerBodyBottom
 
 // ─── ① Pinbar ─────────────────────────────────────────────────────
 export pinbar(simple float longFrac = 0.667, simple float shortFrac = 0.2, simple bool strict = true) =>
@@ -50,11 +50,14 @@ export fractal() =>
     bot = low[1] < low[2] and low[1] < low[0] and high[1] < high[2] and high[1] < high[0]
     [top ? "SELL" : na, bot ? "BUY" : na]
 
-// ─── ④ Harami + ④b Double Harami — returns [single, double] 孕线──────
+// ─── ④ Harami breakout — returns [single, legacy double] ────────────
+// Bar [2] contains inside bar [1]; bar [0] must close beyond [1].
+// Body direction is irrelevant. The legacy double output mirrors single.
 export harami() =>
-    h0 = contains(1, 0)
-    h1 = contains(2, 1)
-    [h0 ? reverseOf(1) : na, (h0 and h1) ? reverseOf(2) : na]
+    hasInsideBar = contains(2, 1)
+    breakoutSide = close > high[1] ? "BUY" : close < low[1] ? "SELL" : na
+    side = hasInsideBar ? breakoutSide : na
+    [side, side]
 
 // ─── ⑤ Big Body 大实体K线───────────────────────────────────────────────────
 export bigbody(simple float minFrac = 0.7) =>
@@ -62,4 +65,3 @@ export bigbody(simple float minFrac = 0.7) =>
     dir = bodyDirAt(0)
     ok  = not na(bf) and bf >= minFrac
     ok and dir > 0 ? "BUY" : ok and dir < 0 ? "SELL" : na
-

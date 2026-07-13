@@ -163,6 +163,24 @@ Fields include:
 * `IsLongSignal`
 * `IsShortSignal`
 
+### Current Harami breakout rule
+
+The Harami signal is a strategy-specific inside-bar breakout, not the classic
+reverse-the-parent-body pattern.
+
+For candles ordered as `current [0]`, `previous [1]`, `earlier [2]`:
+
+* `earlier [2]` must strictly contain `previous [1]` by wick range and body range.
+* `current.Close > previous.High` means `Buy` (`孕线上破`).
+* `current.Close < previous.Low` means `Sell` (`孕线下破`).
+* A close inside the previous candle's range means `None`.
+* Parent and inside-bar body direction must not affect the result.
+* `HaramiSingle` is used for entries. `HaramiDouble` currently mirrors it only for legacy compatibility and is not used by the order detector.
+
+Do not change this back to the obsolete rule where `previous [1]` contains `current [0]`
+and the signal reverses the parent candle's body direction. Keep the C# implementation,
+unit tests, `docs/design/hanjin-signals-26.md`, and the Pine reference library aligned.
+
 ### `PdhpdlSignalMarkers`
 
 Draws visual signal markers.
