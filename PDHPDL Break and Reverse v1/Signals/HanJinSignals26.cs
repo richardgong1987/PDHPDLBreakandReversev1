@@ -67,9 +67,10 @@ public static class HanJinSignals26 {
     // the high line AND the low line.
     public static (SignalSideModel Top, SignalSideModel Bottom) Fractal(CandleModel current, CandleModel previous, CandleModel earlier) {
         bool isTop = previous.High > earlier.High && previous.High > current.High && previous.Low > earlier.Low &&
-                     previous.Low > current.Low;
-        bool isBottom = previous.Low < earlier.Low && previous.Low < current.Low && previous.High < earlier.High &&
-                        previous.High < current.High;
+                     previous.Low > current.Low && previous.BodyBottom > current.Close;
+
+        bool isBottom = earlier.Low > previous.Low && previous.Low < current.Low && earlier.High > previous.High &&
+                        previous.High < current.High && previous.BodyTop < current.Close;
 
         return (isTop ? SignalSideModel.Sell : SignalSideModel.None, isBottom ? SignalSideModel.Buy : SignalSideModel.None);
     }
