@@ -70,23 +70,39 @@ namespace Pdhpdl.Tests.Signals {
 
         // ── ④ Harami ─────────────────────────────────────────────────────────
         [Fact]
-        public void harami_single_is_reverse_of_parent_body() {
-            CandleModel current = new(open: 5.0, high: 6.0, low: 4.0, close: 5.5);
-            CandleModel parent = new(open: 2.0, high: 9.0, low: 1.0, close: 8.0);    // bullish -> Sell
-            CandleModel earlier = new(open: 5.0, high: 7.0, low: 3.0, close: 6.0);
-            (SignalSideModel single, SignalSideModel doubleHarami) = HanJinSignals26.Harami(current, parent, earlier);
-            Assert.Equal(SignalSideModel.Sell, single);
-            Assert.Equal(SignalSideModel.None, doubleHarami);
+        public void harami_is_buy_when_close_breaks_above_inside_bar() {
+            CandleModel current = new(open: 5.0, high: 8.0, low: 4.0, close: 7.5);
+            CandleModel insideBar = new(open: 3.0, high: 7.0, low: 2.0, close: 6.0);
+            CandleModel parent = new(open: 1.0, high: 10.0, low: 0.0, close: 9.0);
+
+            (SignalSideModel single, SignalSideModel doubleHarami) = HanJinSignals26.Harami(current, insideBar, parent);
+
+            Assert.Equal(SignalSideModel.Buy, single);
+            Assert.Equal(SignalSideModel.Buy, doubleHarami);
         }
 
         [Fact]
-        public void harami_double_fires_when_grandparent_also_contains_parent() {
-            CandleModel current = new(open: 5.0, high: 6.0, low: 4.0, close: 5.5);
-            CandleModel parent = new(open: 3.0, high: 7.0, low: 2.0, close: 6.0);    // bullish
-            CandleModel earlier = new(open: 1.0, high: 10.0, low: 0.0, close: 9.0);  // bullish -> Sell
-            (SignalSideModel single, SignalSideModel doubleHarami) = HanJinSignals26.Harami(current, parent, earlier);
+        public void harami_is_sell_when_close_breaks_below_inside_bar() {
+            CandleModel current = new(open: 5.0, high: 6.0, low: 1.0, close: 1.5);
+            CandleModel insideBar = new(open: 3.0, high: 7.0, low: 2.0, close: 6.0);
+            CandleModel parent = new(open: 1.0, high: 10.0, low: 0.0, close: 9.0);
+
+            (SignalSideModel single, SignalSideModel doubleHarami) = HanJinSignals26.Harami(current, insideBar, parent);
+
             Assert.Equal(SignalSideModel.Sell, single);
             Assert.Equal(SignalSideModel.Sell, doubleHarami);
+        }
+
+        [Fact]
+        public void harami_is_none_when_close_remains_inside_previous_range() {
+            CandleModel current = new(open: 5.0, high: 6.0, low: 4.0, close: 5.5);
+            CandleModel insideBar = new(open: 3.0, high: 7.0, low: 2.0, close: 6.0);
+            CandleModel parent = new(open: 1.0, high: 10.0, low: 0.0, close: 9.0);
+
+            (SignalSideModel single, SignalSideModel doubleHarami) = HanJinSignals26.Harami(current, insideBar, parent);
+
+            Assert.Equal(SignalSideModel.None, single);
+            Assert.Equal(SignalSideModel.None, doubleHarami);
         }
 
         // ── ⑤ Big Body ───────────────────────────────────────────────────────
