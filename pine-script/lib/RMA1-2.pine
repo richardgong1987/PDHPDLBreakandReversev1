@@ -1,0 +1,109 @@
+//@version=5
+indicator( title = "MA 1 + MA 2",shorttitle = "MA 1 + MA 2",overlay = true)
+
+// =====================================================
+// MA 1 配置
+// =====================================================
+
+plot_ma_1 = input.bool( true,   title = "MA 1",inline = "ma1",group = "Moving Averages")
+
+ma_1_type = input.string("EMA",title = "",options = ["RMA", "SMA", "EMA", "WMA", "HMA", "VWMA"],inline = "ma1",group = "Moving Averages")
+
+ma_1_length = input.int(200,title = "",minval = 1,inline = "ma1", group = "Moving Averages")
+
+ma_1_setting = input.string( "Normal MA",title = "",options = ["Normal MA","Open","High","Low","Close","hl2","hlc3","ohlc4","hlcc4","Chart","1 Minute","3 Minutes","5 Minutes","15 Minutes","30 Minutes","45 Minutes","1 Hour","2 Hours","3 Hours","4 Hours","Day","Week","Month"], inline = "ma1", group = "Moving Averages")
+
+ma_1_color = input.color(color.red,title = "",inline = "ma1",group = "Moving Averages")
+
+// =====================================================
+// MA 2 配置
+// =====================================================
+
+plot_ma_2 = input.bool(false,title = "MA 2",inline = "ma2",group = "Moving Averages")
+
+ma_2_type = input.string("SMA",title = "",options = ["RMA", "SMA", "EMA", "WMA", "HMA", "VWMA"],inline = "ma2",group = "Moving Averages")
+
+ma_2_length = input.int(1,title = "",minval = 1,inline = "ma2",group = "Moving Averages")
+
+ma_2_setting = input.string("Normal MA",title = "",options = [    "Normal MA",    "Open",    "High",    "Low",    "Close",    "hl2",    "hlc3",    "ohlc4",    "hlcc4",    "Chart",    "1 Minute",    "3 Minutes",    "5 Minutes",    "15 Minutes",    "30 Minutes",    "45 Minutes",    "1 Hour",    "2 Hours",    "3 Hours",    "4 Hours",    "Day",    "Week",    "Month"],inline = "ma2",group = "Moving Averages")
+
+ma_2_color = input.color( color.black, title = "", inline = "ma2", group = "Moving Averages")
+
+// =====================================================
+// 均线计算函数
+// =====================================================
+
+calculate_ma(source, length, ma_type) =>
+    switch ma_type
+        "RMA"  => ta.rma(source, length)
+        "SMA"  => ta.sma(source, length)
+        "EMA"  => ta.ema(source, length)
+        "WMA"  => ta.wma(source, length)
+        "HMA"  => ta.hma(source, length < 2 ? 2 : length)
+        "VWMA" => ta.vwma(source, length)
+
+// 判断配置是价格来源还是时间周期
+is_price_source(setting) => setting == "Normal MA" or setting == "Open" or setting == "High" or setting == "Low" or setting == "Close" or setting == "hl2" or setting == "hlc3" or setting == "ohlc4" or setting == "hlcc4"
+
+// 根据配置取得价格
+get_price_source(setting) =>
+    switch setting
+        "Open"  => open
+        "High"  => high
+        "Low"   => low
+        "Close" => close
+        "hl2"   => hl2
+        "hlc3"  => hlc3
+        "ohlc4" => ohlc4
+        "hlcc4" => hlcc4
+        => close
+
+// 根据配置取得时间周期
+get_timeframe(setting) =>
+    switch setting
+        "1 Minute"   => "1"
+        "3 Minutes"  => "3"
+        "5 Minutes"  => "5"
+        "15 Minutes" => "15"
+        "30 Minutes" => "30"
+        "45 Minutes" => "45"
+        "1 Hour"     => "60"
+        "2 Hours"    => "120"
+        "3 Hours"    => "180"
+        "4 Hours"    => "240"
+        "Day"        => "D"
+        "Week"       => "W"
+        "Month"      => "M"
+        => timeframe.period
+
+// =====================================================
+// MA 1 计算
+// =====================================================
+
+ma_1_normal = calculate_ma(get_price_source(ma_1_setting),ma_1_length,ma_1_type)
+
+ma_1_timeframe = request.security(syminfo.tickerid,get_timeframe(ma_1_setting),calculate_ma(close, ma_1_length, ma_1_type))
+
+ma_1 = is_price_source(ma_1_setting) ?
+     ma_1_normal :
+     ma_1_timeframe
+
+// =====================================================
+// MA 2 计算
+// =====================================================
+
+ma_2_normal = calculate_ma( get_price_source(ma_2_setting), ma_2_length, ma_2_type)
+
+ma_2_timeframe = request.security(syminfo.tickerid,get_timeframe(ma_2_setting),calculate_ma(close, ma_2_length, ma_2_type))
+
+ma_2 = is_price_source(ma_2_setting) ?
+     ma_2_normal :
+     ma_2_timeframe
+
+// =====================================================
+// 只绘制 MA 1 和 MA 2
+// =====================================================
+
+plot( plot_ma_1 ? ma_1 : na, title = "MA 1", color = ma_1_color, linewidth = 1)
+
+plot( plot_ma_2 ? ma_2 : na, title = "MA 2", color = ma_2_color, linewidth = 1)
