@@ -272,7 +272,7 @@ public class PdhpdlSignalDetector {
         /**
          * 蓝线在下面，代表，只作空。这但这里都是作多的，所以就不走这里的逻辑了。
          */
-        if (rmaPosition != RmaPositionModel.FastAboveSlow) {
+        if (rmaPosition == RmaPositionModel.FastBelowSlow) {
             return false;
         }
 
