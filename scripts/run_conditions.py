@@ -22,12 +22,14 @@
 
     --report-json="~/Documents/XAUUSD-h1-Close-0-2-20260601-20260630.json"
 
-任务按顺序执行：等当前回测跑完，再执行下一条。
+默认逐条串行执行；用 --jobs N 可最多同时跑 N 条（默认 = CPU 核数的一半）。
 """
 
 import argparse
+import os
 import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, datetime
 from pathlib import Path
 
@@ -49,6 +51,10 @@ CONDITIONS_FILE = SCRIPTS_DIR / "backtester/conditions.numbers"
 # cBot 把交易 CSV 写到「我的文档」(~/Documents)。回测报告 --report-json 与 CSV 同目录、
 # 同名（仅把 .csv 后缀换成 .json），方便一条回测的 CSV 和 report 成对存放、互相对应。
 CBOT_OUTPUT_DIR = Path.home() / "Documents"
+
+# --jobs 默认并发数：CPU 核数的一半（至少 1）。回测是 CPU/内存密集型，取一半核数是为了
+# 在加速的同时给系统留余量，避免把机器抢满反而更慢。用户可用 --jobs 覆盖。
+DEFAULT_JOBS = max(1, (os.cpu_count() or 2) // 2)
 
 # .env 必填项；DATA_MODE / BALANCE 选填，未填用默认值
 REQUIRED_ENV_KEYS = ["AUTH_TOKEN", "CTRADER_BIN", "ALGO_PATH", "CTID", "ACCOUNT"]
@@ -315,6 +321,38 @@ def refresh_final_report():
         print(f"*****汇总图已更新：{image_path}", flush=True)
 
 
+def run_tasks_sequentially(tasks, config):
+    """逐条串行执行（--jobs 1）：保持顺序，每条跑完刷新汇总图。"""
+    total = len(tasks)
+    for index, task in enumerate(tasks, start=1):
+        run_task(task, index, total, config)
+        refresh_final_report()
+
+
+def run_tasks_in_parallel(tasks, config, jobs):
+    """有界并发执行（--jobs N）：最多同时跑 jobs 条。
+
+    子进程等待会释放 GIL，所以用线程池即可并行。汇总图只在主线程、每有一条完成时刷新一次，
+    避免多线程同时调用 matplotlib（pyplot 非线程安全）。
+    """
+    total = len(tasks)
+    with ThreadPoolExecutor(max_workers=jobs) as executor:
+        futures = [
+            executor.submit(run_task, task, index, total, config)
+            for index, task in enumerate(tasks, start=1)
+        ]
+        for future in as_completed(futures):
+            future.result()  # 让 run_task 里的意外异常冒出来（正常失败只是非零返回码）
+            refresh_final_report()
+
+
+def run_tasks(tasks, config, jobs):
+    if jobs <= 1:
+        run_tasks_sequentially(tasks, config)
+    else:
+        run_tasks_in_parallel(tasks, config, jobs)
+
+
 def parse_args(argv):
     parser = argparse.ArgumentParser(
         description="按 conditions.numbers 计划表逐条运行 cTrader 历史回测。"
@@ -323,6 +361,12 @@ def parse_args(argv):
         "--env-file",
         default=str(DEFAULT_ENV_FILE),
         help="环境配置文件路径（默认 scripts/.env；生产用 --env-file scripts/.env-prod）",
+    )
+    parser.add_argument(
+        "--jobs",
+        type=int,
+        default=DEFAULT_JOBS,
+        help=f"并发回测的任务数（默认 {DEFAULT_JOBS} = CPU 核数的一半）；设为 1 则逐条串行。",
     )
     return parser.parse_args(argv)
 
@@ -336,10 +380,13 @@ def main(argv=None):
         print("计划表中没有有效任务。")
         return 0
 
-    print(f"共 {len(tasks)} 条回测任务，将按顺序逐条执行。")
-    for index, task in enumerate(tasks, start=1):
-        run_task(task, index, len(tasks), config)
-        refresh_final_report()
+    jobs = max(1, args.jobs)
+    if jobs > 1:
+        print(f"共 {len(tasks)} 条回测任务，最多并发 {jobs} 条执行。")
+    else:
+        print(f"共 {len(tasks)} 条回测任务，将按顺序逐条执行。")
+
+    run_tasks(tasks, config, jobs)
 
     print("\n全部回测执行完毕。")
     return 0

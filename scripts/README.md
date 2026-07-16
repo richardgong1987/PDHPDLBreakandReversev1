@@ -37,12 +37,25 @@ cp scripts/.env.example scripts/.env        # 首次：生成开发配置并填�
    ```bash
    python3 scripts/run_conditions.py                          # 默认读 scripts/.env
    python3 scripts/run_conditions.py --env-file scripts/.env-prod   # 用生产配置
+   python3 scripts/run_conditions.py --jobs 4                 # 最多同时跑 4 条
+   python3 scripts/run_conditions.py --jobs 1                 # 逐条串行
    ```
 
-3. 脚本按顺序逐条回测，每条结果 CSV 生成在 `~/Documents/`。
+3. 每条结果 CSV 生成在 `~/Documents/`。
 
 运行前会先做校验（env 缺文件/缺必填项、计划表缺列、日期格式非法）并明确报错，
 不会带着错误配置去跑。
+
+### 并发回测（--jobs）
+
+`--jobs N` 控制同时跑几条回测，**默认 = CPU 核数的一半**（给系统留余量），`--jobs 1`
+恢复逐条串行。回测是 CPU/内存密集型，并发数超过物理核数一般不会更快、反而互相抢资源。
+
+第一次并发跑某个品种前，建议先 `--jobs 1` 跑一条把 m1 数据缓存好，再放大并发，避免多个
+进程同时下载同一份数据时冲突。汇总图 `final_report.png` 只在主线程刷新，并发下也安全。
+
+> cTrader 官方文档说明回测引擎支持并行跑多个回测进程，但 CLI 层面未明确背书并发用法；
+> 首次并发建议先小样（2～3 条）验证报告/CSV 正常，再放大。
 
 ## 计划表（conditions.numbers）列说明
 
