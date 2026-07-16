@@ -3,3 +3,7 @@
 
 # 读取 conditions.numbers（Apple Numbers 表格）
 numbers-parser>=4.18.5
+
+# 汇总回测报告 JSON、生成胜率/盈亏柱状图 final_report.png
+pandas>=2.0
+matplotlib>=3.7

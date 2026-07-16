@@ -33,6 +33,8 @@ from pathlib import Path
 
 from numbers_parser import Document
 
+import report_summary
+
 # --- 路径与环境配置 ---------------------------------------------------------
 #
 # 账户、路径、鉴权等“环境相关”配置不写死在脚本里，而是从 .env 文件读取，
@@ -301,6 +303,18 @@ def run_task(task, index, total, config):
     return result.returncode
 
 
+def refresh_final_report():
+    """每条任务跑完后，用目录里现有的报告刷新汇总图。图表失败不应中断回测批次。"""
+    try:
+        image_path = report_summary.update_final_report(CBOT_OUTPUT_DIR)
+    except Exception as error:  # noqa: BLE001 — 汇总图是附带产物，任何异常都不该拖垮回测
+        print(f"*****汇总图刷新失败（已跳过）：{error}", flush=True)
+        return
+
+    if image_path is not None:
+        print(f"*****汇总图已更新：{image_path}", flush=True)
+
+
 def parse_args(argv):
     parser = argparse.ArgumentParser(
         description="按 conditions.numbers 计划表逐条运行 cTrader 历史回测。"
@@ -325,6 +339,7 @@ def main(argv=None):
     print(f"共 {len(tasks)} 条回测任务，将按顺序逐条执行。")
     for index, task in enumerate(tasks, start=1):
         run_task(task, index, len(tasks), config)
+        refresh_final_report()
 
     print("\n全部回测执行完毕。")
     return 0

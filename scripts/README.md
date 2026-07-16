@@ -9,7 +9,8 @@
 pip install -r scripts/requirements.txt
 ```
 
-只依赖一个第三方库 `numbers-parser`（读 `.numbers` 表格）；其余是 Python 标准库。
+第三方依赖：`numbers-parser`（读 `.numbers` 表格）、`pandas` + `matplotlib`
+（汇总回测报告、画柱状图）；其余是 Python 标准库。
 
 > 包名是 `numbers-parser`（连字符），代码里 `import numbers_parser`（下划线），是同一个包。
 
@@ -86,6 +87,26 @@ cp scripts/.env.example scripts/.env        # 首次：生成开发配置并填�
 ```
 
 这样每条回测的 CSV（交易明细）和 report.json（回测统计）成对存放、文件名一一对应。
+
+## 汇总柱状图（final_report.png）
+
+每跑完一条任务，脚本会扫描输出目录里**所有**回测报告 JSON，用 `pandas` 汇总成表，再用
+`matplotlib` 画成上下两幅柱状图并导出到 `~/Documents/final_report.png`：
+
+- **上图**：每份报告的净利润（`main.netProfit`），盈利绿色、亏损红色。
+- **下图**：每份报告的胜率（`winningTrades.all / totalTrades.all`）。
+- X 轴标签自动去掉各报告的共同前缀，只留有区分度的部分（通常是日期区间）。
+
+图会随批量回测进度逐步长出来，跑到一半也能随时打开看当前结果。汇总逻辑在
+`report_summary.py`，也可单独运行来手动刷新图片（不重跑回测）：
+
+```bash
+python3 scripts/report_summary.py                 # 默认扫 ~/Documents
+python3 scripts/report_summary.py --dir <目录>    # 指定报告目录
+```
+
+> 注意：图会汇总目录里**所有**报告 JSON，包括历史遗留的。若只想看某一批，先清掉目录里
+> 旧的 `*.json` 再跑。
 
 ## 可调项
 
