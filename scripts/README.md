@@ -88,7 +88,33 @@ cp scripts/.env.example scripts/.env        # 首次：生成开发配置并填�
 
 策略参数（在 `run_conditions.py` 的 `CBOT_FIXED_PARAMS` 里改）：
 
-- RiskPct、StopOffsetTicks、各时段小时等所有“非计划表覆盖”的 cBot 参数。
+这里的 key 必须与 cBot 的 C# 属性名逐字一致（cTrader CLI 按属性名匹配，不是按中文显示名）。
+当前固定项与 cBot 参数一一对应：
+
+| CBOT_FIXED_PARAMS | 默认值 | 含义 |
+|---|---|---|
+| `Strategy` | `0` | 策略模式（枚举整数：AB=0, A=1, B=2） |
+| `ResetTradeLogOnStart` | `True` | 启动时清空交易记录 CSV |
+| `RiskPct` | `1` | 每笔交易风险百分比 |
+| `RiskSafetyFactor` | `1` | 风险安全系数 |
+| `StopOffsetTicks` | `15` | 止损偏移点数 |
+| `MinStopLossPips` | `5` | 最小止损点数（Pips） |
+| `SaturdayForceCloseHour` | `5` | 周六强制平仓小时（日本时间） |
+| `SaturdayForceCloseMinute` | `30` | 周六强制平仓分钟 |
+| `ShowMovingAverages` | `True` | 是否绘制均线（RMA 1 + RMA 2） |
+| `MaSource` | `0` | 均线来源（枚举整数：HigherTimeFrame=0, ChartTimeFrame=1） |
+| `MaFastPeriod` | `13` | 均线周期 RMA 1（快） |
+| `MaSlowPeriod` | `55` | 均线周期 RMA 2（慢） |
+| `MaTimeFrameMinutes` | `120` | 均线周期（分钟） |
+| `ShowDebugLogs` | `False` | 展示调试日志 |
+| `IsDebug` | `False` | debug 调试 |
+
+> 均线参数不只影响绘图：`MaSource`/`MaFastPeriod`/`MaSlowPeriod`/`MaTimeFrameMinutes` 会喂给
+> RMA 均线序列，而多空信号会用快/慢 RMA 的相对位置过滤方向，所以它们直接影响回测出的交易。
+> 枚举（`Strategy`、`MaSource`）按整数值传，与 `EntryModel` 的做法一致。
+
+未列入的 cBot 参数（如 `NewsBlackoutWindows`）不传，回测时走 cBot 自身默认值；需要固定时再加进
+`CBOT_FIXED_PARAMS`。`EntryModel`、`TakeProfitR`、`FileName` 由计划表逐行覆盖，不放在这里。
 
 ## 关键设计说明
 

@@ -22,7 +22,8 @@ Behavior classes live beside the feature they serve; all data types live in `Mod
   submits orders, and tracks CSV row ids.
 - `Risk/` — `PdhpdlRiskGuard` (time/news/weekend windows + risk-money, pure, unit tested).
 - `LineDrawer/` — `PdhpdlLines`, `PdhpdlSignalMarkers` (chart drawing).
-- `OrderLogger/` — `PdhpdlTradeCsvLogger`.
+- `OrderLogger/` — `PdhpdlTradeCsvLogger` (writes trade rows) and `PdhpdlTradeCsvMigrator`
+  (pure; upgrades an existing trades CSV from older column layouts to the current schema).
 - `Models/` — data types: `PdhpdlOrderPlanModel`, `PdhpdlTradeDirectionModel`,
   `PdhpdlEntryModel`, `PdhpdlRiskGuardConfigModel`, `NewsBlackoutWindowModel`,
   `PdhpdlTradeCsvRecordModel`, the `IPdhpdlSymbolModel` port, and its `CAlgoSymbolModel`

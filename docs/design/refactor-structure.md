@@ -24,6 +24,7 @@ fixed risk budget, place it through cTrader, and record the trade to CSV.
 | Time / news / risk windows | `PdhpdlRiskGuard` (pure) | no | yes |
 | Draw lines / markers | `PdhpdlLines`, `PdhpdlSignalMarkers` | yes | no |
 | Write CSV | `PdhpdlTradeCsvLogger` | yes (file IO) | no |
+| Upgrade an old trades CSV to the current column schema | `PdhpdlTradeCsvMigrator` (pure) | no | yes |
 
 ## 4. Dependency Direction
 
@@ -48,6 +49,11 @@ Pure classes never import `cAlgo.API`. The planner talks to the broker only thro
 - The `PdhpdlUtils` catch-all and the misleadingly named `OrderUtil/` folder are removed.
   Behavior classes live beside the feature they serve; all data types live in `Models/`
   (suffixed `Model`).
+- **Writing vs. migrating the trades CSV are split.** `PdhpdlTradeCsvLogger` writes today's
+  rows; `PdhpdlTradeCsvMigrator` owns the history of older column layouts and rewrites old
+  files to the current schema. They change for different reasons (new field vs. reconciling an
+  old on-disk format), so they are separate classes. The migrator is pure (no `cAlgo.API`), so
+  it is unit-testable even though the logger — which does file IO — is not.
 
 ## 6. Folder Layout
 
@@ -56,7 +62,7 @@ Signals/     PdhpdlSignalDetector, PdhpdlSignal (data)
 Orders/      PdhpdlOrderPlanner (pure), PdhpdlOrderExecutor
 Risk/        PdhpdlRiskGuard (pure)
 LineDrawer/  PdhpdlLines, PdhpdlSignalMarkers
-OrderLogger/ PdhpdlTradeCsvLogger
+OrderLogger/ PdhpdlTradeCsvLogger (write), PdhpdlTradeCsvMigrator (pure — upgrade old files)
 Models/      PdhpdlOrderPlanModel, PdhpdlTradeDirectionModel, PdhpdlEntryModel,
              PdhpdlRiskGuardConfigModel, NewsBlackoutWindowModel, PdhpdlTradeCsvRecordModel,
              IPdhpdlSymbolModel (port), CAlgoSymbolModel (adapter — only Models/ file on cAlgo)

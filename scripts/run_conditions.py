@@ -111,20 +111,24 @@ REQUIRED_COLUMNS = [
 ]
 
 # cBot 自定义参数（回测计划表覆盖之外的固定项，保持与手工命令一致）
+# 名称必须与 cBot 的 C# 属性名逐字一致（cTrader CLI 按属性名匹配，不是按中文显示名）。
+# 枚举按整数值传（与 EntryModel 一致）：
+#   Strategy -> StrategyModel: AB=0, A=1, B=2
+#   MaSource -> MovingAverageSourceModel: HigherTimeFrame=0, ChartTimeFrame=1
 CBOT_FIXED_PARAMS = {
-    "LineThickness": "3",
+    "Strategy": "0",
     "ResetTradeLogOnStart": "True",
     "RiskPct": "1",
     "RiskSafetyFactor": "1",
     "StopOffsetTicks": "15",
-    "MinRiskPrice": "5",
-    "NoNewOrdersStartHour": "4",
-    "ForceCloseHour": "4",
-    "ForceCloseMinute": "30",
-    "ResumeTradingHour": "8",
-    "FridayNoNewOrdersStartHour": "0",
-    "FridayForceCloseHour": "3",
-    "FridayForceCloseMinute": "30",
+    "MinStopLossPips": "5",
+    "SaturdayForceCloseHour": "5",
+    "SaturdayForceCloseMinute": "30",
+    "ShowMovingAverages": "True",
+    "MaSource": "0",
+    "MaFastPeriod": "13",
+    "MaSlowPeriod": "55",
+    "MaTimeFrameMinutes": "120",
     "ShowDebugLogs": "False",
     "IsDebug": "False",
 }
