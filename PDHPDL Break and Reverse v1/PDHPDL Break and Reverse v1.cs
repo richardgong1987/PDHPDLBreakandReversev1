@@ -50,7 +50,23 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("输出文件名", DefaultValue = "pdhpdl-trades.csv")]
     public string FileName { get; set; }
 
+    [Parameter("显示均线 (RMA 1 + RMA 2)", DefaultValue = true, Group = "均线")]
+    public bool ShowMovingAverages { get; set; }
+
+    [Parameter("均线来源", DefaultValue = MovingAverageSourceModel.HigherTimeFrame, Group = "均线")]
+    public MovingAverageSourceModel MaSource { get; set; }
+
+    [Parameter("均线周期 RMA 1 (快)", DefaultValue = 13, MinValue = 1, Group = "均线")]
+    public int MaFastPeriod { get; set; }
+
+    [Parameter("均线周期 RMA 2 (慢)", DefaultValue = 55, MinValue = 1, Group = "均线")]
+    public int MaSlowPeriod { get; set; }
+
+    [Parameter("均线周期(分钟)", DefaultValue = 120, MinValue = 1, Group = "均线")]
+    public int MaTimeFrameMinutes { get; set; }
+
     private PdhpdlLines _pdhpdlLines;
+    private DualRmaLines _movingAverageLines;
     private PdhpdlSignalDetector _signalDetector;
     private PdhpdlSignalMarkers _signalMarkers;
     private PdhpdlOrderExecutor _orderExecutor;
@@ -67,6 +83,11 @@ public class PDHPDLBreakandReversev1 : Robot {
         _pdhpdlLines = new PdhpdlLines(Chart, MarketData, SymbolName, Bars, 3);
         _pdhpdlLines.Draw();
 
+        if (ShowMovingAverages) {
+            _movingAverageLines = new DualRmaLines(Chart, MarketData, Indicators, SymbolName, Bars, BuildMovingAverageConfig());
+            _movingAverageLines.Draw();
+        }
+
         Bars dailyBars = MarketData.GetBars(TimeFrame.Daily, SymbolName);
         _signalDetector = new PdhpdlSignalDetector(Bars, dailyBars);
         _signalMarkers = new PdhpdlSignalMarkers(Chart, Symbol.TickSize);
@@ -78,6 +99,12 @@ public class PDHPDLBreakandReversev1 : Robot {
         var planner = new PdhpdlOrderPlanner(new CAlgoSymbolModel(Symbol), riskGuard, StopOffsetTicks, TakeProfitR, EntryModel, RiskPct);
         _orderExecutor = new PdhpdlOrderExecutor(this, SymbolName, Bars.TimeFrame.ToString(), planner, riskGuard, _csvLogger);
         Print("*****PDH/PDL Break and Reverse started.");
+    }
+
+    private DualRmaLinesConfigModel BuildMovingAverageConfig() {
+        return new DualRmaLinesConfigModel {
+            Source = MaSource, FastPeriod = MaFastPeriod, SlowPeriod = MaSlowPeriod, HigherTimeFrameMinutes = MaTimeFrameMinutes
+        };
     }
 
     private PdhpdlRiskGuardConfigModel BuildRiskGuardConfig() {
@@ -92,6 +119,7 @@ public class PDHPDLBreakandReversev1 : Robot {
 
     protected override void OnBar() {
         _pdhpdlLines.Draw();
+        _movingAverageLines?.Draw();
         _orderExecutor?.ManageOpenPositions();
         HandleClosedBarSignal();
     }
@@ -130,5 +158,6 @@ public class PDHPDLBreakandReversev1 : Robot {
         _orderExecutor?.Stop();
         _signalMarkers?.Clear();
         _pdhpdlLines?.Clear();
+        _movingAverageLines?.Clear();
     }
 }
