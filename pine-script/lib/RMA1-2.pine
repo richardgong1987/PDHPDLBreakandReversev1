@@ -1,23 +1,11 @@
 //@version=6
 indicator(title = 'MA 1 + MA 2', shorttitle = 'MA 1 + MA 2', overlay = true)
 
-ma_1_setting = '2 Hours'
-
-ma_2_setting = '2 Hours'
-
 ma_1_normal = ta.rma(close, 13)
-
-ma_1_timeframe = request.security(syminfo.tickerid, '120', ta.rma(close, 13))
-
-ma_1 =  ma_1_timeframe
-
+ma_1 = request.security(syminfo.tickerid, '120', ta.rma(close, 13))
 
 ma_2_normal = ta.rma(close, 55)
-
-ma_2_timeframe = request.security(syminfo.tickerid, '120', ta.rma(close, 55))
-
-ma_2 =  ma_2_timeframe
+ma_2 = request.security(syminfo.tickerid, '120', ta.rma(close, 55))
 
 plot( ma_1, title = 'MA 1', color = color.blue, linewidth = 1)
-
 plot( ma_2, title = 'MA 2', color = color.red, linewidth = 1)
