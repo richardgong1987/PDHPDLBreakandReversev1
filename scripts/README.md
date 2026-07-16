@@ -78,6 +78,15 @@ cp scripts/.env.example scripts/.env        # 首次：生成开发配置并填�
 
 例：`XAUUSD-h1-Close-0-2-20260601-20260630.csv`。文件写到 `~/Documents/`（由 cBot 自身的日志器决定路径）。
 
+每条回测还会额外生成一个 **回测报告 JSON**（`--report-json`），与 CSV **同目录、同名**，
+只把后缀换成 `.json`：
+
+```
+~/Documents/XAUUSD-h1-Close-0-2-20260601-20260630.json
+```
+
+这样每条回测的 CSV（交易明细）和 report.json（回测统计）成对存放、文件名一一对应。
+
 ## 可调项
 
 环境相关（在 `.env` / `.env-prod` 里改）：

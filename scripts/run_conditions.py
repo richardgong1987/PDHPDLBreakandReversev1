@@ -18,6 +18,10 @@
 
     --FileName="XAUUSD-h1-Close-0-2-20260601-20260630.csv"
 
+同时把回测报告写到与 CSV 同目录、同名（后缀换成 .json）的文件：
+
+    --report-json="~/Documents/XAUUSD-h1-Close-0-2-20260601-20260630.json"
+
 任务按顺序执行：等当前回测跑完，再执行下一条。
 """
 
@@ -39,6 +43,10 @@ from numbers_parser import Document
 SCRIPTS_DIR = Path(__file__).resolve().parent
 DEFAULT_ENV_FILE = SCRIPTS_DIR / ".env"
 CONDITIONS_FILE = SCRIPTS_DIR / "backtester/conditions.numbers"
+
+# cBot 把交易 CSV 写到「我的文档」(~/Documents)。回测报告 --report-json 与 CSV 同目录、
+# 同名（仅把 .csv 后缀换成 .json），方便一条回测的 CSV 和 report 成对存放、互相对应。
+CBOT_OUTPUT_DIR = Path.home() / "Documents"
 
 # .env 必填项；DATA_MODE / BALANCE 选填，未填用默认值
 REQUIRED_ENV_KEYS = ["AUTH_TOKEN", "CTRADER_BIN", "ALGO_PATH", "CTID", "ACCOUNT"]
@@ -165,6 +173,11 @@ class ConditionRow:
             f"{to_compact_date(self.start_date)}-{to_compact_date(self.end_date)}.csv"
         )
 
+    @property
+    def report_file_name(self):
+        """回测报告文件名：与 CSV 同名，只把 .csv 换成 .json。"""
+        return self.file_name[:-len(".csv")] + ".json"
+
 
 def format_backtest_date(value, column_name):
     """把计划表里的日期单元格格式化成 cTrader 需要的 DD/MM/YYYY。
@@ -272,6 +285,7 @@ def build_command(task, config):
     command.append(f"--EntryModel={task.entry_model_code}")
     command.append(f"--TakeProfitR={task.take_profit_text}")
     command.append(f"--FileName={task.file_name}")
+    command.append(f"--report-json={CBOT_OUTPUT_DIR / task.report_file_name}")
     return command
 
 
