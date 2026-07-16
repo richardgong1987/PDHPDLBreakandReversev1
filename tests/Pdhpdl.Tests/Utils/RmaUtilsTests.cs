@@ -1,14 +1,15 @@
+using System;
 using cAlgo.Robots;
 using Xunit;
 
 namespace Pdhpdl.Tests.Utils {
     public class RmaUtilsTests {
         [Theory]
-        [InlineData(99.0, 100.0, true)]
-        [InlineData(100.0, 100.0, false)]
-        [InlineData(101.0, 100.0, false)]
-        public void identifies_when_fast_rma_is_below_slow_rma(double fastRma, double slowRma, bool expected) {
-            Assert.Equal(expected, RmaUtils.IsFastBelowSlow(fastRma, slowRma));
+        [InlineData(99.0, 100.0, RmaPositionModel.FastBelowSlow)]
+        [InlineData(100.0, 100.0, RmaPositionModel.Equal)]
+        [InlineData(101.0, 100.0, RmaPositionModel.FastAboveSlow)]
+        public void returns_fast_rma_position_relative_to_slow_rma(double fastRma, double slowRma, RmaPositionModel expected) {
+            Assert.Equal(expected, RmaUtils.GetFastToSlowPosition(fastRma, slowRma));
         }
 
         [Theory]
@@ -16,8 +17,8 @@ namespace Pdhpdl.Tests.Utils {
         [InlineData(100.0, double.NaN)]
         [InlineData(double.PositiveInfinity, 100.0)]
         [InlineData(100.0, double.NegativeInfinity)]
-        public void returns_false_for_invalid_values(double fastRma, double slowRma) {
-            Assert.False(RmaUtils.IsFastBelowSlow(fastRma, slowRma));
+        public void rejects_invalid_values(double fastRma, double slowRma) {
+            Assert.Throws<ArgumentException>(() => RmaUtils.GetFastToSlowPosition(fastRma, slowRma));
         }
     }
 }

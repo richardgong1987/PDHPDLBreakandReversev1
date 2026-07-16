@@ -47,6 +47,7 @@
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Models\CandleModel.cs" Link="Models\CandleModel.cs" />
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Models\HanJinSignalOptionsModel.cs" Link="Models\HanJinSignalOptionsModel.cs" />
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Models\HanJinSignalScanModel.cs" Link="Models\HanJinSignalScanModel.cs" />
+    <Compile Include="..\..\PDHPDL Break and Reverse v1\Models\RmaPositionModel.cs" Link="Models\RmaPositionModel.cs" />
   </ItemGroup>
 
 </Project>

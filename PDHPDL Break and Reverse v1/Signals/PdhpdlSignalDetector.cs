@@ -91,10 +91,16 @@ public class PdhpdlSignalDetector {
 
     public bool IsShortSignal(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current, CandleModel previous,
         CandleModel earlier) {
-        bool isFastBelowSlow = signalModel.HasRmaData && RmaUtils.IsFastBelowSlow(signalModel.FastRma, signalModel.SlowRma);
-        if (isFastBelowSlow == false) {
+        if (!signalModel.HasRmaData)
             return false;
-        }
+
+        RmaPositionModel rmaPosition = RmaUtils.GetFastToSlowPosition(signalModel.FastRma, signalModel.SlowRma);
+
+        /**
+         * 蓝线在上面，作多。但这里是专门作空的。所以就跳过
+         */
+        if (rmaPosition == RmaPositionModel.FastAboveSlow)
+            return false;
 
         /*
             一. 假突破/反转
@@ -258,11 +264,18 @@ public class PdhpdlSignalDetector {
     // Long: the qualifying bar or three-bar pattern touches a level, then the confirmation bar closes above it.
     public bool IsLongSignal(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current, CandleModel previous,
         CandleModel earlier) {
-        bool isFastBelowSlow = signalModel.HasRmaData && RmaUtils.IsFastBelowSlow(signalModel.FastRma, signalModel.SlowRma);
-        // 蓝线在小面，作空，但这里是作多的。所以。直接跳过。
-        if (isFastBelowSlow) {
+        if (!signalModel.HasRmaData)
+            return false;
+
+        RmaPositionModel rmaPosition = RmaUtils.GetFastToSlowPosition(signalModel.FastRma, signalModel.SlowRma);
+
+        /**
+         * 蓝线在下面，代表，只作空。这但这里都是作多的，所以就不走这里的逻辑了。
+         */
+        if (rmaPosition != RmaPositionModel.FastAboveSlow) {
             return false;
         }
+
 
         /**
          一. 假突破/反转
