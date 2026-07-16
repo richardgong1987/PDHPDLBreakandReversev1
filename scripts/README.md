@@ -127,8 +127,8 @@ directory, summarizes them into a table with `pandas`, and draws two stacked bar
   glance which parameter set / date range it is.
 
 The chart grows as the batch progresses — you can open it mid-run to see current results. The
-summary logic lives in `report_summary.py`, which can also be run standalone to refresh the
-image manually (without re-running backtests):
+summary logic lives in the `summary/` package; `report_summary.py` is a thin CLI over it that
+can be run standalone to refresh the image manually (without re-running backtests):
 
 ```bash
 python3 scripts/report_summary.py                 # scans ~/Documents by default
@@ -187,17 +187,22 @@ modules together); the actual logic is split by responsibility into the `backtes
 each part doing one thing and decoupled from the others:
 
 ```
-run_conditions.py     CLI entry point (composition root: parse_args + main)
-report_summary.py     summarize report JSONs, draw final_report.png (runnable standalone)
-backtest/
+run_conditions.py     Backtest CLI entry point (composition root: parse_args + main)
+report_summary.py     Chart CLI entry point (refresh final_report.png standalone)
+backtest/             Running backtests
   config.py           read .env, produce Config (account/paths/credentials/capital/data mode)
   plan.py             read conditions.numbers, produce backtest tasks (ConditionRow)
   command.py          task + config -> cTrader CLI command (includes CBOT_FIXED_PARAMS)
   runner.py           run tasks sequentially/in parallel, refresh the chart after each
+summary/              Summarizing results
+  metrics.py          read report JSONs -> DataFrame (win rate / net profit)   [data]
+  chart.py            DataFrame -> two-panel bar chart PNG                       [presentation]
+  report.py           scan dir -> summarize -> render (public: update_final_report)
 ```
 
-Dependency direction: `run_conditions → runner → command`, and `run_conditions → config /
-plan`. `config` / `plan` / `command` are leaf modules and do not depend back on runner.
+Dependency direction: `run_conditions → backtest.runner → {backtest.command, summary}`, and
+`report_summary → summary`. Within `summary`: `report → {metrics, chart}`. Leaf modules
+(`config` / `plan` / `command` / `metrics` / `chart`) don't depend back on their orchestrators.
 
 ## Key design notes
 
