@@ -129,7 +129,7 @@ python3 scripts/report_summary.py --dir <目录>    # 指定报告目录
 - `BALANCE`（初始资金，默认 `10000`）
 - `DATA_MODE`（回测数据模式，默认 `m1`；可选 `open`、`m1-csv`）
 
-策略参数（在 `run_conditions.py` 的 `CBOT_FIXED_PARAMS` 里改）：
+策略参数（在 `backtest/command.py` 的 `CBOT_FIXED_PARAMS` 里改）：
 
 这里的 key 必须与 cBot 的 C# 属性名逐字一致（cTrader CLI 按属性名匹配，不是按中文显示名）。
 当前固定项与 cBot 参数一一对应：
@@ -158,6 +158,24 @@ python3 scripts/report_summary.py --dir <目录>    # 指定报告目录
 
 未列入的 cBot 参数（如 `NewsBlackoutWindows`）不传，回测时走 cBot 自身默认值；需要固定时再加进
 `CBOT_FIXED_PARAMS`。`EntryModel`、`TakeProfitR`、`FileName` 由计划表逐行覆盖，不放在这里。
+
+## 代码结构
+
+命令行入口 `run_conditions.py` 只负责“组合”（解析参数 + 装配各模块），具体逻辑按职责拆在
+`backtest/` 包里，各管一件事、互不耦合：
+
+```
+run_conditions.py     命令行入口（组合根：parse_args + main）
+report_summary.py     汇总报告 JSON、画 final_report.png（可单独运行）
+backtest/
+  config.py           读 .env，产出 Config（账户/路径/鉴权/回测资金/数据模式）
+  plan.py             读 conditions.numbers，产出回测任务 ConditionRow
+  command.py          任务 + 配置 -> cTrader CLI 命令（含 CBOT_FIXED_PARAMS）
+  runner.py           串行/并发执行任务，每条完成后刷新汇总图
+```
+
+依赖方向：`run_conditions → runner → command`，以及 `run_conditions → config / plan`。
+`config` / `plan` / `command` 是叶子模块，不反向依赖 runner。
 
 ## 关键设计说明
 
