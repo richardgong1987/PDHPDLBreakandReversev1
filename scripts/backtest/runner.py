@@ -8,7 +8,7 @@ import os
 import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-import report_summary
+from summary import update_final_report
 
 from . import command
 
@@ -32,7 +32,7 @@ def run_task(task, index, total, config):
 def refresh_final_report():
     """每条任务跑完后，用目录里现有的报告刷新汇总图。图表失败不应中断回测批次。"""
     try:
-        image_path = report_summary.update_final_report(command.CBOT_OUTPUT_DIR)
+        image_path = update_final_report(command.CBOT_OUTPUT_DIR)
     except Exception as error:  # noqa: BLE001 — 汇总图是附带产物，任何异常都不该拖垮回测
         print(f"*****汇总图刷新失败（已跳过）：{error}", flush=True)
         return
