@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using cAlgo.API;
-using cAlgo.API.Indicators;
 using cAlgo.API.Internals;
 
 namespace cAlgo.Robots;
@@ -30,27 +29,22 @@ public class DualRmaLines {
     private readonly Chart _chart;
     private readonly Bars _chartBars;
     private readonly Bars _sourceBars;
-    private readonly MovingAverage _fastMa;
-    private readonly MovingAverage _slowMa;
+    private readonly IndicatorDataSeries _fastValues;
+    private readonly IndicatorDataSeries _slowValues;
     private readonly MovingAverageSourceModel _source;
     private readonly int _thickness;
     private readonly List<string> _objectNames = new();
 
     private DateTime _lastChartOpenTime = DateTime.MinValue;
 
-    public DualRmaLines(Chart chart, MarketData marketData, IIndicatorsAccessor indicators, string symbolName,
-        Bars chartBars, DualRmaLinesConfigModel config) {
+    public DualRmaLines(Chart chart, Bars chartBars, DualRmaSeries rmaSeries, int thickness) {
         _chart = chart;
         _chartBars = chartBars;
-        _source = config.Source;
-        _thickness = config.Thickness;
-
-        _sourceBars = config.Source == MovingAverageSourceModel.ChartTimeFrame
-            ? chartBars
-            : marketData.GetBars(ToTimeFrame(config.HigherTimeFrameMinutes), symbolName);
-
-        _fastMa = indicators.MovingAverage(_sourceBars.ClosePrices, config.FastPeriod, MovingAverageType.WilderSmoothing);
-        _slowMa = indicators.MovingAverage(_sourceBars.ClosePrices, config.SlowPeriod, MovingAverageType.WilderSmoothing);
+        _source = rmaSeries.Source;
+        _sourceBars = rmaSeries.SourceBars;
+        _fastValues = rmaSeries.FastValues;
+        _slowValues = rmaSeries.SlowValues;
+        _thickness = thickness;
     }
 
     // Redraw once per chart bar so the higher-timeframe line's held tail keeps
@@ -71,11 +65,11 @@ public class DualRmaLines {
         int startIndex = Math.Max(1, _sourceBars.Count - MaxSegmentsPerLine);
 
         if (_source == MovingAverageSourceModel.ChartTimeFrame) {
-            DrawSmoothLine("FAST", startIndex, _fastMa, FastColor);
-            DrawSmoothLine("SLOW", startIndex, _slowMa, SlowColor);
+            DrawSmoothLine("FAST", startIndex, _fastValues, FastColor);
+            DrawSmoothLine("SLOW", startIndex, _slowValues, SlowColor);
         } else {
-            DrawSteppedLine("FAST", startIndex, _fastMa, FastColor);
-            DrawSteppedLine("SLOW", startIndex, _slowMa, SlowColor);
+            DrawSteppedLine("FAST", startIndex, _fastValues, FastColor);
+            DrawSteppedLine("SLOW", startIndex, _slowValues, SlowColor);
         }
     }
 
@@ -88,10 +82,10 @@ public class DualRmaLines {
     }
 
     // Chart-timeframe mode: join consecutive per-bar averages into one line.
-    private void DrawSmoothLine(string lineKey, int startIndex, MovingAverage movingAverage, Color color) {
+    private void DrawSmoothLine(string lineKey, int startIndex, IndicatorDataSeries values, Color color) {
         for (int i = startIndex; i < _sourceBars.Count - 1; i++) {
-            double fromValue = movingAverage.Result[i];
-            double toValue = movingAverage.Result[i + 1];
+            double fromValue = values[i];
+            double toValue = values[i + 1];
 
             if (double.IsNaN(fromValue) || double.IsNaN(toValue))
                 continue;
@@ -105,12 +99,12 @@ public class DualRmaLines {
     // higher-timeframe average value is only known once its bar closes, so it is
     // held flat from that close until the next close, then steps to the new
     // value. The last confirmed value is held out to the current chart time.
-    private void DrawSteppedLine(string lineKey, int startIndex, MovingAverage movingAverage, Color color) {
+    private void DrawSteppedLine(string lineKey, int startIndex, IndicatorDataSeries values, Color color) {
         DateTime currentTime = _chartBars.OpenTimes[_chartBars.Count - 1];
         int lastConfirmedIndex = _sourceBars.Count - 2;
 
         for (int i = startIndex; i <= lastConfirmedIndex; i++) {
-            double value = movingAverage.Result[i];
+            double value = values[i];
 
             if (double.IsNaN(value))
                 continue;
@@ -123,17 +117,17 @@ public class DualRmaLines {
 
             DrawSegment($"{Prefix}{lineKey}_H_{holdStart:yyyyMMddHHmm}", holdStart, value, holdEnd, value, color);
 
-            DrawStepConnector(lineKey, startIndex, i, holdStart, value, movingAverage, color);
+            DrawStepConnector(lineKey, startIndex, i, holdStart, value, values, color);
         }
     }
 
     // Vertical jump between the previous held value and the current one.
     private void DrawStepConnector(string lineKey, int startIndex, int index, DateTime stepTime, double value,
-        MovingAverage movingAverage, Color color) {
+        IndicatorDataSeries values, Color color) {
         if (index - 1 < startIndex)
             return;
 
-        double previousValue = movingAverage.Result[index - 1];
+        double previousValue = values[index - 1];
 
         if (double.IsNaN(previousValue))
             return;
@@ -147,28 +141,4 @@ public class DualRmaLines {
         _objectNames.Add(name);
     }
 
-    private static TimeFrame ToTimeFrame(int minutes) {
-        return minutes switch {
-            1 => TimeFrame.Minute,
-            2 => TimeFrame.Minute2,
-            3 => TimeFrame.Minute3,
-            4 => TimeFrame.Minute4,
-            5 => TimeFrame.Minute5,
-            10 => TimeFrame.Minute10,
-            15 => TimeFrame.Minute15,
-            20 => TimeFrame.Minute20,
-            30 => TimeFrame.Minute30,
-            45 => TimeFrame.Minute45,
-            60 => TimeFrame.Hour,
-            120 => TimeFrame.Hour2,
-            180 => TimeFrame.Hour3,
-            240 => TimeFrame.Hour4,
-            360 => TimeFrame.Hour6,
-            480 => TimeFrame.Hour8,
-            720 => TimeFrame.Hour12,
-            1440 => TimeFrame.Daily,
-            _ => throw new ArgumentOutOfRangeException(nameof(minutes), minutes,
-                "Unsupported higher-timeframe minutes for DualRmaLines.")
-        };
-    }
 }

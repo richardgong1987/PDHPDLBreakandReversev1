@@ -8,15 +8,17 @@ namespace cAlgo.Robots;
 public class PdhpdlSignalDetector {
     private readonly Bars _chartBars;
     private readonly Bars _dailyBars;
+    private readonly DualRmaSeries _rmaSeries;
 
-    public PdhpdlSignalDetector(Bars chartBars, Bars dailyBars) {
+    public PdhpdlSignalDetector(Bars chartBars, Bars dailyBars, DualRmaSeries rmaSeries) {
         _chartBars = chartBars;
         _dailyBars = dailyBars;
+        _rmaSeries = rmaSeries;
     }
 
-    public PdhpdlSignalModel DetectOnClosedBar(StrategyModel Strategy) {
+    public PdhpdlSignalModel DetectOnClosedBar(StrategyModel strategy) {
         PdhpdlSignalModel signalModel = new();
-        signalModel.Strategy = Strategy;
+        signalModel.Strategy = strategy;
 
         if (_chartBars.Count < 2 || !TryGetPreviousDayLevels(out double pdh, out double pdl))
             return signalModel;
@@ -53,6 +55,7 @@ public class PdhpdlSignalDetector {
         signalModel.Low = low;
         signalModel.Pdh = pdh;
         signalModel.Pdl = pdl;
+        FillRmaData(signalModel);
 
         signalModel.IsShortSignal = IsShortSignal(signalModel, scanResult, current, previous, earlier);
         signalModel.IsLongSignal = IsLongSignal(signalModel, scanResult, current, previous, earlier);
@@ -73,8 +76,26 @@ public class PdhpdlSignalDetector {
         return true;
     }
 
-    public static bool IsShortSignal(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current,
-        CandleModel previous, CandleModel earlier) {
+    private void FillRmaData(PdhpdlSignalModel signalModel) {
+        signalModel.FastRma = double.NaN;
+        signalModel.SlowRma = double.NaN;
+
+        if (!_rmaSeries.TryGetLastConfirmedValues(out DateTime sourceBarTime, out double fastRma, out double slowRma))
+            return;
+
+        signalModel.HasRmaData = true;
+        signalModel.RmaSourceBarTime = sourceBarTime;
+        signalModel.FastRma = fastRma;
+        signalModel.SlowRma = slowRma;
+    }
+
+    public bool IsShortSignal(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current, CandleModel previous,
+        CandleModel earlier) {
+        bool isFastBelowSlow = signalModel.HasRmaData && RmaUtils.IsFastBelowSlow(signalModel.FastRma, signalModel.SlowRma);
+        if (isFastBelowSlow == false) {
+            return false;
+        }
+
         /*
             一. 假突破/反转
 
@@ -235,8 +256,14 @@ public class PdhpdlSignalDetector {
     }
 
     // Long: the qualifying bar or three-bar pattern touches a level, then the confirmation bar closes above it.
-    public static bool IsLongSignal(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current,
-        CandleModel previous, CandleModel earlier) {
+    public bool IsLongSignal(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current, CandleModel previous,
+        CandleModel earlier) {
+        bool isFastBelowSlow = signalModel.HasRmaData && RmaUtils.IsFastBelowSlow(signalModel.FastRma, signalModel.SlowRma);
+        // 蓝线在小面，作空，但这里是作多的。所以。直接跳过。
+        if (isFastBelowSlow) {
+            return false;
+        }
+
         /**
          一. 假突破/反转
             PDL开仓条件 （多单）

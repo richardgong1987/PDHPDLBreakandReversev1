@@ -66,6 +66,7 @@ public class PDHPDLBreakandReversev1 : Robot {
     public int MaTimeFrameMinutes { get; set; }
 
     private PdhpdlLines _pdhpdlLines;
+    private DualRmaSeries _rmaSeries;
     private DualRmaLines _movingAverageLines;
     private PdhpdlSignalDetector _signalDetector;
     private PdhpdlSignalMarkers _signalMarkers;
@@ -83,13 +84,16 @@ public class PDHPDLBreakandReversev1 : Robot {
         _pdhpdlLines = new PdhpdlLines(Chart, MarketData, SymbolName, Bars, 3);
         _pdhpdlLines.Draw();
 
+        DualRmaLinesConfigModel rmaConfig = BuildMovingAverageConfig();
+        _rmaSeries = new DualRmaSeries(MarketData, Indicators, SymbolName, Bars, rmaConfig);
+
         if (ShowMovingAverages) {
-            _movingAverageLines = new DualRmaLines(Chart, MarketData, Indicators, SymbolName, Bars, BuildMovingAverageConfig());
+            _movingAverageLines = new DualRmaLines(Chart, Bars, _rmaSeries, rmaConfig.Thickness);
             _movingAverageLines.Draw();
         }
 
         Bars dailyBars = MarketData.GetBars(TimeFrame.Daily, SymbolName);
-        _signalDetector = new PdhpdlSignalDetector(Bars, dailyBars);
+        _signalDetector = new PdhpdlSignalDetector(Bars, dailyBars, _rmaSeries);
         _signalMarkers = new PdhpdlSignalMarkers(Chart, Symbol.TickSize);
 
         _csvLogger = new PdhpdlTradeCsvLogger(ResetTradeLogOnStart, FileName);

@@ -21,6 +21,14 @@ public class PdhpdlSignalModel {
 
     public double Pdl { get; set; }
 
+    public bool HasRmaData { get; set; }
+
+    public DateTime RmaSourceBarTime { get; set; }
+
+    public double FastRma { get; set; }
+
+    public double SlowRma { get; set; }
+
     public bool IsLongSignal { get; set; }
 
     public bool IsShortSignal { get; set; }
