@@ -28,6 +28,10 @@
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Orders\PdhpdlOrderPlanner.cs" Link="Orders\PdhpdlOrderPlanner.cs" />
   </ItemGroup>
 
+  <ItemGroup Label="Utils under test">
+    <Compile Include="..\..\PDHPDL Break and Reverse v1\Utils\RmaUtils.cs" Link="Utils\RmaUtils.cs" />
+  </ItemGroup>
+
   <!-- Data models the units above depend on. CAlgoSymbolModel is intentionally excluded:
        it is the only Models/ file that references cAlgo.API. -->
   <ItemGroup Label="Models under test">
