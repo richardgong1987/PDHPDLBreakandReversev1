@@ -16,7 +16,6 @@ run_conditions.py 每跑完一条任务就调用 update_final_report()，重新�
 
 import argparse
 import json
-import os
 import sys
 from pathlib import Path
 
@@ -71,19 +70,9 @@ def load_report_frame(output_dir):
     return frame.sort_values("report").reset_index(drop=True)
 
 
-def _short_labels(report_names):
-    """去掉各报告共有的前缀，X 轴只留有区分度的部分（通常是日期区间）。"""
-    if len(report_names) < 2:
-        return list(report_names)
-
-    common_prefix = os.path.commonprefix(list(report_names))
-    cut = common_prefix.rfind("-") + 1  # 只在破折号边界裁剪，避免切碎日期
-    return [name[cut:] for name in report_names]
-
-
 def render_report_chart(frame, image_path):
     """把汇总表画成上下两幅柱状图（净利润 / 胜率）并存成 PNG。"""
-    labels = _short_labels(frame["report"].tolist())
+    labels = frame["report"].tolist()  # 用完整文件名（不含扩展名）当 X 轴标签
     positions = range(len(frame))
     figure_width = max(12.0, len(frame) * 0.45)
 
@@ -101,10 +90,11 @@ def render_report_chart(frame, image_path):
     win_rate_axes.set_ylim(0, 100)
     win_rate_axes.grid(axis="y", linestyle=":", alpha=0.4)
     win_rate_axes.set_xticks(list(positions))
-    win_rate_axes.set_xticklabels(labels, rotation=90, fontsize=6)
+    win_rate_axes.set_xticklabels(labels, rotation=90, fontsize=7)
 
     figure.tight_layout()
-    figure.savefig(image_path, dpi=150)
+    # bbox_inches="tight" 保证竖排的完整文件名标签不会被裁掉
+    figure.savefig(image_path, dpi=150, bbox_inches="tight")
     plt.close(figure)
 
 
