@@ -14,9 +14,9 @@
     结束日期     -> --end     (回测区间结束, DD/MM/YYYY, UTC)
     最大浮盈     -> 暂时不处理
 
-并把 种类/周期/回撤开仓模式/编号/止盈目标 拼成 cBot 日志文件名，例如：
+并把 种类/周期/回撤开仓模式/编号/止盈目标/起始日期/结束日期 拼成 cBot 日志文件名，例如：
 
-    --FileName="XAUUSD-h1-Close-0-2.csv"
+    --FileName="XAUUSD-h1-Close-0-2-20260601-20260630.csv"
 
 任务按顺序执行：等当前回测跑完，再执行下一条。
 """
@@ -161,7 +161,8 @@ class ConditionRow:
     def file_name(self):
         return (
             f"{self.symbol}-{self.period}-{self.entry_model_name}-"
-            f"{self.entry_model_code}-{self.take_profit_text}.csv"
+            f"{self.entry_model_code}-{self.take_profit_text}-"
+            f"{to_compact_date(self.start_date)}-{to_compact_date(self.end_date)}.csv"
         )
 
 
@@ -185,6 +186,11 @@ def format_backtest_date(value, column_name):
             "请按 日/月/年 填写（例如 01/06/2026）。"
         )
     return parsed.strftime("%d/%m/%Y")
+
+
+def to_compact_date(backtest_date):
+    """把 DD/MM/YYYY（传给 CLI 的格式）转成文件名用的紧凑 YYYYMMDD。"""
+    return datetime.strptime(backtest_date, "%d/%m/%Y").strftime("%Y%m%d")
 
 
 def resolve_column_indexes(header_row):

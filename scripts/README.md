@@ -70,13 +70,13 @@ cp scripts/.env.example scripts/.env        # 首次：生成开发配置并填�
 
 ## 输出 CSV 文件名
 
-由计划表字段拼接而成：
+由计划表字段拼接而成（日期用紧凑的 `YYYYMMDD`）：
 
 ```
-<种类>-<周期>-<回撤开仓模式>-<EntryModel值>-<止盈目标>.csv
+<种类>-<周期>-<回撤开仓模式>-<EntryModel值>-<止盈目标>-<起始日期>-<结束日期>.csv
 ```
 
-例：`XAUUSD-h1-Close-0-2.csv`。文件写到 `~/Documents/`（由 cBot 自身的日志器决定路径）。
+例：`XAUUSD-h1-Close-0-2-20260601-20260630.csv`。文件写到 `~/Documents/`（由 cBot 自身的日志器决定路径）。
 
 ## 可调项
 
