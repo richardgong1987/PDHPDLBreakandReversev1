@@ -77,13 +77,12 @@ public static class HanJinSignals26 {
 
     // ── ④ Harami + double Harami — returns (Single, Double) ────────────────────
     public static (SignalSideModel Single, SignalSideModel Double) Harami(CandleModel current, CandleModel previous, CandleModel earlier) {
-        bool parentContainsCurrent = Contains(outer: earlier, inner: previous);
-        bool grandparentContainsParent = Contains(outer: earlier, inner: previous);
+        bool earlierContainsPrevious = Contains(outer: earlier, inner: previous);
+        SignalSideModel single = earlierContainsPrevious ? HaramiDirection(previous, current) : SignalSideModel.None;
 
-        SignalSideModel single = parentContainsCurrent ? HaramiDirection(previous, current) : SignalSideModel.None;
-        SignalSideModel doubleHarami = parentContainsCurrent && grandparentContainsParent
-            ? HaramiDirection(previous, current)
-            : SignalSideModel.None;
+        // HaramiDouble intentionally mirrors HaramiSingle for legacy compatibility; it is not
+        // consumed by the order detector. See docs/design/hanjin-signals-26.md.
+        SignalSideModel doubleHarami = single;
 
         return (single, doubleHarami);
     }

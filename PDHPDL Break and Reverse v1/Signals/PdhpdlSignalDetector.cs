@@ -23,36 +23,20 @@ public class PdhpdlSignalDetector {
         if (_chartBars.Count < 2 || !TryGetPreviousDayLevels(out double pdh, out double pdl))
             return signalModel;
 
-
-        int currentIndex = _chartBars.Count - 2; // last fully closed bar in OnBar()
-        int previousIndex = currentIndex - 1;
-        int earlierIndex = currentIndex - 2;
-
-        CandleModel current = new(open: _chartBars.OpenPrices[currentIndex], high: _chartBars.HighPrices[currentIndex],
-            low: _chartBars.LowPrices[currentIndex], close: _chartBars.ClosePrices[currentIndex]);
-
-        CandleModel previous = new(open: _chartBars.OpenPrices[previousIndex], high: _chartBars.HighPrices[previousIndex],
-            low: _chartBars.LowPrices[previousIndex], close: _chartBars.ClosePrices[previousIndex]);
-
-        CandleModel earlier = new(open: _chartBars.OpenPrices[earlierIndex], high: _chartBars.HighPrices[earlierIndex],
-            low: _chartBars.LowPrices[earlierIndex], close: _chartBars.ClosePrices[earlierIndex]);
+        int closedBarIndex = _chartBars.Count - 2; // last fully closed bar in OnBar()
+        CandleModel current = ReadCandle(closedBarIndex);
+        CandleModel previous = ReadCandle(closedBarIndex - 1);
+        CandleModel earlier = ReadCandle(closedBarIndex - 2);
 
         HanJinSignalScanModel scanResult = HanJinSignals26.Scan(current, previous, earlier);
-
-        int closedBarIndex = _chartBars.Count - 2;
-
-        double high = _chartBars.HighPrices[closedBarIndex];
-        double low = _chartBars.LowPrices[closedBarIndex];
-        double open = _chartBars.OpenPrices[closedBarIndex];
-        double close = _chartBars.ClosePrices[closedBarIndex];
 
         signalModel.HasData = true;
         signalModel.BarIndex = closedBarIndex;
         signalModel.BarTime = _chartBars.OpenTimes[closedBarIndex];
-        signalModel.Open = open;
-        signalModel.Close = close;
-        signalModel.High = high;
-        signalModel.Low = low;
+        signalModel.Open = current.Open;
+        signalModel.Close = current.Close;
+        signalModel.High = current.High;
+        signalModel.Low = current.Low;
         signalModel.Pdh = pdh;
         signalModel.Pdl = pdl;
         FillRmaData(signalModel);
@@ -61,6 +45,11 @@ public class PdhpdlSignalDetector {
         signalModel.IsLongSignal = IsLongSignal(signalModel, scanResult, current, previous, earlier);
 
         return signalModel;
+    }
+
+    private CandleModel ReadCandle(int index) {
+        return new CandleModel(open: _chartBars.OpenPrices[index], high: _chartBars.HighPrices[index],
+            low: _chartBars.LowPrices[index], close: _chartBars.ClosePrices[index]);
     }
 
     private bool TryGetPreviousDayLevels(out double pdh, out double pdl) {
@@ -89,7 +78,7 @@ public class PdhpdlSignalDetector {
         signalModel.SlowRma = slowRma;
     }
 
-    public bool IsShortSignal(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current, CandleModel previous,
+    private bool IsShortSignal(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current, CandleModel previous,
         CandleModel earlier) {
         if (!signalModel.HasRmaData)
             return false;
@@ -262,7 +251,7 @@ public class PdhpdlSignalDetector {
     }
 
     // Long: the qualifying bar or three-bar pattern touches a level, then the confirmation bar closes above it.
-    public bool IsLongSignal(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current, CandleModel previous,
+    private bool IsLongSignal(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current, CandleModel previous,
         CandleModel earlier) {
         if (!signalModel.HasRmaData)
             return false;
