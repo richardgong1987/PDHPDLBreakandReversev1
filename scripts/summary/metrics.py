@@ -11,24 +11,26 @@ from pathlib import Path
 import pandas as pd
 
 # DataFrame 的列（同时也是 read_report_stats 返回 dict 的键）
-REPORT_COLUMNS = ["report", "net_profit", "win_rate", "total_trades"]
+REPORT_COLUMNS = ["report", "net_profit", "win_rate", "total_trades", "starting_capital"]
 
 
 def read_report_stats(report_path):
-    """从单个报告 JSON 读出胜率与净利润；不是回测报告（缺 main/tradeStatistics）就返回 None。"""
+    """从单个报告 JSON 读出胜率、净利润、初始资金；不是回测报告（缺 main/tradeStatistics）就返回 None。"""
     report = _load_json(report_path)
     if report is None or "main" not in report or "tradeStatistics" not in report:
         return None
 
+    main = report["main"]
     statistics = report["tradeStatistics"]
     total_trades = statistics.get("totalTrades", {}).get("all", 0) or 0
     winning_trades = statistics.get("winningTrades", {}).get("all", 0) or 0
 
     return {
         "report": report_path.stem,
-        "net_profit": report["main"].get("netProfit", 0.0),
+        "net_profit": main.get("netProfit", 0.0),
         "win_rate": (winning_trades / total_trades * 100.0) if total_trades else 0.0,
         "total_trades": total_trades,
+        "starting_capital": main.get("startingCapital", 0.0),
     }
 
 

@@ -7,7 +7,7 @@ import csv
 
 from .naming import parse_report_name
 
-CSV_COLUMNS = ["文件名", "起始日期", "结束日期", "周期", "止盈目标", "胜率%", "盈利金额"]
+CSV_COLUMNS = ["文件名", "起始日期", "结束日期", "周期", "止盈目标", "胜率%", "盈利金额", "盈利率%"]
 
 
 def write_summary_csv(frame, csv_path):
@@ -20,8 +20,10 @@ def write_summary_csv(frame, csv_path):
 
 
 def _build_row(row):
-    """一份报告 -> 一行 CSV。row 是 DataFrame 的一行（含 report / win_rate / net_profit）。"""
+    """一份报告 -> 一行 CSV。row 是 DataFrame 的一行（含 report / win_rate / net_profit / starting_capital）。"""
     name = parse_report_name(row.report)
+    # 盈利率 = 盈利金额 / 初始资金 x 100
+    roi = (row.net_profit / row.starting_capital * 100.0) if row.starting_capital else 0.0
     return [
         row.report,
         name.start_date,
@@ -30,4 +32,5 @@ def _build_row(row):
         f"{name.take_profit}R" if name.take_profit else "",
         f"{row.win_rate:.0f}%",
         f"{row.net_profit:.0f}$",
+        f"{roi:.2f}%",
     ]
