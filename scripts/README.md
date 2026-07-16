@@ -60,8 +60,8 @@ makes the runs contend for resources.
 
 The first time you run a given symbol in parallel, it's best to run one with `--jobs 1` first
 to warm the m1 data cache, then scale up — this avoids multiple processes downloading the
-same data at once and conflicting. The summary chart `final_report.png` is refreshed only on
-the main thread, so it's safe under concurrency.
+same data at once and conflicting. The summary chart `final_report.png` is generated once
+after all tasks finish, so concurrency doesn't affect it.
 
 > cTrader's official docs state the backtesting engine supports running multiple backtest
 > processes in parallel, but concurrency is not explicitly endorsed at the CLI level. For a
@@ -117,7 +117,7 @@ as a matched pair with one-to-one filenames.
 
 ## Summary bar chart (final_report.png)
 
-After each task finishes, the script scans **all** backtest report JSONs in the output
+Once **all** tasks finish, the script scans **all** backtest report JSONs in the output
 directory, summarizes them into a table with `pandas`, and draws two stacked bar charts with
 `matplotlib`, exporting to `~/Documents/final_report.png`:
 
@@ -126,9 +126,10 @@ directory, summarizes them into a table with `pandas`, and draws two stacked bar
 - The X-axis label is each report's full filename (without extension), so you can tell at a
   glance which parameter set / date range it is.
 
-The chart grows as the batch progresses — you can open it mid-run to see current results. The
-summary logic lives in the `summary/` package; `report_summary.py` is a thin CLI over it that
-can be run standalone to refresh the image manually (without re-running backtests):
+The chart is generated once at the end of the batch. The summary logic lives in the `summary/`
+package; `report_summary.py` is a thin CLI over it that can be run standalone to (re)generate
+the image manually at any time — e.g. mid-run in another terminal, or without re-running
+backtests:
 
 ```bash
 python3 scripts/report_summary.py                 # scans ~/Documents by default
@@ -193,7 +194,7 @@ backtest/             Running backtests
   config.py           read .env, produce Config (account/paths/credentials/capital/data mode)
   plan.py             read conditions.numbers, produce backtest tasks (ConditionRow)
   command.py          task + config -> cTrader CLI command (includes CBOT_FIXED_PARAMS)
-  runner.py           run tasks sequentially/in parallel, refresh the chart after each
+  runner.py           run tasks sequentially/in parallel; generate the chart once at the end
 summary/              Summarizing results
   metrics.py          read report JSONs -> DataFrame (win rate / net profit)   [data]
   chart.py            DataFrame -> two-panel bar chart PNG                       [presentation]

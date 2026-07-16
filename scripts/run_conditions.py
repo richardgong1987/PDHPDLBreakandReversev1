@@ -22,7 +22,7 @@ from pathlib import Path
 
 from backtest.config import load_config
 from backtest.plan import read_condition_rows
-from backtest.runner import DEFAULT_JOBS, run_tasks
+from backtest.runner import DEFAULT_JOBS, generate_final_report, run_tasks
 
 SCRIPTS_DIR = Path(__file__).resolve().parent
 DEFAULT_ENV_FILE = SCRIPTS_DIR / ".env"
@@ -63,6 +63,9 @@ def main(argv=None):
         print(f"共 {len(tasks)} 条回测任务，将按顺序逐条执行。")
 
     run_tasks(tasks, config, jobs)
+
+    # 全部跑完后，扫描所有报告生成一次汇总图（不再每条任务都刷新一次）
+    generate_final_report()
 
     print("\n全部回测执行完毕。")
     return 0

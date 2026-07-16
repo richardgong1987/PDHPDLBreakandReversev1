@@ -1,7 +1,6 @@
-"""串行 / 并发执行回测任务，并在每条完成后刷新汇总图 final_report.png。
+"""串行 / 并发执行回测任务。汇总图 final_report.png 由调用方在全部跑完后生成一次。
 
-默认逐条串行；用 jobs>1 时用有界线程池并发。子进程等待会释放 GIL，所以线程即可并行；
-汇总图只在主线程刷新，避免多线程同时调用 matplotlib（pyplot 非线程安全）。
+默认逐条串行；用 jobs>1 时用有界线程池并发。子进程等待会释放 GIL，所以线程即可并行。
 """
 
 import os
@@ -29,24 +28,23 @@ def run_task(task, index, total, config):
     return result.returncode
 
 
-def refresh_final_report():
-    """每条任务跑完后，用目录里现有的报告刷新汇总图。图表失败不应中断回测批次。"""
+def generate_final_report():
+    """全部回测结束后，扫描输出目录里的所有报告，生成一次汇总图。图表失败不应中断批次。"""
     try:
         image_path = update_final_report(command.CBOT_OUTPUT_DIR)
     except Exception as error:  # noqa: BLE001 — 汇总图是附带产物，任何异常都不该拖垮回测
-        print(f"*****汇总图刷新失败（已跳过）：{error}", flush=True)
+        print(f"*****汇总图生成失败（已跳过）：{error}", flush=True)
         return
 
     if image_path is not None:
-        print(f"*****汇总图已更新：{image_path}", flush=True)
+        print(f"*****汇总图已生成：{image_path}", flush=True)
 
 
 def run_tasks_sequentially(tasks, config):
-    """逐条串行执行（jobs 1）：保持顺序，每条跑完刷新汇总图。"""
+    """逐条串行执行（jobs 1）：保持顺序。"""
     total = len(tasks)
     for index, task in enumerate(tasks, start=1):
         run_task(task, index, total, config)
-        refresh_final_report()
 
 
 def run_tasks_in_parallel(tasks, config, jobs):
@@ -59,7 +57,6 @@ def run_tasks_in_parallel(tasks, config, jobs):
         ]
         for future in as_completed(futures):
             future.result()  # 让 run_task 里的意外异常冒出来（正常失败只是非零返回码）
-            refresh_final_report()
 
 
 def run_tasks(tasks, config, jobs):
