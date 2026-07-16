@@ -29,15 +29,16 @@ def run_task(task, index, total, config):
 
 
 def generate_final_report():
-    """全部回测结束后，扫描输出目录里的所有报告，生成一次汇总图。图表失败不应中断批次。"""
+    """全部回测结束后，扫描输出目录里的所有报告，生成一次汇总图和汇总表。生成失败不应中断批次。"""
     try:
-        image_path = update_final_report(command.CBOT_OUTPUT_DIR)
-    except Exception as error:  # noqa: BLE001 — 汇总图是附带产物，任何异常都不该拖垮回测
-        print(f"*****汇总图生成失败（已跳过）：{error}", flush=True)
+        outputs = update_final_report(command.CBOT_OUTPUT_DIR)
+    except Exception as error:  # noqa: BLE001 — 汇总产物是附带结果，任何异常都不该拖垮回测
+        print(f"*****汇总报告生成失败（已跳过）：{error}", flush=True)
         return
 
-    if image_path is not None:
-        print(f"*****汇总图已生成：{image_path}", flush=True)
+    if outputs is not None:
+        print(f"*****汇总图已生成：{outputs.chart_path}", flush=True)
+        print(f"*****汇总表已生成：{outputs.csv_path}", flush=True)
 
 
 def run_tasks_sequentially(tasks, config):

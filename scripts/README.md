@@ -115,20 +115,32 @@ directory with the same name** as the CSV, only with the extension changed to `.
 This way each run's CSV (trade details) and report.json (backtest statistics) sit together
 as a matched pair with one-to-one filenames.
 
-## Summary bar chart (final_report.png)
+## Summary outputs (final_report.png + final_summary_report.csv)
 
 Once **all** tasks finish, the script scans **all** backtest report JSONs in the output
-directory, summarizes them into a table with `pandas`, and draws two stacked bar charts with
-`matplotlib`, exporting to `~/Documents/final_report.png`:
+directory, summarizes them with `pandas`, and writes two files to `~/Documents/`:
+
+**1. `final_report.png`** — two stacked bar charts drawn with `matplotlib`:
 
 - **Top chart**: net profit per report (`main.netProfit`), green for profit, red for loss.
 - **Bottom chart**: win rate per report (`winningTrades.all / totalTrades.all`).
 - The X-axis label is each report's full filename (without extension), so you can tell at a
   glance which parameter set / date range it is.
 
-The chart is generated once at the end of the batch. The summary logic lives in the `summary/`
+**2. `final_summary_report.csv`** — one row per report, columns:
+
+```
+文件名, 起始日期, 结束日期, 周期, 止盈目标, 胜率%, 盈利金额
+XAUUSD-m5-Close-0-2-20240101-20240131, 20240101, 20240131, m5, 2R, 29%, -509$
+```
+
+Only `胜率%` (win rate) and `盈利金额` (net profit) come from the report JSON; the rest
+(filename, start/end dates, period, take-profit) are parsed straight from the report filename.
+Written with a UTF-8 BOM so the Chinese headers open correctly in Excel.
+
+Both are generated once at the end of the batch. The summary logic lives in the `summary/`
 package; `report_summary.py` is a thin CLI over it that can be run standalone to (re)generate
-the image manually at any time — e.g. mid-run in another terminal, or without re-running
+both files manually at any time — e.g. mid-run in another terminal, or without re-running
 backtests:
 
 ```bash
@@ -136,8 +148,8 @@ python3 scripts/report_summary.py                 # scans ~/Documents by default
 python3 scripts/report_summary.py --dir <dir>     # specify the report directory
 ```
 
-> Note: the chart summarizes **all** report JSONs in the directory, including leftovers from
-> previous runs. To view only one batch, clear the old `*.json` from the directory first.
+> Note: the summary covers **all** report JSONs in the directory, including leftovers from
+> previous runs. To summarize only one batch, clear the old `*.json` from the directory first.
 
 ## Tunables
 
@@ -197,13 +209,16 @@ backtest/             Running backtests
   runner.py           run tasks sequentially/in parallel; generate the chart once at the end
 summary/              Summarizing results
   metrics.py          read report JSONs -> DataFrame (win rate / net profit)   [data]
+  naming.py           parse a report filename -> its fields (symbol/period/…)  [data]
   chart.py            DataFrame -> two-panel bar chart PNG                       [presentation]
-  report.py           scan dir -> summarize -> render (public: update_final_report)
+  table.py            DataFrame -> final_summary_report.csv                      [presentation]
+  report.py           scan dir -> summarize -> chart + csv (public: update_final_report)
 ```
 
 Dependency direction: `run_conditions → backtest.runner → {backtest.command, summary}`, and
-`report_summary → summary`. Within `summary`: `report → {metrics, chart}`. Leaf modules
-(`config` / `plan` / `command` / `metrics` / `chart`) don't depend back on their orchestrators.
+`report_summary → summary`. Within `summary`: `report → {metrics, chart, table}` and
+`table → naming`. Leaf modules (`config` / `plan` / `command` / `metrics` / `naming` /
+`chart` / `table`) don't depend back on their orchestrators.
 
 ## Key design notes
 
