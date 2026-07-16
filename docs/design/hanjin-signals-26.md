@@ -38,8 +38,8 @@ side (Buy / Sell / None).
 - **Harami breakout**: the earlier parent bar (`[2]`) must strictly contain the previous
   inside bar (`[1]`) by both wick range and body range. The current confirmation bar (`[0]`)
   then determines the side from its **close**:
-  - `current.Close > previous.High` → Buy (`孕线上破`).
-  - `current.Close < previous.Low` → Sell (`孕线下破`).
+  - `current.Close > previous.High` → Buy (Harami break-up).
+  - `current.Close < previous.Low` → Sell (Harami break-down).
   - Otherwise → None.
   The body direction of either the parent bar or the inside bar is irrelevant. The current
   bar does not have to be contained because it is the breakout confirmation bar.

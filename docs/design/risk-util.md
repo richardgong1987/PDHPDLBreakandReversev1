@@ -193,4 +193,5 @@ The CSV at `~/Documents/pdhpdl-trades.csv` is a single fixed, append-only file. 
 every backtest run stacks another full copy of the (deterministic) trades — the raw file grew
 to ~8 copies, mixing pre- and post-fix runs and making it unreadable. `PdhpdlTradeCsvLogger`
 now overwrites the file with a fresh header at construction when `resetOnStart` is true (the
-`启动时清空交易记录CSV` parameter, default on), so the file always reflects the latest run.
+`启动时清空交易记录CSV` / "reset trade log on start" parameter, default on), so the file always
+reflects the latest run.
