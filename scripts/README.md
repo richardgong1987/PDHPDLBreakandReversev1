@@ -130,11 +130,13 @@ directory, summarizes them with `pandas`, and writes two files to `~/Documents/`
 **2. `final_summary_report.csv`** — one row per report, columns:
 
 ```
-文件名, 起始日期, 结束日期, 周期, 止盈目标, 胜率%, 盈利金额
-XAUUSD-m5-Close-0-2-20240101-20240131, 20240101, 20240131, m5, 2R, 29%, -509$
+文件名, 起始日期, 结束日期, 周期, 止盈目标, 胜率%, 盈利金额, 盈利率%
+XAUUSD-m5-Close-0-2-20240101-20240131, 20240101, 20240131, m5, 2R, 29%, -509$, -5.09%
 ```
 
-Only `胜率%` (win rate) and `盈利金额` (net profit) come from the report JSON; the rest
+`胜率%` (win rate), `盈利金额` (net profit) and `盈利率%` (return on capital) come from the
+report JSON — win rate = `winningTrades.all / totalTrades.all`, and `盈利率% = netProfit /
+startingCapital × 100` (starting capital read from each report, `10000` by default). The rest
 (filename, start/end dates, period, take-profit) are parsed straight from the report filename.
 Written with a UTF-8 BOM so the Chinese headers open correctly in Excel.
 
