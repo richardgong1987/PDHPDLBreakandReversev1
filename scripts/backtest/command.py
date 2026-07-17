@@ -50,7 +50,6 @@ def build_command(task, config):
         f"--end={task.end_date}",
         f"--data-mode={config.data_mode}",
         f"--balance={config.balance}",
-        "--commission=30",
         "--environment-variables",
         "--full-access",
         # backtest 跑完后不会自己退出（进程会空转），--exit-on-stop 让它结束，
