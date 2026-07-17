@@ -31,6 +31,6 @@ def _build_row(row):
         name.period,
         f"{name.take_profit}R" if name.take_profit else "",
         f"{row.win_rate:.0f}%",
-        f"{row.net_profit:.0f}$",
+        f"{row.net_profit}$",
         f"{roi:.2f}%",
     ]
