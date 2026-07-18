@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
 
-cd /Users/hg/cAlgo/Sources/Robots/PDHPDL-Break-and-Reverse-v1/scripts/
+cd "$(dirname "$0")/.." || exit 1
 
-python3 run_conditions.py --env-file .env-prod
+python3 run_conditions.py --env-file .env
