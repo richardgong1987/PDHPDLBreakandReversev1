@@ -8,7 +8,7 @@ namespace cAlgo.Robots;
 
 [Robot(TimeZone = TimeZones.TokyoStandardTime, AccessRights = AccessRights.FullAccess, AddIndicators = true)]
 public class PDHPDLBreakandReversev1 : Robot {
-    [Parameter("策略模式", DefaultValue = StrategyModel.AB)]
+    [Parameter("策略模式", DefaultValue = StrategyModel.All)]
     public StrategyModel Strategy { get; set; }
 
     [Parameter("启动时清空交易记录CSV", DefaultValue = true)]
