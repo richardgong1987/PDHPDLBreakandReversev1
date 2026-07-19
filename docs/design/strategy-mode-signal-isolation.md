@@ -18,28 +18,38 @@ direction).
 `StrategyModel` enum, read from the cBot `[Parameter("策略模式")]`:
 
 - Production: `All`, `Reversal`, `Continuation`
-- Isolation:  `PinbarLong/Short`, `EngulfLong/Short`, `HaramiLong/Short`,
-  `FractalTopShort`, `FractalBottomLong`
+- Isolation (both key levels): `PinbarLong/Short`, `EngulfLong/Short`,
+  `HaramiLong/Short`, `FractalTopShort`, `FractalBottomLong`
+- Isolation + key level: the same 8 combos prefixed `Pdh…` and `Pdl…`
+  (e.g. `PdhPinbarShort`, `PdlFractalTopShort`) — 16 more.
 
 FractalTop is only bearish (`ShortTop`) and FractalBottom is only bullish
 (`LongBottom`); there is no LongTop / ShortBottom pattern, so those combos are not
 offered.
+
+Key-level ↔ branch mapping (a level maps to a different breakout branch per
+direction): Short+PDH and Long+PDL are the 假突破/反转 branch; Short+PDL and
+Long+PDH are the 真突破/延续 branch. `StrategyModePolicy` encodes this once so the
+signal predicates in `MainBiz` are never touched by the key-level axis.
 
 ## 4. Output Model
 
 No new output. The mode gates which of `signalModel.IsLongSignal` /
 `IsShortSignal` and which family predicates may fire.
 
-## 5. Domain Rules (three orthogonal switches)
+## 5. Domain Rules (four orthogonal switches)
 
 | Switch | Production | Isolation test |
 | --- | --- | --- |
 | Direction (作多/作空) | both (RMA filtered) | only the mode's bound direction |
 | Signal family | all families | only the mode's bound family |
-| Breakout branch (假突破 A / 真突破 B) | `All`=both, `Reversal`=A only, `Continuation`=B only | both |
+| Breakout branch (假突破 A / 真突破 B) | `All`=both, `Reversal`=A only, `Continuation`=B only | both, unless a key level is bound |
+| Key level (PDH/PDL) | both | `Pdh…`/`Pdl…` modes run only the branch touching that level |
 
-`StrategyModePolicy` translates the enum into these three switches. It is the one
-place that knows the mode taxonomy.
+`StrategyModePolicy` translates the enum into these switches via a spec table
+(`IsolationSpecs`). It is the one place that knows the mode taxonomy. The key-level
+switch is expressed through the breakout-branch gates (see the level↔branch mapping
+above), so no predicate code changes when a key level is bound.
 
 ## 6. Application Flow
 
