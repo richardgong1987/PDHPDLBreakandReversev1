@@ -22,6 +22,7 @@
 
   <ItemGroup Label="Signals under test">
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Signals\HanJinSignals26.cs" Link="Signals\HanJinSignals26.cs" />
+    <Compile Include="..\..\PDHPDL Break and Reverse v1\Signals\PdhpdlSignalEvaluator.cs" Link="Signals\PdhpdlSignalEvaluator.cs" />
   </ItemGroup>
 
   <ItemGroup Label="Orders under test">
@@ -30,6 +31,7 @@
 
   <ItemGroup Label="Utils under test">
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Utils\RmaUtils.cs" Link="Utils\RmaUtils.cs" />
+    <Compile Include="..\..\PDHPDL Break and Reverse v1\Utils\Utils.cs" Link="Utils\Utils.cs" />
   </ItemGroup>
 
   <!-- Data models the units above depend on. CAlgoSymbolModel is intentionally excluded:
