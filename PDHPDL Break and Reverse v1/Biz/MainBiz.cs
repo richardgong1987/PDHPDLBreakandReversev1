@@ -1,8 +1,7 @@
+using System;
+
 namespace cAlgo.Robots;
 
-// Pure PDH/PDL false-breakout rules. Given an already-assembled signal model (levels + RMA)
-// and the three closed candles, it runs the HanJin scan and decides long/short signals.
-// No cAlgo.API dependency: this is domain logic and is unit-testable on its own.
 public class MainBiz {
     public void Evaluate(PdhpdlSignalModel signalModel, CandleModel current, CandleModel previous, CandleModel earlier) {
         HanJinSignalScanModel scanResult = HanJinSignals26.Scan(current, previous, earlier);
@@ -87,7 +86,7 @@ public class MainBiz {
             if (Utils.CanA(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdh, current, previous, earlier) &&
                 current.Close < signalModel.Pdh) {
                 signalModel.Label = "S_Harami_1";
-                signalModel.SL = previous.High;
+                signalModel.SL = Math.Max(previous.High, current.High);
                 return true;
             }
 
@@ -95,7 +94,7 @@ public class MainBiz {
             if (Utils.CanB(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdl, current, previous, earlier) &&
                 current.Close < signalModel.Pdl) {
                 signalModel.Label = "S_Harami_2";
-                signalModel.SL = previous.High;
+                signalModel.SL = Math.Max(previous.High, current.High);
                 return true;
             }
         }
@@ -124,7 +123,7 @@ public class MainBiz {
             if (Utils.CanA(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdl, current, previous, earlier) &&
                 current.Close > signalModel.Pdl) {
                 signalModel.Label = "L_Harami_1";
-                signalModel.SL = previous.Low;
+                signalModel.SL = Math.Min(previous.Low, current.Low);
                 return true;
             }
 
@@ -132,7 +131,7 @@ public class MainBiz {
             if (Utils.CanB(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdh, current, previous, earlier) &&
                 current.Close > signalModel.Pdh) {
                 signalModel.Label = "L_Harami_2";
-                signalModel.SL = previous.Low;
+                signalModel.SL = Math.Min(previous.Low, current.Low);
                 return true;
             }
         }
