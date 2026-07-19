@@ -1,13 +1,7 @@
 namespace cAlgo.Robots;
 
 public class Utils {
-    public static bool CanA(PdhpdlSignalModel signalModel) {
-        return signalModel.Strategy == StrategyModel.AB || StrategyModel.A == signalModel.Strategy;
-    }
-
-    public static bool CanB(PdhpdlSignalModel signalModel) {
-        return signalModel.Strategy == StrategyModel.AB || StrategyModel.B == signalModel.Strategy;
-    }
+    // 突破分支开关（原 CanA/CanB）已迁移到 StrategyModePolicy.AllowsReversal / AllowsContinuation。
 
     public static bool AnyBarTouchesLevel(double level, params CandleModel[] candles) {
         foreach (CandleModel candle in candles) {
