@@ -11,8 +11,8 @@ public class PdhpdlSignalEvaluator {
         signalModel.IsLongSignal = IsLongSignal(signalModel, scanResult, current, previous, earlier);
     }
 
-    private static bool IsShortSignal(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current, CandleModel previous,
-        CandleModel earlier) {
+    private static bool IsShortSignal(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current,
+        CandleModel previous, CandleModel earlier) {
         if (!signalModel.HasRmaData)
             return false;
 
@@ -184,8 +184,8 @@ public class PdhpdlSignalEvaluator {
     }
 
     // Long: the qualifying bar or three-bar pattern touches a level, then the confirmation bar closes above it.
-    private static bool IsLongSignal(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current, CandleModel previous,
-        CandleModel earlier) {
+    private static bool IsLongSignal(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current,
+        CandleModel previous, CandleModel earlier) {
         if (!signalModel.HasRmaData)
             return false;
 

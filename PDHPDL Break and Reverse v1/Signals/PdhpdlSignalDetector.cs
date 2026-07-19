@@ -47,8 +47,8 @@ public class PdhpdlSignalDetector {
     }
 
     private CandleModel ReadCandle(int index) {
-        return new CandleModel(open: _chartBars.OpenPrices[index], high: _chartBars.HighPrices[index],
-            low: _chartBars.LowPrices[index], close: _chartBars.ClosePrices[index]);
+        return new CandleModel(open: _chartBars.OpenPrices[index], high: _chartBars.HighPrices[index], low: _chartBars.LowPrices[index],
+            close: _chartBars.ClosePrices[index]);
     }
 
     private bool TryGetPreviousDayLevels(out double pdh, out double pdl) {
