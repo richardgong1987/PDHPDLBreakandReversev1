@@ -23,6 +23,7 @@
   <ItemGroup Label="Signals under test">
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Signals\HanJinSignals26.cs" Link="Signals\HanJinSignals26.cs" />
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Biz\MainBiz.cs" Link="Biz\MainBiz.cs" />
+    <Compile Include="..\..\PDHPDL Break and Reverse v1\Biz\StrategyModePolicy.cs" Link="Biz\StrategyModePolicy.cs" />
   </ItemGroup>
 
   <ItemGroup Label="OrderLogger under test">
@@ -46,6 +47,7 @@
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Models\PdhpdlTradeDirectionModel.cs" Link="Models\PdhpdlTradeDirectionModel.cs" />
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Models\PdhpdlEntryModel.cs" Link="Models\PdhpdlEntryModel.cs" />
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Models\StrategyModel.cs" Link="Models\StrategyModel.cs" />
+    <Compile Include="..\..\PDHPDL Break and Reverse v1\Models\SignalFamilyModel.cs" Link="Models\SignalFamilyModel.cs" />
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Models\PdhpdlSignalModel.cs" Link="Models\PdhpdlSignalModel.cs" />
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Models\PdhpdlOrderPlanModel.cs" Link="Models\PdhpdlOrderPlanModel.cs" />
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Models\IPdhpdlSymbolModel.cs" Link="Models\IPdhpdlSymbolModel.cs" />
