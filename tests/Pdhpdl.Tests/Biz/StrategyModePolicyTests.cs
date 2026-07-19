@@ -38,6 +38,19 @@ namespace Pdhpdl.Tests.Biz {
             Assert.True(StrategyModePolicy.AllowsContinuation(StrategyModel.Continuation));
         }
 
+        [Theory]
+        [InlineData(StrategyModel.Pinbar, SignalFamilyModel.Pinbar)]
+        [InlineData(StrategyModel.Engulf, SignalFamilyModel.Engulf)]
+        [InlineData(StrategyModel.Harami, SignalFamilyModel.Harami)]
+        public void family_only_isolation_keeps_both_directions_and_both_breakout_branches(StrategyModel mode, SignalFamilyModel family) {
+            Assert.True(StrategyModePolicy.AllowsLong(mode));
+            Assert.True(StrategyModePolicy.AllowsShort(mode));
+            Assert.True(StrategyModePolicy.AllowsFamily(mode, family));
+            Assert.False(StrategyModePolicy.AllowsFamily(mode, SignalFamilyModel.FractalTop));
+            Assert.True(StrategyModePolicy.AllowsReversal(mode));
+            Assert.True(StrategyModePolicy.AllowsContinuation(mode));
+        }
+
         [Fact]
         public void pinbar_long_isolation_allows_only_long_pinbar_but_both_breakout_branches() {
             StrategyModel mode = StrategyModel.PinbarLong;

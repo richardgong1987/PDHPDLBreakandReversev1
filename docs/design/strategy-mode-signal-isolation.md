@@ -18,9 +18,11 @@ direction).
 `StrategyModel` enum, read from the cBot `[Parameter("策略模式")]`:
 
 - Production: `All`, `Reversal`, `Continuation`
-- Isolation (both key levels): `PinbarLong/Short`, `EngulfLong/Short`,
-  `HaramiLong/Short`, `FractalTopShort`, `FractalBottomLong`
-- Isolation + key level: the same 8 combos prefixed `Pdh…` and `Pdl…`
+- Isolation (family only, both directions + both key levels): `Pinbar`, `Engulf`,
+  `Harami`
+- Isolation (family + direction, both key levels): `PinbarLong/Short`,
+  `EngulfLong/Short`, `HaramiLong/Short`, `FractalTopShort`, `FractalBottomLong`
+- Isolation + key level: the same 8 directional combos prefixed `Pdh…` and `Pdl…`
   (e.g. `PdhPinbarShort`, `PdlFractalTopShort`) — 16 more.
 
 FractalTop is only bearish (`ShortTop`) and FractalBottom is only bullish
