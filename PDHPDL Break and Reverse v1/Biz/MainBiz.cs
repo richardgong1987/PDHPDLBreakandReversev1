@@ -56,133 +56,6 @@ public class MainBiz {
         return false;
     }
 
-    private static bool ShortTop(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current, CandleModel previous,
-        CandleModel earlier) {
-        if (scanResult.FractalTop == SignalSideModel.Sell) {
-            // (1).假突破/反转
-            if (Utils.CanA(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdh, current, previous, earlier) &&
-                Utils.AnyBarIsShort(current) && current.Close < signalModel.Pdh) {
-                signalModel.Label = "S_Top_1";
-                signalModel.SL = previous.High;
-                return true;
-            }
-
-            // (2).真突破/延续
-            if (Utils.CanB(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdl, current, previous, earlier) &&
-                Utils.AnyBarIsShort(current) && current.Close < signalModel.Pdl) {
-                signalModel.Label = "S_Top_2";
-                signalModel.SL = previous.High;
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static bool ShortHarami(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current,
-        CandleModel previous, CandleModel earlier) {
-        if (scanResult.HaramiSingle == SignalSideModel.Sell) {
-            // (1).假突破/反转
-            if (Utils.CanA(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdh, current, previous, earlier) &&
-                current.Close < signalModel.Pdh) {
-                signalModel.Label = "S_Harami_1";
-                signalModel.SL = Math.Max(previous.High, current.High);
-                return true;
-            }
-
-            // (2).真突破/延续
-            if (Utils.CanB(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdl, current, previous, earlier) &&
-                current.Close < signalModel.Pdl) {
-                signalModel.Label = "S_Harami_2";
-                signalModel.SL = Math.Max(previous.High, current.High);
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static bool LongHarami(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current,
-        CandleModel previous, CandleModel earlier) {
-        /**
-         一. 假突破/反转
-            PDL开仓条件 （多单）
-            K线接触到PDL
-            出现看涨信号：孕线上破。
-            看涨信号的收线价格一定要高于PDL
-
-          二. 真突破/延续
-              PDH开仓条件（多单）
-              K线接触到PDH
-             出现看涨信号：孕线上破。
-             看涨信号的收线价格一定要高于PDH
-         */
-
-        if (scanResult.HaramiSingle == SignalSideModel.Buy) {
-            // (1).假突破/反转
-            if (Utils.CanA(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdl, current, previous, earlier) &&
-                current.Close > signalModel.Pdl) {
-                signalModel.Label = "L_Harami_1";
-                signalModel.SL = Math.Min(previous.Low, current.Low);
-                return true;
-            }
-
-            // (2).真突破/延续
-            if (Utils.CanB(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdh, current, previous, earlier) &&
-                current.Close > signalModel.Pdh) {
-                signalModel.Label = "L_Harami_2";
-                signalModel.SL = Math.Min(previous.Low, current.Low);
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static bool ShortEngulf(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current,
-        CandleModel previous) {
-        if (scanResult.Engulf == SignalSideModel.Sell) {
-            // (1).假突破/反转
-            if (Utils.CanA(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdh, current, previous) &&
-                current.Close < signalModel.Pdh) {
-                signalModel.Label = "S_Eng_1";
-                signalModel.SL = current.High;
-                return true;
-            }
-
-            // (2).真突破/延续
-            if (Utils.CanB(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdl, current, previous) &&
-                current.Close < signalModel.Pdl) {
-                signalModel.Label = "S_Eng_2";
-                signalModel.SL = current.High;
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static bool ShortPinBar(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current) {
-        if (scanResult.Pinbar == SignalSideModel.Sell) {
-            // (1).假突破/反转
-            if (Utils.CanA(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdh, current) && current.Close < signalModel.Pdh) {
-                signalModel.Label = "S_Pin_1";
-                signalModel.SL = current.High;
-                return true;
-            }
-
-            // (2).真突破/延续
-            if (Utils.CanB(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdl, current) && current.Close < signalModel.Pdl) {
-                signalModel.Label = "S_Pin_2";
-                signalModel.SL = current.High;
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    // Long: the qualifying bar or three-bar pattern touches a level, then the confirmation bar closes above it.
     private static bool IsLongSignal(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current,
         CandleModel previous, CandleModel earlier) {
         if (!signalModel.HasRmaData)
@@ -231,6 +104,144 @@ public class MainBiz {
         return false;
     }
 
+    private static bool ShortTop(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current, CandleModel previous,
+        CandleModel earlier) {
+        if (scanResult.FractalTop == SignalSideModel.Sell) {
+            // (1).假突破/反转
+            if (Utils.CanA(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdh, current, previous, earlier) &&
+                Utils.AnyBarIsShort(current) && current.Close < signalModel.Pdh) {
+                signalModel.Label = "S_Top_1";
+                signalModel.SL = previous.High;
+                signalModel.KeyLevel = "PDH";
+                return true;
+            }
+
+            // (2).真突破/延续
+            if (Utils.CanB(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdl, current, previous, earlier) &&
+                Utils.AnyBarIsShort(current) && current.Close < signalModel.Pdl) {
+                signalModel.Label = "S_Top_2";
+                signalModel.SL = previous.High;
+                signalModel.KeyLevel = "PDL";
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool ShortHarami(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current,
+        CandleModel previous, CandleModel earlier) {
+        if (scanResult.HaramiSingle == SignalSideModel.Sell) {
+            // (1).假突破/反转
+            if (Utils.CanA(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdh, current, previous, earlier) &&
+                current.Close < signalModel.Pdh) {
+                signalModel.Label = "S_Harami_1";
+                signalModel.SL = Math.Max(previous.High, current.High);
+                signalModel.KeyLevel = "PDH";
+                return true;
+            }
+
+            // (2).真突破/延续
+            if (Utils.CanB(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdl, current, previous, earlier) &&
+                current.Close < signalModel.Pdl) {
+                signalModel.Label = "S_Harami_2";
+                signalModel.SL = Math.Max(previous.High, current.High);
+                signalModel.KeyLevel = "PDL";
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool LongHarami(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current,
+        CandleModel previous, CandleModel earlier) {
+        /**
+         一. 假突破/反转
+            PDL开仓条件 （多单）
+            K线接触到PDL
+            出现看涨信号：孕线上破。
+            看涨信号的收线价格一定要高于PDL
+
+          二. 真突破/延续
+              PDH开仓条件（多单）
+              K线接触到PDH
+             出现看涨信号：孕线上破。
+             看涨信号的收线价格一定要高于PDH
+         */
+
+        if (scanResult.HaramiSingle == SignalSideModel.Buy) {
+            // (1).假突破/反转
+            if (Utils.CanA(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdl, current, previous, earlier) &&
+                current.Close > signalModel.Pdl) {
+                signalModel.Label = "L_Harami_1";
+                signalModel.SL = Math.Min(previous.Low, current.Low);
+                signalModel.KeyLevel = "PDL";
+                return true;
+            }
+
+            // (2).真突破/延续
+            if (Utils.CanB(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdh, current, previous, earlier) &&
+                current.Close > signalModel.Pdh) {
+                signalModel.Label = "L_Harami_2";
+                signalModel.SL = Math.Min(previous.Low, current.Low);
+                signalModel.KeyLevel = "PDH";
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool ShortEngulf(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current,
+        CandleModel previous) {
+        if (scanResult.Engulf == SignalSideModel.Sell) {
+            // (1).假突破/反转
+            if (Utils.CanA(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdh, current, previous) &&
+                current.Close < signalModel.Pdh) {
+                signalModel.Label = "S_Eng_1";
+                signalModel.SL = current.High;
+                signalModel.KeyLevel = "PDH";
+                return true;
+            }
+
+            // (2).真突破/延续
+            if (Utils.CanB(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdl, current, previous) &&
+                current.Close < signalModel.Pdl) {
+                signalModel.Label = "S_Eng_2";
+                signalModel.SL = current.High;
+                signalModel.KeyLevel = "PDL";
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool ShortPinBar(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current) {
+        if (scanResult.Pinbar == SignalSideModel.Sell) {
+            // (1).假突破/反转
+            if (Utils.CanA(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdh, current) && current.Close < signalModel.Pdh) {
+                signalModel.Label = "S_Pin_1";
+                signalModel.SL = current.High;
+                signalModel.KeyLevel = "PDH";
+                return true;
+            }
+
+            // (2).真突破/延续
+            if (Utils.CanB(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdl, current) && current.Close < signalModel.Pdl) {
+                signalModel.Label = "S_Pin_2";
+                signalModel.SL = current.High;
+                signalModel.KeyLevel = "PDL";
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // Long: the qualifying bar or three-bar pattern touches a level, then the confirmation bar closes above it.
+
     private static bool LongBottom(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current,
         CandleModel previous, CandleModel earlier) {
         if (scanResult.FractalBottom == SignalSideModel.Buy) {
@@ -239,6 +250,7 @@ public class MainBiz {
                 Utils.AnyBarIsLong(current) && current.Close > signalModel.Pdl) {
                 signalModel.Label = "L_Bot_1";
                 signalModel.SL = previous.Low;
+                signalModel.KeyLevel = "PDL";
                 return true;
             }
 
@@ -247,6 +259,7 @@ public class MainBiz {
                 Utils.AnyBarIsLong(current) && current.Close > signalModel.Pdh) {
                 signalModel.Label = "L_Bot_2";
                 signalModel.SL = previous.Low;
+                signalModel.KeyLevel = "PDH";
                 return true;
             }
         }
@@ -263,6 +276,7 @@ public class MainBiz {
                 current.Close > signalModel.Pdl) {
                 signalModel.Label = "L_Eng_1";
                 signalModel.SL = current.Low;
+                signalModel.KeyLevel = "PDL";
                 return true;
             }
 
@@ -271,6 +285,7 @@ public class MainBiz {
                 current.Close > signalModel.Pdh) {
                 signalModel.Label = "L_Eng_2";
                 signalModel.SL = current.Low;
+                signalModel.KeyLevel = "PDH";
                 return true;
             }
         }
@@ -284,6 +299,7 @@ public class MainBiz {
             if (Utils.CanA(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdl, current) && current.Close > signalModel.Pdl) {
                 signalModel.Label = "L_Pin_1";
                 signalModel.SL = current.Low;
+                signalModel.KeyLevel = "PDL";
                 return true;
             }
 
@@ -291,6 +307,7 @@ public class MainBiz {
             if (Utils.CanB(signalModel) && Utils.AnyBarTouchesLevel(signalModel.Pdh, current) && current.Close > signalModel.Pdh) {
                 signalModel.Label = "L_Pin_2";
                 signalModel.SL = current.Low;
+                signalModel.KeyLevel = "PDH";
                 return true;
             }
         }

@@ -25,6 +25,10 @@
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Biz\MainBiz.cs" Link="Biz\MainBiz.cs" />
   </ItemGroup>
 
+  <ItemGroup Label="OrderLogger under test">
+    <Compile Include="..\..\PDHPDL Break and Reverse v1\OrderLogger\PdhpdlTradeCsvMigrator.cs" Link="OrderLogger\PdhpdlTradeCsvMigrator.cs" />
+  </ItemGroup>
+
   <ItemGroup Label="Orders under test">
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Orders\PdhpdlOrderPlanner.cs" Link="Orders\PdhpdlOrderPlanner.cs" />
   </ItemGroup>

@@ -79,6 +79,7 @@ public class PdhpdlOrderExecutor {
         }
 
         planModel.SignalName = signalModel.Label;
+        planModel.KeyLevel = signalModel.KeyLevel;
         return ExecutePlan(planModel);
     }
 

@@ -22,7 +22,8 @@ public class PdhpdlOrderPlanModel {
     public double AccountEquity { get; set; }
     public double RiskMoney { get; set; }
     public double EstimatedRiskMoney { get; set; }
-
     public string Label { get; set; } = "";
+
+    public string KeyLevel { get; set; } = "";
     public string SignalName { get; set; } = "";
 }

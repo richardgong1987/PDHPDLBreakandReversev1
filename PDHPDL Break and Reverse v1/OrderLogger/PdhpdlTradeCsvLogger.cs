@@ -30,11 +30,9 @@ public class PdhpdlTradeCsvLogger {
         if (planModel == null || position == null)
             return "";
 
-        string keyLevel = planModel.DirectionModel == PdhpdlTradeDirectionModel.Long ? "PDL" : "PDH";
-
         var record = new PdhpdlTradeCsvRecordModel {
             Id = position.Id.ToString(),
-            KeyLevel = keyLevel,
+            KeyLevel = planModel.KeyLevel,
             Signal = planModel.SignalName,
             EntryMode = GetEntryModeCsvValue(planModel.EntryModel),
             Comment = "ENTRY",
@@ -129,12 +127,10 @@ public class PdhpdlTradeCsvLogger {
         if (recordModel == null)
             return;
 
-        string line = string.Join(",", Escape(recordModel.Id), Escape(recordModel.KeyLevel),
-            Escape(recordModel.Signal), Escape(recordModel.EntryMode), Escape(recordModel.Comment), Escape(recordModel.Symbol),
-            Escape(recordModel.TimeFrame),
+        string line = string.Join(",", Escape(recordModel.Id), Escape(recordModel.KeyLevel), Escape(recordModel.Signal),
+            Escape(recordModel.EntryMode), Escape(recordModel.Comment), Escape(recordModel.Symbol), Escape(recordModel.TimeFrame),
             Escape(recordModel.EntryTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)),
-            Escape(recordModel.EntryPrice.ToString(CultureInfo.InvariantCulture)),
-            Escape(FormatOptionalNumber(recordModel.ClosePrice)),
+            Escape(recordModel.EntryPrice.ToString(CultureInfo.InvariantCulture)), Escape(FormatOptionalNumber(recordModel.ClosePrice)),
             Escape(recordModel.StopPrice.ToString(CultureInfo.InvariantCulture)),
             Escape(recordModel.TakeProfitPrice.ToString(CultureInfo.InvariantCulture)),
             Escape(recordModel.RiskPrice.ToString(CultureInfo.InvariantCulture)),
@@ -168,8 +164,8 @@ public class PdhpdlTradeCsvLogger {
 
     private static string BuildHeader() {
         // "多空" (Side) 字段已废弃，从当前表头中移除。历史文件由 PdhpdlTradeCsvMigrator 升级时会剥离该列。
-        return string.Join(",", "编号", "关键位", "信号", "回撤开仓模式", "备注", "交易品种", "时间周期", "入场时间", "入场价格",
-            "平仓价格", "止损价格", "止盈价格", "风险价格距离", "下单数量", "平仓原因", "开仓账户权益", "平仓账户权益", "平仓盈亏", "平仓时间", "挂单ID", "持仓ID", "成交ID");
+        return string.Join(",", "编号", "关键位", "信号", "回撤开仓模式", "备注", "交易品种", "时间周期", "入场时间", "入场价格", "平仓价格", "止损价格", "止盈价格", "风险价格距离", "下单数量",
+            "平仓原因", "开仓账户权益", "平仓账户权益", "平仓盈亏", "平仓时间", "挂单ID", "持仓ID", "成交ID");
     }
 
     private static string FormatOptionalNumber(double value) {
