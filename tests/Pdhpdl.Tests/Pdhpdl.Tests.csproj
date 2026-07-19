@@ -22,7 +22,7 @@
 
   <ItemGroup Label="Signals under test">
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Signals\HanJinSignals26.cs" Link="Signals\HanJinSignals26.cs" />
-    <Compile Include="..\..\PDHPDL Break and Reverse v1\Biz\PdhpdlSignalEvaluator.cs" Link="Biz\PdhpdlSignalEvaluator.cs" />
+    <Compile Include="..\..\PDHPDL Break and Reverse v1\Biz\MainBiz.cs" Link="Biz\MainBiz.cs" />
   </ItemGroup>
 
   <ItemGroup Label="Orders under test">

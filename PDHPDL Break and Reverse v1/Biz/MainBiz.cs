@@ -3,7 +3,7 @@ namespace cAlgo.Robots;
 // Pure PDH/PDL false-breakout rules. Given an already-assembled signal model (levels + RMA)
 // and the three closed candles, it runs the HanJin scan and decides long/short signals.
 // No cAlgo.API dependency: this is domain logic and is unit-testable on its own.
-public class PdhpdlSignalEvaluator {
+public class MainBiz {
     public void Evaluate(PdhpdlSignalModel signalModel, CandleModel current, CandleModel previous, CandleModel earlier) {
         HanJinSignalScanModel scanResult = HanJinSignals26.Scan(current, previous, earlier);
 

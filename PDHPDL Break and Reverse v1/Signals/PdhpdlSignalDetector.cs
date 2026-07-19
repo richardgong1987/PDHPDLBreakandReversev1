@@ -10,7 +10,7 @@ public class PdhpdlSignalDetector {
     private readonly Bars _chartBars;
     private readonly Bars _dailyBars;
     private readonly DualRmaSeries _rmaSeries;
-    private readonly PdhpdlSignalEvaluator _evaluator = new();
+    private readonly MainBiz _mainBiz = new();
 
     public PdhpdlSignalDetector(Bars chartBars, Bars dailyBars, DualRmaSeries rmaSeries) {
         _chartBars = chartBars;
@@ -41,7 +41,7 @@ public class PdhpdlSignalDetector {
         signalModel.Pdl = pdl;
         FillRmaData(signalModel);
 
-        _evaluator.Evaluate(signalModel, current, previous, earlier);
+        _mainBiz.Evaluate(signalModel, current, previous, earlier);
 
         return signalModel;
     }
