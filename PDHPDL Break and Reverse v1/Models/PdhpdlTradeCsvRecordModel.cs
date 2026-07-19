@@ -5,8 +5,6 @@ namespace cAlgo.Robots;
 public class PdhpdlTradeCsvRecordModel {
     public string Id { get; set; }
 
-    public string Side { get; set; }
-
     public string KeyLevel { get; set; }
 
     public string Signal { get; set; }

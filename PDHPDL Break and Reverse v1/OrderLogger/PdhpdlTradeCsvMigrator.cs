@@ -8,11 +8,19 @@ namespace cAlgo.Robots;
 // history of older layouts (fewer columns, equity columns in different positions, per-pullback
 // entry-mode columns) and rewrites old rows in place. Pure string work, no cAlgo dependency.
 public static class PdhpdlTradeCsvMigrator {
-    private const int CurrentColumnCount = 23;
+    private const int CurrentColumnCount = 22;
+    // "多空"(Side) 列移除之前的旧 schema：所有历史布局的第 1 列（索引 SideColumnIndex）都是 Side。
+    private const int ColumnCountWithSide = 23;
     private const int PreviousColumnCount = 26;
     private const int OldColumnCountBeforeAccountEquity = 23;
     private const int OldColumnCountBeforeSingleTakeProfit = 24;
     private const int OldColumnCountBeforeClosePrice = 25;
+    private const int SideColumnIndex = 1;
+
+    // 移除 "多空" 列之前，本 cBot 输出的表头。用来把 "含 Side 的旧 current 布局(23 列)" 与
+    // "更早、同为 23 列的 before-account-equity 布局" 区分开——这正是过去用 hasCurrentHeader 承担的判断。
+    private const string PreviousHeaderWithSide =
+        "编号,多空,关键位,信号,回撤开仓模式,备注,交易品种,时间周期,入场时间,入场价格,平仓价格,止损价格,止盈价格,风险价格距离,下单数量,平仓原因,开仓账户权益,平仓账户权益,平仓盈亏,平仓时间,挂单ID,持仓ID,成交ID";
 
     // Returns the upgraded lines (header replaced, old rows rewritten), or null when the file is
     // already on the current schema and needs no rewrite.
@@ -22,7 +30,8 @@ public static class PdhpdlTradeCsvMigrator {
         if (hasCurrentHeader && !NeedsRowMigration(lines))
             return null;
 
-        MigrateRows(lines, hasCurrentHeader);
+        bool isPreviousWithSideHeader = lines[0] == PreviousHeaderWithSide;
+        MigrateRows(lines, isPreviousWithSideHeader);
         lines[0] = currentHeader;
         return lines;
     }
@@ -41,35 +50,58 @@ public static class PdhpdlTradeCsvMigrator {
         return false;
     }
 
-    private static void MigrateRows(string[] lines, bool hasCurrentHeader) {
+    private static void MigrateRows(string[] lines, bool isPreviousWithSideHeader) {
         for (int i = 1; i < lines.Length; i++) {
             if (string.IsNullOrWhiteSpace(lines[i]))
                 continue;
 
             string[] columns = lines[i].Split(',');
 
-            if (hasCurrentHeader && columns.Length == CurrentColumnCount)
+            if (columns.Length == CurrentColumnCount)
                 continue;
 
-            if (columns.Length == OldColumnCountBeforeAccountEquity)
-                columns = MigrateOldSingleTakeProfitRow(columns);
+            string[] withSide = NormalizeToWithSideLayout(columns, isPreviousWithSideHeader);
 
-            else if (columns.Length == OldColumnCountBeforeSingleTakeProfit)
-                columns = MigrateOldTwoTakeProfitRow(columns);
-
-            else if (columns.Length == OldColumnCountBeforeClosePrice) {
-                if (IsOldAccountEquityColumnOrder(columns))
-                    MoveEquityColumnsNearProfitLoss(columns);
-
-                if (IsOldNoEquityCurrentColumnOrder(columns))
-                    MoveProfitLossFromEquityColumn(columns);
-
-                columns = MigrateOldRowBeforeClosePrice(columns);
-            }
-
-            if (columns.Length == PreviousColumnCount)
-                lines[i] = string.Join(",", CollapseEntryModeColumns(columns));
+            // 只有成功归一到 "含 Side 的 23 列布局" 才剥离 Side 列；无法识别长度的行保持原样，
+            // 与旧逻辑一致（旧代码对未命中任何分支的行也不改动）。
+            if (withSide.Length == ColumnCountWithSide)
+                lines[i] = string.Join(",", RemoveSideColumn(withSide));
         }
+    }
+
+    // 把任意历史布局归一到 "含 Side 的 23 列布局"，随后由 RemoveSideColumn 统一剥离 Side。
+    private static string[] NormalizeToWithSideLayout(string[] columns, bool isPreviousWithSideHeader) {
+        if (isPreviousWithSideHeader && columns.Length == ColumnCountWithSide)
+            return columns;
+
+        if (columns.Length == OldColumnCountBeforeAccountEquity)
+            columns = MigrateOldSingleTakeProfitRow(columns);
+
+        else if (columns.Length == OldColumnCountBeforeSingleTakeProfit)
+            columns = MigrateOldTwoTakeProfitRow(columns);
+
+        else if (columns.Length == OldColumnCountBeforeClosePrice) {
+            if (IsOldAccountEquityColumnOrder(columns))
+                MoveEquityColumnsNearProfitLoss(columns);
+
+            if (IsOldNoEquityCurrentColumnOrder(columns))
+                MoveProfitLossFromEquityColumn(columns);
+
+            columns = MigrateOldRowBeforeClosePrice(columns);
+        }
+
+        if (columns.Length == PreviousColumnCount)
+            columns = CollapseEntryModeColumns(columns);
+
+        return columns;
+    }
+
+    // 删除索引 SideColumnIndex 处的 "多空" 列，把 23 列布局收敛到当前 22 列 schema。
+    private static string[] RemoveSideColumn(string[] columnsWithSide) {
+        string[] result = new string[columnsWithSide.Length - 1];
+        result[0] = columnsWithSide[0];
+        Array.Copy(columnsWithSide, SideColumnIndex + 1, result, SideColumnIndex, columnsWithSide.Length - SideColumnIndex - 1);
+        return result;
     }
 
     private static bool IsOldAccountEquityColumnOrder(string[] columns) {
@@ -142,7 +174,7 @@ public static class PdhpdlTradeCsvMigrator {
     }
 
     private static string[] CollapseEntryModeColumns(string[] columns) {
-        string[] collapsed = new string[CurrentColumnCount];
+        string[] collapsed = new string[ColumnCountWithSide];
         Array.Copy(columns, 0, collapsed, 0, 4);
         collapsed[4] = GetLegacyEntryMode(columns);
         Array.Copy(columns, 8, collapsed, 5, columns.Length - 8);
