@@ -114,5 +114,5 @@ public static class HanJinSignals26 {
     // ── Internal geometry helpers (mirror the Pine private functions) ──────────
     // outer fully brackets inner on both the high and the low line.
     private static bool Contains(CandleModel outer, CandleModel inner) =>
-        outer.High > inner.High && outer.Low < inner.Low && outer.BodyTop >= inner.BodyTop && outer.BodyBottom <= inner.BodyBottom;
+        outer.High > inner.High && outer.Low < inner.Low;
 }
