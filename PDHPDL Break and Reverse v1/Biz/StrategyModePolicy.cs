@@ -56,7 +56,7 @@ public static class StrategyModePolicy {
         }
     }
 
-    private static PdhpdlTradeDirectionModel  DirectionOf(StrategyModel mode) {
+    private static PdhpdlTradeDirectionModel DirectionOf(StrategyModel mode) {
         switch (mode) {
             case StrategyModel.PinbarLong:
             case StrategyModel.EngulfLong:
