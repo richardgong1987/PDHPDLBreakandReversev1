@@ -79,5 +79,56 @@ namespace Pdhpdl.Tests.Biz {
             Assert.True(StrategyModePolicy.AllowsFamily(mode, SignalFamilyModel.FractalBottom));
             Assert.False(StrategyModePolicy.AllowsFamily(mode, SignalFamilyModel.FractalTop));
         }
+
+        // 关键位隔离：短单触 PDH = 假突破/反转分支；触 PDL = 真突破/延续分支。
+        [Fact]
+        public void pdh_short_isolation_opens_only_the_reversal_branch() {
+            StrategyModel mode = StrategyModel.PdhPinbarShort;
+
+            Assert.True(StrategyModePolicy.AllowsShort(mode));
+            Assert.False(StrategyModePolicy.AllowsLong(mode));
+            Assert.True(StrategyModePolicy.AllowsFamily(mode, SignalFamilyModel.Pinbar));
+            Assert.True(StrategyModePolicy.AllowsReversal(mode));      // 短单 PDH = 反转分支
+            Assert.False(StrategyModePolicy.AllowsContinuation(mode));
+        }
+
+        [Fact]
+        public void pdl_short_isolation_opens_only_the_continuation_branch() {
+            StrategyModel mode = StrategyModel.PdlPinbarShort;
+
+            Assert.False(StrategyModePolicy.AllowsReversal(mode));
+            Assert.True(StrategyModePolicy.AllowsContinuation(mode)); // 短单 PDL = 延续分支
+        }
+
+        // 关键位隔离：多单触 PDL = 假突破/反转分支；触 PDH = 真突破/延续分支（方向翻转）。
+        [Fact]
+        public void pdl_long_isolation_opens_only_the_reversal_branch() {
+            StrategyModel mode = StrategyModel.PdlPinbarLong;
+
+            Assert.True(StrategyModePolicy.AllowsLong(mode));
+            Assert.False(StrategyModePolicy.AllowsShort(mode));
+            Assert.True(StrategyModePolicy.AllowsReversal(mode));      // 多单 PDL = 反转分支
+            Assert.False(StrategyModePolicy.AllowsContinuation(mode));
+        }
+
+        [Fact]
+        public void pdh_long_isolation_opens_only_the_continuation_branch() {
+            StrategyModel mode = StrategyModel.PdhPinbarLong;
+
+            Assert.False(StrategyModePolicy.AllowsReversal(mode));
+            Assert.True(StrategyModePolicy.AllowsContinuation(mode)); // 多单 PDH = 延续分支
+        }
+
+        [Fact]
+        public void key_level_isolation_still_isolates_family_and_direction() {
+            StrategyModel mode = StrategyModel.PdhFractalTopShort;
+
+            Assert.True(StrategyModePolicy.AllowsShort(mode));
+            Assert.False(StrategyModePolicy.AllowsLong(mode));
+            Assert.True(StrategyModePolicy.AllowsFamily(mode, SignalFamilyModel.FractalTop));
+            Assert.False(StrategyModePolicy.AllowsFamily(mode, SignalFamilyModel.Engulf));
+            Assert.True(StrategyModePolicy.AllowsReversal(mode));      // 短单 PDH = 反转分支
+            Assert.False(StrategyModePolicy.AllowsContinuation(mode));
+        }
     }
 }
