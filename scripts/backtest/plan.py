@@ -2,13 +2,13 @@
 
 计划表每一行是一条回测任务，按“列名”（不是列顺序）读取以下字段：
 
-    种类         -> symbol
-    周期         -> period
-    回撤开仓模式 -> entry_model_name（映射成 EntryModel 数值）
-    止盈目标     -> take_profit_r
-    起始日期     -> start_date（DD/MM/YYYY, UTC）
-    结束日期     -> end_date（DD/MM/YYYY, UTC）
-    最大浮盈     -> 暂时不处理
+    种类             -> symbol
+    周期             -> period
+    回撤开仓模式     -> entry_model_name（映射成 EntryModel 数值）
+    止盈目标         -> take_profit_r
+    MaxKeylevelTimes -> max_keylevel_times（同一关键位连续最大下单次数，0=不限制）
+    起始日期         -> start_date（DD/MM/YYYY, UTC）
+    结束日期         -> end_date（DD/MM/YYYY, UTC）
 """
 
 from datetime import date, datetime
@@ -28,6 +28,7 @@ COLUMN_SYMBOL = "种类"
 COLUMN_PERIOD = "周期"
 COLUMN_ENTRY_MODEL = "回撤开仓模式"
 COLUMN_TAKE_PROFIT = "止盈目标"
+COLUMN_MAX_KEYLEVEL_TIMES = "MaxKeylevelTimes"
 COLUMN_START_DATE = "起始日期"
 COLUMN_END_DATE = "结束日期"
 
@@ -36,6 +37,7 @@ REQUIRED_COLUMNS = [
     COLUMN_PERIOD,
     COLUMN_ENTRY_MODEL,
     COLUMN_TAKE_PROFIT,
+    COLUMN_MAX_KEYLEVEL_TIMES,
     COLUMN_START_DATE,
     COLUMN_END_DATE,
 ]
@@ -44,11 +46,21 @@ REQUIRED_COLUMNS = [
 class ConditionRow:
     """计划表中的一条回测任务。"""
 
-    def __init__(self, symbol, period, entry_model_name, take_profit_r, start_date, end_date):
+    def __init__(
+        self,
+        symbol,
+        period,
+        entry_model_name,
+        take_profit_r,
+        max_keylevel_times,
+        start_date,
+        end_date,
+    ):
         self.symbol = symbol
         self.period = period
         self.entry_model_name = entry_model_name
         self.take_profit_r = take_profit_r
+        self.max_keylevel_times = max_keylevel_times
         self.start_date = start_date
         self.end_date = end_date
 
@@ -65,10 +77,16 @@ class ConditionRow:
         return str(value)
 
     @property
+    def max_keylevel_times_text(self):
+        """文件名/命令行里用的次数文本，带 k 前缀便于人眼区分（k0 = 不限制）。"""
+        return f"k{self.max_keylevel_times}"
+
+    @property
     def file_name(self):
         return (
             f"{self.symbol}-{self.period}-{self.entry_model_name}-"
             f"{self.entry_model_code}-{self.take_profit_text}-"
+            f"{self.max_keylevel_times_text}-"
             f"{to_compact_date(self.start_date)}-{to_compact_date(self.end_date)}.csv"
         )
 
@@ -98,6 +116,24 @@ def format_backtest_date(value, column_name):
             "请按 日/月/年 填写（例如 01/06/2026）。"
         )
     return parsed.strftime("%d/%m/%Y")
+
+
+def parse_max_keylevel_times(value):
+    """把计划表单元格转成 cBot 需要的整数次数（Numbers 数字格会给出 2.0 这样的浮点）。"""
+    if value is None or str(value).strip() == "":
+        raise ValueError(f"计划表列「{COLUMN_MAX_KEYLEVEL_TIMES}」为空，请填 0（不限制）或正整数。")
+    try:
+        times = int(float(str(value).strip()))
+    except ValueError:
+        raise ValueError(
+            f"计划表列「{COLUMN_MAX_KEYLEVEL_TIMES}」的值 {value!r} 不是整数，"
+            "请填 0（不限制）或正整数。"
+        )
+    if times < 0:
+        raise ValueError(
+            f"计划表列「{COLUMN_MAX_KEYLEVEL_TIMES}」不能为负数：{value!r}。0 表示不限制。"
+        )
+    return times
 
 
 def to_compact_date(backtest_date):
@@ -139,6 +175,7 @@ def read_condition_rows(conditions_file):
         period = row[indexes[COLUMN_PERIOD]]
         entry_model_name = row[indexes[COLUMN_ENTRY_MODEL]]
         take_profit_r = row[indexes[COLUMN_TAKE_PROFIT]]
+        max_keylevel_cell = row[indexes[COLUMN_MAX_KEYLEVEL_TIMES]]
         start_cell = row[indexes[COLUMN_START_DATE]]
         end_cell = row[indexes[COLUMN_END_DATE]]
 
@@ -147,9 +184,18 @@ def read_condition_rows(conditions_file):
         if entry_model_name not in ENTRY_MODEL_CODES:
             raise ValueError(f"未知的回撤开仓模式: {entry_model_name!r}")
 
+        max_keylevel_times = parse_max_keylevel_times(max_keylevel_cell)
         start_date = format_backtest_date(start_cell, COLUMN_START_DATE)
         end_date = format_backtest_date(end_cell, COLUMN_END_DATE)
         tasks.append(
-            ConditionRow(symbol, period, entry_model_name, take_profit_r, start_date, end_date)
+            ConditionRow(
+                symbol,
+                period,
+                entry_model_name,
+                take_profit_r,
+                max_keylevel_times,
+                start_date,
+                end_date,
+            )
         )
     return tasks

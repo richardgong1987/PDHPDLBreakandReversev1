@@ -63,6 +63,7 @@ def build_command(task, config):
 
     command.append(f"--EntryModel={task.entry_model_code}")
     command.append(f"--TakeProfitR={task.take_profit_text}")
+    command.append(f"--MaxKeylevelTimes={task.max_keylevel_times}")
     command.append(f"--FileName={task.file_name}")
     command.append(f"--report-json={CBOT_OUTPUT_DIR / task.report_file_name}")
     return command

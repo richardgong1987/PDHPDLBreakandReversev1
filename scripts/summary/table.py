@@ -7,7 +7,17 @@ import csv
 
 from .naming import parse_report_name
 
-CSV_COLUMNS = ["文件名", "起始日期", "结束日期", "周期", "止盈目标", "胜率%", "盈利金额", "盈利率%"]
+CSV_COLUMNS = [
+    "文件名",
+    "起始日期",
+    "结束日期",
+    "周期",
+    "止盈目标",
+    "关键位连续最大次数",
+    "胜率%",
+    "盈利金额",
+    "盈利率%",
+]
 
 
 def write_summary_csv(frame, csv_path):
@@ -30,6 +40,7 @@ def _build_row(row):
         name.end_date,
         name.period,
         f"{name.take_profit}R" if name.take_profit else "",
+        name.max_keylevel_times,
         f"{row.win_rate:.0f}%",
         f"{row.net_profit}$",
         f"{roi:.2f}%",
