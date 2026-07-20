@@ -12,8 +12,10 @@ CBOT_OUTPUT_DIR = Path.home() / "Documents"
 
 # cBot 自定义参数（回测计划表覆盖之外的固定项，保持与手工命令一致）
 # 名称必须与 cBot 的 C# 属性名逐字一致（cTrader CLI 按属性名匹配，不是按中文显示名）。
-# 枚举按整数值传（与 EntryModel、Strategy 一致）：
+# 枚举成员名和整数值 CLI 都接受（实测）。这里 MaSource / EntryModel 沿用整数值，
+# Strategy 用成员名（成员多、且枚举中间插入成员时整数值会整体偏移）：
 #   MaSource -> MovingAverageSourceModel: HigherTimeFrame=0, ChartTimeFrame=1
+# 注意：非法枚举取值 CLI 不报错，会静默退回参数默认值，所以取值由 plan.py 校验。
 CBOT_FIXED_PARAMS = {
     "ResetTradeLogOnStart": "True",
     "RiskPct": "1",
@@ -62,7 +64,7 @@ def build_command(task, config):
     command.append(f"--EntryModel={task.entry_model_code}")
     command.append(f"--TakeProfitR={task.take_profit_text}")
     command.append(f"--MaxKeylevelTimes={task.max_keylevel_times}")
-    command.append(f"--Strategy={task.strategy_code}")
+    command.append(f"--Strategy={task.strategy_name}")
     command.append(f"--FileName={task.file_name}")
     command.append(f"--report-json={CBOT_OUTPUT_DIR / task.report_file_name}")
     return command

@@ -7,7 +7,7 @@
     回撤开仓模式     -> entry_model_name（映射成 EntryModel 数值）
     止盈目标         -> take_profit_r
     关键位连续最大次数 -> max_keylevel_times（同一关键位连续最大下单次数，0=不限制）
-    策略模式         -> strategy_name（映射成 StrategyModel 数值）
+    策略模式         -> strategy_name（StrategyModel 成员名，留空=All）
     起始日期         -> start_date（DD/MM/YYYY, UTC）
     结束日期         -> end_date（DD/MM/YYYY, UTC）
 """
@@ -24,9 +24,10 @@ ENTRY_MODEL_CODES = {
     "Pb50": 3,
 }
 
-# 策略模式的名称 -> cBot 的 StrategyModel 数值。
-# cTrader CLI 按整数值传枚举，所以这里的顺序必须与 Models/StrategyModel.cs 的声明顺序逐字对应；
-# 在 C# 枚举中间插入成员会让所有后续数值偏移，改枚举时必须同步改这里。
+# 合法的「策略模式」取值，必须与 Models/StrategyModel.cs 的成员名一致（顺序无关）。
+# CLI 传枚举时成员名和整数值都接受，这里用成员名：C# 枚举中间插入成员时整数值会整体偏移，
+# 成员名不会。实测非法取值（拼错的名字、越界的整数）CLI 不报错、静默退回默认值 All，
+# 所以这份白名单是唯一能挡住“回测跑的其实是 All”的防线。
 STRATEGY_MODEL_NAMES = [
     "All",
     "Reversal",
@@ -59,8 +60,6 @@ STRATEGY_MODEL_NAMES = [
     "PdlFractalTopShort",
     "PdlFractalBottomLong",
 ]
-
-STRATEGY_MODEL_CODES = {name: code for code, name in enumerate(STRATEGY_MODEL_NAMES)}
 
 # 计划表列名（用列名匹配，避免依赖列顺序）
 COLUMN_SYMBOL = "种类"
@@ -110,10 +109,6 @@ class ConditionRow:
     @property
     def entry_model_code(self):
         return ENTRY_MODEL_CODES[self.entry_model_name]
-
-    @property
-    def strategy_code(self):
-        return STRATEGY_MODEL_CODES[self.strategy_name]
 
     @property
     def take_profit_text(self):
@@ -188,7 +183,7 @@ def parse_strategy_name(value):
     name = "" if value is None else str(value).strip()
     if not name:
         return "All"
-    if name not in STRATEGY_MODEL_CODES:
+    if name not in STRATEGY_MODEL_NAMES:
         raise ValueError(
             f"计划表列「{COLUMN_STRATEGY}」的值 {value!r} 不是已知的策略模式。"
             "可填：" + "、".join(STRATEGY_MODEL_NAMES)
