@@ -9,6 +9,8 @@ SOLUTION="$REPO_ROOT/PDHPDL Break and Reverse v1.sln"
 
 git pull --all
 git reset --hard origin/master
+python3 -m venv .venv
+source .venv/bin/activate
 
 pip3 install -r requirements.txt
 
