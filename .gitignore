@@ -28,3 +28,4 @@ packages/
 # Local backtest config & secrets (auto-test.sh)
 scripts/auto-test.env
 *.pwd
+__pycache__
