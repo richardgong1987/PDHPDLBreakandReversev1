@@ -3,9 +3,9 @@
 文件名格式（见 backtest/plan.py 里 ConditionRow.file_name 的拼接）：
 
     <symbol>-<period>-<entry_mode>-<entry_code>-<take_profit>-k<max_keylevel_times>
-    -<start_YYYYMMDD>-<end_YYYYMMDD>
+    -<strategy>-<start_YYYYMMDD>-<end_YYYYMMDD>
 
-例：XAUUSD-m5-Close-0-2-k2-20240101-20240131
+例：XAUUSD-m5-Close-0-2-k2-PdhPinbarShort-20240101-20240131
 
 除“胜率/盈利金额”要从报告 JSON 计算外，其余字段解析文件名即可得到。
 """
@@ -21,14 +21,15 @@ ReportName = namedtuple(
         "entry_code",
         "take_profit",
         "max_keylevel_times",
+        "strategy",
         "start_date",
         "end_date",
     ],
 )
 
 # 固定尾部字段个数：period, entry_mode, entry_code, take_profit,
-# max_keylevel_times, start, end（symbol 之外的 7 个）
-_TRAILING_FIELDS = 7
+# max_keylevel_times, strategy, start, end（symbol 之外的 8 个）
+_TRAILING_FIELDS = 8
 
 
 def parse_report_name(stem):
@@ -39,15 +40,16 @@ def parse_report_name(stem):
     """
     parts = stem.split("-")
     if len(parts) < _TRAILING_FIELDS + 1:
-        return ReportName(stem, "", "", "", "", "", "", "")
+        return ReportName(stem, "", "", "", "", "", "", "", "")
 
     return ReportName(
         symbol="-".join(parts[:-_TRAILING_FIELDS]),
-        period=parts[-7],
-        entry_mode=parts[-6],
-        entry_code=parts[-5],
-        take_profit=parts[-4],
-        max_keylevel_times=parts[-3].lstrip("k"),
+        period=parts[-8],
+        entry_mode=parts[-7],
+        entry_code=parts[-6],
+        take_profit=parts[-5],
+        max_keylevel_times=parts[-4].lstrip("k"),
+        strategy=parts[-3],
         start_date=parts[-2],
         end_date=parts[-1],
     )

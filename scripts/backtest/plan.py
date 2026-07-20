@@ -7,7 +7,7 @@
     回撤开仓模式     -> entry_model_name（映射成 EntryModel 数值）
     止盈目标         -> take_profit_r
     关键位连续最大次数 -> max_keylevel_times（同一关键位连续最大下单次数，0=不限制）
-    策略模式 -> Strategy
+    策略模式         -> strategy_name（映射成 StrategyModel 数值）
     起始日期         -> start_date（DD/MM/YYYY, UTC）
     结束日期         -> end_date（DD/MM/YYYY, UTC）
 """
@@ -24,13 +24,51 @@ ENTRY_MODEL_CODES = {
     "Pb50": 3,
 }
 
+# 策略模式的名称 -> cBot 的 StrategyModel 数值。
+# cTrader CLI 按整数值传枚举，所以这里的顺序必须与 Models/StrategyModel.cs 的声明顺序逐字对应；
+# 在 C# 枚举中间插入成员会让所有后续数值偏移，改枚举时必须同步改这里。
+STRATEGY_MODEL_NAMES = [
+    "All",
+    "Reversal",
+    "Continuation",
+    "Pinbar",
+    "Engulf",
+    "Harami",
+    "PinbarLong",
+    "PinbarShort",
+    "EngulfLong",
+    "EngulfShort",
+    "HaramiLong",
+    "HaramiShort",
+    "FractalTopShort",
+    "FractalBottomLong",
+    "PdhPinbarLong",
+    "PdhPinbarShort",
+    "PdhEngulfLong",
+    "PdhEngulfShort",
+    "PdhHaramiLong",
+    "PdhHaramiShort",
+    "PdhFractalTopShort",
+    "PdhFractalBottomLong",
+    "PdlPinbarLong",
+    "PdlPinbarShort",
+    "PdlEngulfLong",
+    "PdlEngulfShort",
+    "PdlHaramiLong",
+    "PdlHaramiShort",
+    "PdlFractalTopShort",
+    "PdlFractalBottomLong",
+]
+
+STRATEGY_MODEL_CODES = {name: code for code, name in enumerate(STRATEGY_MODEL_NAMES)}
+
 # 计划表列名（用列名匹配，避免依赖列顺序）
 COLUMN_SYMBOL = "种类"
 COLUMN_PERIOD = "周期"
 COLUMN_ENTRY_MODEL = "回撤开仓模式"
 COLUMN_TAKE_PROFIT = "止盈目标"
 COLUMN_MAX_KEYLEVEL_TIMES = "关键位连续最大次数"
-STRATEGY = "策略模式"
+COLUMN_STRATEGY = "策略模式"
 COLUMN_START_DATE = "起始日期"
 COLUMN_END_DATE = "结束日期"
 
@@ -40,7 +78,7 @@ REQUIRED_COLUMNS = [
     COLUMN_ENTRY_MODEL,
     COLUMN_TAKE_PROFIT,
     COLUMN_MAX_KEYLEVEL_TIMES,
-    STRATEGY,
+    COLUMN_STRATEGY,
     COLUMN_START_DATE,
     COLUMN_END_DATE,
 ]
@@ -56,6 +94,7 @@ class ConditionRow:
         entry_model_name,
         take_profit_r,
         max_keylevel_times,
+        strategy_name,
         start_date,
         end_date,
     ):
@@ -64,12 +103,17 @@ class ConditionRow:
         self.entry_model_name = entry_model_name
         self.take_profit_r = take_profit_r
         self.max_keylevel_times = max_keylevel_times
+        self.strategy_name = strategy_name
         self.start_date = start_date
         self.end_date = end_date
 
     @property
     def entry_model_code(self):
         return ENTRY_MODEL_CODES[self.entry_model_name]
+
+    @property
+    def strategy_code(self):
+        return STRATEGY_MODEL_CODES[self.strategy_name]
 
     @property
     def take_profit_text(self):
@@ -89,7 +133,7 @@ class ConditionRow:
         return (
             f"{self.symbol}-{self.period}-{self.entry_model_name}-"
             f"{self.entry_model_code}-{self.take_profit_text}-"
-            f"{self.max_keylevel_times_text}-"
+            f"{self.max_keylevel_times_text}-{self.strategy_name}-"
             f"{to_compact_date(self.start_date)}-{to_compact_date(self.end_date)}.csv"
         )
 
@@ -139,6 +183,19 @@ def parse_max_keylevel_times(value):
     return times
 
 
+def parse_strategy_name(value):
+    """把计划表单元格转成 StrategyModel 的成员名；留空按 All（不作隔离）处理。"""
+    name = "" if value is None else str(value).strip()
+    if not name:
+        return "All"
+    if name not in STRATEGY_MODEL_CODES:
+        raise ValueError(
+            f"计划表列「{COLUMN_STRATEGY}」的值 {value!r} 不是已知的策略模式。"
+            "可填：" + "、".join(STRATEGY_MODEL_NAMES)
+        )
+    return name
+
+
 def to_compact_date(backtest_date):
     """把 DD/MM/YYYY（传给 CLI 的格式）转成文件名用的紧凑 YYYYMMDD。"""
     return datetime.strptime(backtest_date, "%d/%m/%Y").strftime("%Y%m%d")
@@ -179,6 +236,7 @@ def read_condition_rows(conditions_file):
         entry_model_name = row[indexes[COLUMN_ENTRY_MODEL]]
         take_profit_r = row[indexes[COLUMN_TAKE_PROFIT]]
         max_keylevel_cell = row[indexes[COLUMN_MAX_KEYLEVEL_TIMES]]
+        strategy_cell = row[indexes[COLUMN_STRATEGY]]
         start_cell = row[indexes[COLUMN_START_DATE]]
         end_cell = row[indexes[COLUMN_END_DATE]]
 
@@ -188,6 +246,7 @@ def read_condition_rows(conditions_file):
             raise ValueError(f"未知的回撤开仓模式: {entry_model_name!r}")
 
         max_keylevel_times = parse_max_keylevel_times(max_keylevel_cell)
+        strategy_name = parse_strategy_name(strategy_cell)
         start_date = format_backtest_date(start_cell, COLUMN_START_DATE)
         end_date = format_backtest_date(end_cell, COLUMN_END_DATE)
         tasks.append(
@@ -197,6 +256,7 @@ def read_condition_rows(conditions_file):
                 entry_model_name,
                 take_profit_r,
                 max_keylevel_times,
+                strategy_name,
                 start_date,
                 end_date,
             )
