@@ -6,7 +6,8 @@
     周期             -> period
     回撤开仓模式     -> entry_model_name（映射成 EntryModel 数值）
     止盈目标         -> take_profit_r
-    MaxKeylevelTimes -> max_keylevel_times（同一关键位连续最大下单次数，0=不限制）
+    关键位连续最大次数 -> max_keylevel_times（同一关键位连续最大下单次数，0=不限制）
+    策略模式 -> Strategy
     起始日期         -> start_date（DD/MM/YYYY, UTC）
     结束日期         -> end_date（DD/MM/YYYY, UTC）
 """
@@ -28,7 +29,8 @@ COLUMN_SYMBOL = "种类"
 COLUMN_PERIOD = "周期"
 COLUMN_ENTRY_MODEL = "回撤开仓模式"
 COLUMN_TAKE_PROFIT = "止盈目标"
-COLUMN_MAX_KEYLEVEL_TIMES = "MaxKeylevelTimes"
+COLUMN_MAX_KEYLEVEL_TIMES = "关键位连续最大次数"
+STRATEGY = "策略模式"
 COLUMN_START_DATE = "起始日期"
 COLUMN_END_DATE = "结束日期"
 
@@ -38,6 +40,7 @@ REQUIRED_COLUMNS = [
     COLUMN_ENTRY_MODEL,
     COLUMN_TAKE_PROFIT,
     COLUMN_MAX_KEYLEVEL_TIMES,
+    STRATEGY,
     COLUMN_START_DATE,
     COLUMN_END_DATE,
 ]
