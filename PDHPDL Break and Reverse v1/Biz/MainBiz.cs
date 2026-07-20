@@ -3,11 +3,22 @@ using System;
 namespace cAlgo.Robots;
 
 public class MainBiz {
+    private readonly ConsecutiveKeyLevelOrderLimit _keyLevelLimit;
+
+    public MainBiz(ConsecutiveKeyLevelOrderLimit keyLevelLimit) {
+        _keyLevelLimit = keyLevelLimit;
+    }
+
     public void Evaluate(PdhpdlSignalModel signalModel, CandleModel current, CandleModel previous, CandleModel earlier) {
         HanJinSignalScanModel scanResult = HanJinSignals26.Scan(current, previous, earlier);
 
-        signalModel.IsShortSignal = IsShortSignal(signalModel, scanResult, current, previous, earlier);
-        signalModel.IsLongSignal = IsLongSignal(signalModel, scanResult, current, previous, earlier);
+        signalModel.IsShortSignal = IsShortSignal(signalModel, scanResult, current, previous, earlier) && HasKeyLevelQuotaLeft(signalModel);
+        signalModel.IsLongSignal = IsLongSignal(signalModel, scanResult, current, previous, earlier) && HasKeyLevelQuotaLeft(signalModel);
+    }
+
+    // 命中的信号只有在其关键位（PDH / PDL）连续下单次数未用满时才放行。
+    private bool HasKeyLevelQuotaLeft(PdhpdlSignalModel signalModel) {
+        return !_keyLevelLimit.HasReachedConsecutiveLimit(signalModel.KeyLevel);
     }
 
     private static bool IsShortSignal(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current,
