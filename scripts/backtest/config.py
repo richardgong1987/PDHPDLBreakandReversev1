@@ -1,22 +1,35 @@
-"""从 .env 文件读入环境相关配置（账户、路径、鉴权、回测资金/数据模式）。
+"""从 .env 文件读入环境相关配置（账户、鉴权、cTrader 路径、回测资金/数据模式）。
 
 账户、路径、鉴权等“环境相关”配置不写死在脚本里，而是从 .env 文件读取，这样同一套代码
 用不同 env 文件即可切换环境（开发 / 生产）。
+
+.algo 的位置不进 .env：cTrader.Automate 编译后固定把 .algo 发布到「仓库根目录的上一层」，
+文件名等于仓库根目录名（见 cTrader.Automate.targets 的 _AlgoRootDirectoryName / _AlgoPublish），
+所以它可以从仓库路径直接推导出来。
 """
 
+from pathlib import Path
+
 # .env 必填项；DATA_MODE / BALANCE 选填，未填用默认值
-REQUIRED_ENV_KEYS = ["AUTH_TOKEN", "CTRADER_BIN", "ALGO_PATH", "CTID", "ACCOUNT"]
+REQUIRED_ENV_KEYS = ["AUTH_TOKEN", "CTRADER_BIN", "CTID", "ACCOUNT"]
 DEFAULT_DATA_MODE = "m1"
 DEFAULT_BALANCE = "10000"
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def resolve_algo_path():
+    """推导编译产物 .algo 的路径：仓库上一层目录 / 仓库目录名.algo。"""
+    return REPO_ROOT.parent / f"{REPO_ROOT.name}.algo"
+
 
 class Config:
-    """从 .env 文件读入的环境相关配置（账户、路径、鉴权、回测资金/数据模式）。"""
+    """从 .env 文件读入的环境相关配置（账户、鉴权、cTrader 路径、回测资金/数据模式）。"""
 
     def __init__(self, values):
         self.auth_token = values["AUTH_TOKEN"]
         self.ctrader_bin = values["CTRADER_BIN"]
-        self.algo_path = values["ALGO_PATH"]
+        self.algo_path = str(resolve_algo_path())
         self.ctid = values["CTID"]
         self.account = values["ACCOUNT"]
         self.data_mode = values.get("DATA_MODE") or DEFAULT_DATA_MODE
@@ -46,5 +59,11 @@ def load_config(env_file):
     if missing:
         raise ValueError(
             f"环境配置文件 {env_file} 缺少必填项：" + "、".join(missing)
+        )
+    algo_path = resolve_algo_path()
+    if not algo_path.exists():
+        raise FileNotFoundError(
+            f"找不到编译产物：{algo_path}\n"
+            "请先编译 cBot：dotnet build \"PDHPDL Break and Reverse v1.sln\" -c Release"
         )
     return Config(values)

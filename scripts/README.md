@@ -27,8 +27,12 @@ maintain the env file:
 cp scripts/.env.example scripts/.env        # first time: create the dev config and fill it in
 ```
 
-Required keys: `AUTH_TOKEN`, `CTRADER_BIN`, `ALGO_PATH`, `CTID`, `ACCOUNT`;
+Required keys: `AUTH_TOKEN`, `CTRADER_BIN`, `CTID`, `ACCOUNT`;
 optional: `DATA_MODE` (default `m1`), `BALANCE` (default `10000`).
+
+The `.algo` path is not configured: `dotnet build` publishes the package to the directory
+above the repo root, named after the repo root folder, so `backtest/config.py` derives it.
+Build first — the run aborts with a clear error if the `.algo` is missing.
 
 `.env` and `.env-prod` contain the auth token and are ignored in `.gitignore`, so they are
 never committed; only the `.env.example` template is version-controlled.
@@ -157,7 +161,7 @@ python3 scripts/report_summary.py --dir <dir>     # specify the report directory
 
 Environment-related (edit in `.env` / `.env-prod`):
 
-- `AUTH_TOKEN` / `CTRADER_BIN` / `ALGO_PATH` / `CTID` / `ACCOUNT` (account, paths, credentials)
+- `AUTH_TOKEN` / `CTRADER_BIN` / `CTID` / `ACCOUNT` (account, paths, credentials)
 - `BALANCE` (starting capital, default `10000`)
 - `DATA_MODE` (backtest data mode, default `m1`; options `open`, `m1-csv`)
 
