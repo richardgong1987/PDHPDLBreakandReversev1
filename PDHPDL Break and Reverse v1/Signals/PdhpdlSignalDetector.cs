@@ -10,12 +10,13 @@ public class PdhpdlSignalDetector {
     private readonly Bars _chartBars;
     private readonly Bars _dailyBars;
     private readonly DualRmaSeries _rmaSeries;
-    private readonly MainBiz _mainBiz = new();
+    private readonly MainBiz _mainBiz;
 
-    public PdhpdlSignalDetector(Bars chartBars, Bars dailyBars, DualRmaSeries rmaSeries) {
+    public PdhpdlSignalDetector(Bars chartBars, Bars dailyBars, DualRmaSeries rmaSeries, ConsecutiveKeyLevelOrderLimit keyLevelLimit) {
         _chartBars = chartBars;
         _dailyBars = dailyBars;
         _rmaSeries = rmaSeries;
+        _mainBiz = new MainBiz(keyLevelLimit);
     }
 
     public PdhpdlSignalModel DetectOnClosedBar(StrategyModel strategy) {
