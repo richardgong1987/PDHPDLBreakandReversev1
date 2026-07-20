@@ -24,6 +24,7 @@
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Signals\HanJinSignals26.cs" Link="Signals\HanJinSignals26.cs" />
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Biz\MainBiz.cs" Link="Biz\MainBiz.cs" />
     <Compile Include="..\..\PDHPDL Break and Reverse v1\Biz\StrategyModePolicy.cs" Link="Biz\StrategyModePolicy.cs" />
+    <Compile Include="..\..\PDHPDL Break and Reverse v1\Biz\ConsecutiveKeyLevelOrderLimit.cs" Link="Biz\ConsecutiveKeyLevelOrderLimit.cs" />
   </ItemGroup>
 
   <ItemGroup Label="OrderLogger under test">
