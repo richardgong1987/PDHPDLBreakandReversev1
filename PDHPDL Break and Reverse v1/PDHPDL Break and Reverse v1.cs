@@ -14,7 +14,7 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("启动时清空交易记录CSV", DefaultValue = true)]
     public bool ResetTradeLogOnStart { get; set; }
 
-    [Parameter("关键位连续最大次数（0=不限制）", DefaultValue = 0, MinValue = 0, MaxValue = 50)]
+    [Parameter("关键位连续最大次数", DefaultValue = 0, MinValue = 0, MaxValue = 50)]
     public int MaxKeylevelTimes { get; set; }
 
     [Parameter("每笔交易风险百分比，默认1%", DefaultValue = 1.0, MinValue = 0.1, MaxValue = 10.0, Step = 0.1)]
