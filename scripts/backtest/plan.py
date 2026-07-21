@@ -7,7 +7,7 @@
     回撤开仓模式     -> entry_model_name（映射成 EntryModel 数值）
     止盈目标         -> take_profit_r
     关键位连续最大次数 -> max_keylevel_times（同一关键位连续最大下单次数，0=不限制）
-    策略模式         -> strategy_name（StrategyModel 成员名，留空=All）
+    策略模式         -> strategy_name（StrategyModel 成员名，按 RMA 排列强度隔离；留空=All）
     起始日期         -> start_date（DD/MM/YYYY, UTC）
     结束日期         -> end_date（DD/MM/YYYY, UTC）
 """
@@ -29,36 +29,10 @@ ENTRY_MODEL_CODES = {
 # 成员名不会。实测非法取值（拼错的名字、越界的整数）CLI 不报错、静默退回默认值 All，
 # 所以这份白名单是唯一能挡住“回测跑的其实是 All”的防线。
 STRATEGY_MODEL_NAMES = [
-    "All",
-    "Reversal",
-    "Continuation",
-    "Pinbar",
-    "Engulf",
-    "Harami",
-    "PinbarLong",
-    "PinbarShort",
-    "EngulfLong",
-    "EngulfShort",
-    "HaramiLong",
-    "HaramiShort",
-    "FractalTopShort",
-    "FractalBottomLong",
-    "PdhPinbarLong",
-    "PdhPinbarShort",
-    "PdhEngulfLong",
-    "PdhEngulfShort",
-    "PdhHaramiLong",
-    "PdhHaramiShort",
-    "PdhFractalTopShort",
-    "PdhFractalBottomLong",
-    "PdlPinbarLong",
-    "PdlPinbarShort",
-    "PdlEngulfLong",
-    "PdlEngulfShort",
-    "PdlHaramiLong",
-    "PdlHaramiShort",
-    "PdlFractalTopShort",
-    "PdlFractalBottomLong",
+    "All",  # 全部条件，不作隔离
+    "Strong",  # 强多头 Close>RMA13>RMA55 | 强空头 Close<RMA13<RMA55
+    "Weak",  # 弱多头 RMA13>Close>RMA55 | 弱空头 RMA13<Close<RMA55
+    "StopWhenVolatility",  # 排除震荡排列 RMA13>RMA55>Close（多）/ RMA13<RMA55<Close（空）
 ]
 
 # 计划表列名（用列名匹配，避免依赖列顺序）

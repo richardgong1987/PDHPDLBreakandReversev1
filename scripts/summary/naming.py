@@ -5,7 +5,7 @@
     <symbol>-<period>-<entry_mode>-<entry_code>-<take_profit>-k<max_keylevel_times>
     -<strategy>-<start_YYYYMMDD>-<end_YYYYMMDD>
 
-例：XAUUSD-m5-Close-0-2-k2-PdhPinbarShort-20240101-20240131
+例：XAUUSD-m5-Close-0-2-k2-StopWhenVolatility-20240101-20240131
 
 除“胜率/盈利金额”要从报告 JSON 计算外，其余字段解析文件名即可得到。
 """
