@@ -1,8 +1,6 @@
 namespace cAlgo.Robots;
 
 public class Utils {
-    // 突破分支开关（原 CanA/CanB）已迁移到 StrategyModePolicy.AllowsReversal / AllowsContinuation。
-
     public static bool AnyBarTouchesLevel(double level, params CandleModel[] candles) {
         foreach (CandleModel candle in candles) {
             if (TouchesLevel(candle, level))
@@ -36,50 +34,59 @@ public class Utils {
         return true;
     }
 
-    public static bool Strategy(PdhpdlSignalModel signalModel, CandleModel current, SignalSideModel side) {
-        StrategyModel strategy = signalModel.Strategy;
-        if (strategy == StrategyModel.Strong) {
-            // 强多头：K线收盘价格>RMA13>RMA55
-            if (side == SignalSideModel.Buy) {
-                return current.Close > signalModel.FastRma && signalModel.FastRma > signalModel.SlowRma;
-            }
+    // 「策略模式」按收盘价与双 RMA 的排列，决定该方向的信号是否放行。
+    // 每个分支都自带排列的方向判断，不依赖调用方是否已经做过 RMA 方向过滤。
+    public static bool IsStrategyModeSatisfied(PdhpdlSignalModel signalModel, CandleModel current, SignalSideModel side) {
+        switch (signalModel.Strategy) {
+            case StrategyModel.Strong:
+                return IsStrongTrend(signalModel, current, side);
+            case StrategyModel.Weak:
+                return IsWeakTrend(signalModel, current, side);
+            case StrategyModel.StopWhenVolatility:
+                return !IsVolatility(signalModel, current, side);
+            default:
+                return true; // All：不作隔离
+        }
+    }
 
-            // 强空头：K线收盘价格<RMA13<RMA55
-            if (side == SignalSideModel.Sell) {
-                return current.Close < signalModel.FastRma && signalModel.FastRma < signalModel.SlowRma;
-            }
-
-            return false;
+    private static bool IsStrongTrend(PdhpdlSignalModel signalModel, CandleModel current, SignalSideModel side) {
+        // 强多头：K线收盘价格>RMA13>RMA55
+        if (side == SignalSideModel.Buy) {
+            return current.Close > signalModel.FastRma && signalModel.FastRma > signalModel.SlowRma;
         }
 
-        if (strategy == StrategyModel.Weak) {
-            // 弱多头：RMA13>K线收盘价格>RMA55
-            if (side == SignalSideModel.Buy) {
-                return signalModel.FastRma > current.Close && current.Close > signalModel.SlowRma;
-            }
-
-            // 弱空头：RMA13<K线收盘价格<RMA55
-            if (side == SignalSideModel.Sell) {
-                return signalModel.FastRma < current.Close && current.Close < signalModel.SlowRma;
-            }
-
-            return false;
+        // 强空头：K线收盘价格<RMA13<RMA55
+        if (side == SignalSideModel.Sell) {
+            return current.Close < signalModel.FastRma && signalModel.FastRma < signalModel.SlowRma;
         }
 
-        if (strategy == StrategyModel.StopWhenVolatility) {
-            // 趋势转换或者震荡：RMA13>RMA55>K线收盘价格  （不交易） | 趋势转换或者震荡：RMA13<RMA55<K线收盘价格 （不交易）
-            bool a = signalModel.FastRma > signalModel.SlowRma && signalModel.SlowRma > current.Close;
-            bool b = signalModel.FastRma < signalModel.SlowRma && signalModel.SlowRma < current.Close;
+        return false;
+    }
 
-            if (side == SignalSideModel.Buy) {
-                return !a;
-            }
-
-            if (side == SignalSideModel.Sell) {
-                return !b;
-            }
+    private static bool IsWeakTrend(PdhpdlSignalModel signalModel, CandleModel current, SignalSideModel side) {
+        // 弱多头：RMA13>K线收盘价格>RMA55
+        if (side == SignalSideModel.Buy) {
+            return signalModel.FastRma > current.Close && current.Close > signalModel.SlowRma;
         }
 
-        return true;
+        // 弱空头：RMA13<K线收盘价格<RMA55
+        if (side == SignalSideModel.Sell) {
+            return signalModel.FastRma < current.Close && current.Close < signalModel.SlowRma;
+        }
+
+        return false;
+    }
+
+    // 趋势转换或者震荡：多头 RMA13>RMA55>K线收盘价格 | 空头 RMA13<RMA55<K线收盘价格，两者都不交易。
+    private static bool IsVolatility(PdhpdlSignalModel signalModel, CandleModel current, SignalSideModel side) {
+        if (side == SignalSideModel.Buy) {
+            return signalModel.FastRma > signalModel.SlowRma && signalModel.SlowRma > current.Close;
+        }
+
+        if (side == SignalSideModel.Sell) {
+            return signalModel.FastRma < signalModel.SlowRma && signalModel.SlowRma < current.Close;
+        }
+
+        return true; // 方向未知时按不可交易处理，与 Strong / Weak 的 return false 一致
     }
 }

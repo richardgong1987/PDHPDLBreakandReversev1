@@ -35,7 +35,7 @@ public class MainBiz {
         if (rmaPosition == RmaPositionModel.FastAboveSlow)
             return false;
 
-        if (!Utils.Strategy(signalModel, current, SignalSideModel.Sell)) {
+        if (!Utils.IsStrategyModeSatisfied(signalModel, current, SignalSideModel.Sell)) {
             return false;
         }
 
@@ -86,7 +86,7 @@ public class MainBiz {
             return false;
         }
 
-        if (!Utils.Strategy(signalModel, current, SignalSideModel.Buy)) {
+        if (!Utils.IsStrategyModeSatisfied(signalModel, current, SignalSideModel.Buy)) {
             return false;
         }
 
