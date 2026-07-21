@@ -26,11 +26,6 @@ public class MainBiz {
         if (!signalModel.HasRmaData)
             return false;
 
-        StrategyModel mode = signalModel.Strategy;
-
-        // 隔离测试模式的方向过滤：只作多的模式在这里直接跳过作空。
-        if (!StrategyModePolicy.AllowsShort(mode))
-            return false;
 
         RmaPositionModel rmaPosition = RmaUtils.GetFastToSlowPosition(signalModel.FastRma, signalModel.SlowRma);
 
@@ -54,21 +49,19 @@ public class MainBiz {
                出现看跌信号：看跌pinbar、看跌吞没、顶分型、孕线下破
                看跌信号的收线价格一定要低于PDL
          */
-        if (StrategyModePolicy.AllowsFamily(mode, SignalFamilyModel.Pinbar) && ShortPinBar(signalModel, scanResult, current)) {
+        if (ShortPinBar(signalModel, scanResult, current)) {
             return true;
         }
 
-        if (StrategyModePolicy.AllowsFamily(mode, SignalFamilyModel.Engulf) && ShortEngulf(signalModel, scanResult, current, previous)) {
+        if (ShortEngulf(signalModel, scanResult, current, previous)) {
             return true;
         }
 
-        if (StrategyModePolicy.AllowsFamily(mode, SignalFamilyModel.FractalTop) &&
-            ShortTop(signalModel, scanResult, current, previous, earlier)) {
+        if (ShortTop(signalModel, scanResult, current, previous, earlier)) {
             return true;
         }
 
-        if (StrategyModePolicy.AllowsFamily(mode, SignalFamilyModel.Harami) &&
-            ShortHarami(signalModel, scanResult, current, previous, earlier)) {
+        if (ShortHarami(signalModel, scanResult, current, previous, earlier)) {
             return true;
         }
 
@@ -78,12 +71,6 @@ public class MainBiz {
     private static bool IsLongSignal(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current,
         CandleModel previous, CandleModel earlier) {
         if (!signalModel.HasRmaData)
-            return false;
-
-        StrategyModel mode = signalModel.Strategy;
-
-        // 隔离测试模式的方向过滤：只作空的模式在这里直接跳过作多。
-        if (!StrategyModePolicy.AllowsLong(mode))
             return false;
 
         RmaPositionModel rmaPosition = RmaUtils.GetFastToSlowPosition(signalModel.FastRma, signalModel.SlowRma);
@@ -110,21 +97,19 @@ public class MainBiz {
              看涨信号的收线价格一定要高于PDH
          */
 
-        if (StrategyModePolicy.AllowsFamily(mode, SignalFamilyModel.Pinbar) && LongPinbar(signalModel, scanResult, current)) {
+        if (LongPinbar(signalModel, scanResult, current)) {
             return true;
         }
 
-        if (StrategyModePolicy.AllowsFamily(mode, SignalFamilyModel.Engulf) && LongEngulf(signalModel, scanResult, current, previous)) {
+        if (LongEngulf(signalModel, scanResult, current, previous)) {
             return true;
         }
 
-        if (StrategyModePolicy.AllowsFamily(mode, SignalFamilyModel.FractalBottom) &&
-            LongBottom(signalModel, scanResult, current, previous, earlier)) {
+        if (LongBottom(signalModel, scanResult, current, previous, earlier)) {
             return true;
         }
 
-        if (StrategyModePolicy.AllowsFamily(mode, SignalFamilyModel.Harami) &&
-            LongHarami(signalModel, scanResult, current, previous, earlier)) {
+        if (LongHarami(signalModel, scanResult, current, previous, earlier)) {
             return true;
         }
 
@@ -135,8 +120,7 @@ public class MainBiz {
         CandleModel earlier) {
         if (scanResult.FractalTop == SignalSideModel.Sell) {
             // (1).假突破/反转
-            if (StrategyModePolicy.AllowsReversal(signalModel.Strategy) &&
-                Utils.AnyBarTouchesLevel(signalModel.Pdh, current, previous, earlier) && Utils.AnyBarIsShort(current) &&
+            if (Utils.AnyBarTouchesLevel(signalModel.Pdh, current, previous, earlier) && Utils.AnyBarIsShort(current) &&
                 current.Close < signalModel.Pdh) {
                 signalModel.Label = "S_Top_1";
                 signalModel.SL = previous.High;
@@ -145,8 +129,7 @@ public class MainBiz {
             }
 
             // (2).真突破/延续
-            if (StrategyModePolicy.AllowsContinuation(signalModel.Strategy) &&
-                Utils.AnyBarTouchesLevel(signalModel.Pdl, current, previous, earlier) && Utils.AnyBarIsShort(current) &&
+            if (Utils.AnyBarTouchesLevel(signalModel.Pdl, current, previous, earlier) && Utils.AnyBarIsShort(current) &&
                 current.Close < signalModel.Pdl) {
                 signalModel.Label = "S_Top_2";
                 signalModel.SL = previous.High;
@@ -162,8 +145,7 @@ public class MainBiz {
         CandleModel previous, CandleModel earlier) {
         if (scanResult.HaramiSingle == SignalSideModel.Sell) {
             // (1).假突破/反转
-            if (StrategyModePolicy.AllowsReversal(signalModel.Strategy) &&
-                Utils.AnyBarTouchesLevel(signalModel.Pdh, current, previous, earlier) && current.Close < signalModel.Pdh) {
+            if (Utils.AnyBarTouchesLevel(signalModel.Pdh, current, previous, earlier) && current.Close < signalModel.Pdh) {
                 signalModel.Label = "S_Harami_1";
                 signalModel.SL = Math.Max(previous.High, current.High);
                 signalModel.KeyLevel = "PDH";
@@ -171,8 +153,7 @@ public class MainBiz {
             }
 
             // (2).真突破/延续
-            if (StrategyModePolicy.AllowsContinuation(signalModel.Strategy) &&
-                Utils.AnyBarTouchesLevel(signalModel.Pdl, current, previous, earlier) && current.Close < signalModel.Pdl) {
+            if (Utils.AnyBarTouchesLevel(signalModel.Pdl, current, previous, earlier) && current.Close < signalModel.Pdl) {
                 signalModel.Label = "S_Harami_2";
                 signalModel.SL = Math.Max(previous.High, current.High);
                 signalModel.KeyLevel = "PDL";
@@ -201,8 +182,7 @@ public class MainBiz {
 
         if (scanResult.HaramiSingle == SignalSideModel.Buy) {
             // (1).假突破/反转
-            if (StrategyModePolicy.AllowsReversal(signalModel.Strategy) &&
-                Utils.AnyBarTouchesLevel(signalModel.Pdl, current, previous, earlier) && current.Close > signalModel.Pdl) {
+            if (Utils.AnyBarTouchesLevel(signalModel.Pdl, current, previous, earlier) && current.Close > signalModel.Pdl) {
                 signalModel.Label = "L_Harami_1";
                 signalModel.SL = Math.Min(previous.Low, current.Low);
                 signalModel.KeyLevel = "PDL";
@@ -210,8 +190,7 @@ public class MainBiz {
             }
 
             // (2).真突破/延续
-            if (StrategyModePolicy.AllowsContinuation(signalModel.Strategy) &&
-                Utils.AnyBarTouchesLevel(signalModel.Pdh, current, previous, earlier) && current.Close > signalModel.Pdh) {
+            if (Utils.AnyBarTouchesLevel(signalModel.Pdh, current, previous, earlier) && current.Close > signalModel.Pdh) {
                 signalModel.Label = "L_Harami_2";
                 signalModel.SL = Math.Min(previous.Low, current.Low);
                 signalModel.KeyLevel = "PDH";
@@ -226,8 +205,7 @@ public class MainBiz {
         CandleModel previous) {
         if (scanResult.Engulf == SignalSideModel.Sell) {
             // (1).假突破/反转
-            if (StrategyModePolicy.AllowsReversal(signalModel.Strategy) && Utils.AnyBarTouchesLevel(signalModel.Pdh, current, previous) &&
-                current.Close < signalModel.Pdh) {
+            if (Utils.AnyBarTouchesLevel(signalModel.Pdh, current, previous) && current.Close < signalModel.Pdh) {
                 signalModel.Label = "S_Eng_1";
                 signalModel.SL = current.High;
                 signalModel.KeyLevel = "PDH";
@@ -235,8 +213,7 @@ public class MainBiz {
             }
 
             // (2).真突破/延续
-            if (StrategyModePolicy.AllowsContinuation(signalModel.Strategy) &&
-                Utils.AnyBarTouchesLevel(signalModel.Pdl, current, previous) && current.Close < signalModel.Pdl) {
+            if (Utils.AnyBarTouchesLevel(signalModel.Pdl, current, previous) && current.Close < signalModel.Pdl) {
                 signalModel.Label = "S_Eng_2";
                 signalModel.SL = current.High;
                 signalModel.KeyLevel = "PDL";
@@ -250,8 +227,7 @@ public class MainBiz {
     private static bool ShortPinBar(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current) {
         if (scanResult.Pinbar == SignalSideModel.Sell) {
             // (1).假突破/反转
-            if (StrategyModePolicy.AllowsReversal(signalModel.Strategy) && Utils.AnyBarTouchesLevel(signalModel.Pdh, current) &&
-                current.Close < signalModel.Pdh) {
+            if (Utils.AnyBarTouchesLevel(signalModel.Pdh, current) && current.Close < signalModel.Pdh) {
                 signalModel.Label = "S_Pin_1";
                 signalModel.SL = current.High;
                 signalModel.KeyLevel = "PDH";
@@ -259,8 +235,7 @@ public class MainBiz {
             }
 
             // (2).真突破/延续
-            if (StrategyModePolicy.AllowsContinuation(signalModel.Strategy) && Utils.AnyBarTouchesLevel(signalModel.Pdl, current) &&
-                current.Close < signalModel.Pdl) {
+            if (Utils.AnyBarTouchesLevel(signalModel.Pdl, current) && current.Close < signalModel.Pdl) {
                 signalModel.Label = "S_Pin_2";
                 signalModel.SL = current.High;
                 signalModel.KeyLevel = "PDL";
@@ -277,8 +252,7 @@ public class MainBiz {
         CandleModel previous, CandleModel earlier) {
         if (scanResult.FractalBottom == SignalSideModel.Buy) {
             // (1).假突破/反转
-            if (StrategyModePolicy.AllowsReversal(signalModel.Strategy) &&
-                Utils.AnyBarTouchesLevel(signalModel.Pdl, current, previous, earlier) && Utils.AnyBarIsLong(current) &&
+            if (Utils.AnyBarTouchesLevel(signalModel.Pdl, current, previous, earlier) && Utils.AnyBarIsLong(current) &&
                 current.Close > signalModel.Pdl) {
                 signalModel.Label = "L_Bot_1";
                 signalModel.SL = previous.Low;
@@ -287,8 +261,7 @@ public class MainBiz {
             }
 
             // (2).真突破/延续
-            if (StrategyModePolicy.AllowsContinuation(signalModel.Strategy) &&
-                Utils.AnyBarTouchesLevel(signalModel.Pdh, current, previous, earlier) && Utils.AnyBarIsLong(current) &&
+            if (Utils.AnyBarTouchesLevel(signalModel.Pdh, current, previous, earlier) && Utils.AnyBarIsLong(current) &&
                 current.Close > signalModel.Pdh) {
                 signalModel.Label = "L_Bot_2";
                 signalModel.SL = previous.Low;
@@ -305,8 +278,7 @@ public class MainBiz {
         CandleModel previous) {
         if (scanResult.Engulf == SignalSideModel.Buy) {
             // (1).假突破/反转
-            if (StrategyModePolicy.AllowsReversal(signalModel.Strategy) && Utils.AnyBarTouchesLevel(signalModel.Pdl, current, previous) &&
-                current.Close > signalModel.Pdl) {
+            if (Utils.AnyBarTouchesLevel(signalModel.Pdl, current, previous) && current.Close > signalModel.Pdl) {
                 signalModel.Label = "L_Eng_1";
                 signalModel.SL = current.Low;
                 signalModel.KeyLevel = "PDL";
@@ -314,8 +286,7 @@ public class MainBiz {
             }
 
             // (2).真突破/延续
-            if (StrategyModePolicy.AllowsContinuation(signalModel.Strategy) &&
-                Utils.AnyBarTouchesLevel(signalModel.Pdh, current, previous) && current.Close > signalModel.Pdh) {
+            if (Utils.AnyBarTouchesLevel(signalModel.Pdh, current, previous) && current.Close > signalModel.Pdh) {
                 signalModel.Label = "L_Eng_2";
                 signalModel.SL = current.Low;
                 signalModel.KeyLevel = "PDH";
@@ -329,8 +300,7 @@ public class MainBiz {
     private static bool LongPinbar(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current) {
         if (scanResult.Pinbar == SignalSideModel.Buy) {
             // (1).假突破/反转
-            if (StrategyModePolicy.AllowsReversal(signalModel.Strategy) && Utils.AnyBarTouchesLevel(signalModel.Pdl, current) &&
-                current.Close > signalModel.Pdl) {
+            if (Utils.AnyBarTouchesLevel(signalModel.Pdl, current) && current.Close > signalModel.Pdl) {
                 signalModel.Label = "L_Pin_1";
                 signalModel.SL = current.Low;
                 signalModel.KeyLevel = "PDL";
@@ -338,8 +308,7 @@ public class MainBiz {
             }
 
             // (2).真突破/延续
-            if (StrategyModePolicy.AllowsContinuation(signalModel.Strategy) && Utils.AnyBarTouchesLevel(signalModel.Pdh, current) &&
-                current.Close > signalModel.Pdh) {
+            if (Utils.AnyBarTouchesLevel(signalModel.Pdh, current) && current.Close > signalModel.Pdh) {
                 signalModel.Label = "L_Pin_2";
                 signalModel.SL = current.Low;
                 signalModel.KeyLevel = "PDH";
