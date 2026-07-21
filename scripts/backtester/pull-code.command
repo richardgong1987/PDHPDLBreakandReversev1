@@ -5,8 +5,8 @@ SOLUTION="$REPO_ROOT/PDHPDL Break and Reverse v1.sln"
 
 cd $REPO_ROOT
 
-dotnet build "$SOLUTION" -c Release
-
-
 git pull --all
 git reset --hard origin/master
+
+dotnet build "$SOLUTION" -c Release
+
