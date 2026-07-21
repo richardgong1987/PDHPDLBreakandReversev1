@@ -35,4 +35,51 @@ public class Utils {
 
         return true;
     }
+
+    public static bool Strategy(PdhpdlSignalModel signalModel, CandleModel current, SignalSideModel side) {
+        StrategyModel strategy = signalModel.Strategy;
+        if (strategy == StrategyModel.Strong) {
+            // 强多头：K线收盘价格>RMA13>RMA55
+            if (side == SignalSideModel.Buy) {
+                return current.Close > signalModel.FastRma && signalModel.FastRma > signalModel.SlowRma;
+            }
+
+            // 强空头：K线收盘价格<RMA13<RMA55
+            if (side == SignalSideModel.Sell) {
+                return current.Close < signalModel.FastRma && signalModel.FastRma < signalModel.SlowRma;
+            }
+
+            return false;
+        }
+
+        if (strategy == StrategyModel.Weak) {
+            // 弱多头：RMA13>K线收盘价格>RMA55
+            if (side == SignalSideModel.Buy) {
+                return signalModel.FastRma > current.Close && current.Close > signalModel.SlowRma;
+            }
+
+            // 弱空头：RMA13<K线收盘价格<RMA55
+            if (side == SignalSideModel.Sell) {
+                return signalModel.FastRma < current.Close && current.Close < signalModel.SlowRma;
+            }
+
+            return false;
+        }
+
+        if (strategy == StrategyModel.StopWhenVolatility) {
+            // 趋势转换或者震荡：RMA13>RMA55>K线收盘价格  （不交易） | 趋势转换或者震荡：RMA13<RMA55<K线收盘价格 （不交易）
+            bool a = signalModel.FastRma > signalModel.SlowRma && signalModel.SlowRma > current.Close;
+            bool b = signalModel.FastRma < signalModel.SlowRma && signalModel.SlowRma < current.Close;
+
+            if (side == SignalSideModel.Buy) {
+                return !a;
+            }
+
+            if (side == SignalSideModel.Sell) {
+                return !b;
+            }
+        }
+
+        return true;
+    }
 }
