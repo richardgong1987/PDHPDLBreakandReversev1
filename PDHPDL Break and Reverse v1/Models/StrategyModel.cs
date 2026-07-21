@@ -7,11 +7,6 @@ public enum StrategyModel {
     Reversal, // 只开「假突破/反转」
     Continuation, // 只开「真突破/延续」
 
-    // ── 单信号隔离：多空都跑、PDH/PDL 都跑（只隔离信号家族）──
-    Pinbar, // 只测 Pinbar，含作多+作空
-    Engulf, // 只测 Engulf，含作多+作空
-    Harami, // 只测 Harami，含作多+作空
-
     // ── 单信号隔离：PDH/PDL 两个分支都跑 ──
     PinbarLong, // PinBar作多
     PinbarShort, // PinBar作空

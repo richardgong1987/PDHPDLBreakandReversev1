@@ -40,9 +40,6 @@ public static class StrategyModePolicy {
     // 每个隔离模式绑定的 (信号家族, 方向, 关键位)。不在表中的即生产模式(放行一切)。
     // 与老板给的清单一一对应：先是「只隔离家族、多空都跑」，再是「家族+方向」，再是「家族+方向+关键位」。
     private static readonly Dictionary<StrategyModel, IsolationSpec> IsolationSpecs = new() {
-        { StrategyModel.Pinbar, Iso(SignalFamilyModel.Pinbar, DirectionFilter.Both, LevelFilter.Both) },
-        { StrategyModel.Engulf, Iso(SignalFamilyModel.Engulf, DirectionFilter.Both, LevelFilter.Both) },
-        { StrategyModel.Harami, Iso(SignalFamilyModel.Harami, DirectionFilter.Both, LevelFilter.Both) },
         { StrategyModel.PinbarLong, Iso(SignalFamilyModel.Pinbar, DirectionFilter.Long, LevelFilter.Both) },
         { StrategyModel.PinbarShort, Iso(SignalFamilyModel.Pinbar, DirectionFilter.Short, LevelFilter.Both) },
         { StrategyModel.EngulfLong, Iso(SignalFamilyModel.Engulf, DirectionFilter.Long, LevelFilter.Both) },
