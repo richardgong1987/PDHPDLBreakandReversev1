@@ -22,7 +22,7 @@ from pathlib import Path
 
 from backtest.config import load_config
 from backtest.plan import read_condition_rows
-from backtest.runner import DEFAULT_JOBS, generate_final_report, run_tasks
+from backtest.runner import DEFAULT_JOBS, archive_reports, generate_final_report, run_tasks
 
 SCRIPTS_DIR = Path(__file__).resolve().parent
 DEFAULT_ENV_FILE = SCRIPTS_DIR / ".env"
@@ -66,6 +66,9 @@ def main(argv=None):
 
     # 全部跑完后，扫描所有报告生成一次汇总图（不再每条任务都刷新一次）
     generate_final_report()
+
+    # 汇总产物齐了，再把整个报告目录打包成 zip 存档，供以后使用
+    archive_reports()
 
     print("\n全部回测执行完毕。")
     return 0

@@ -32,8 +32,7 @@ def archive_output_dir():
     zip 放在报告目录的上级（~/Documents），刻意不放进 trading_reports 内部，否则下次批量回测
     reset_output_dir 会把它一并删掉。带时间戳使多次批量的存档可以并存、互不覆盖。
     """
-    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-    base_name = CBOT_OUTPUT_DIR.parent / f"{CBOT_OUTPUT_DIR.name}_{timestamp}"
+    base_name = CBOT_OUTPUT_DIR.parent / f"{CBOT_OUTPUT_DIR.name}"
     archive_path = shutil.make_archive(
         str(base_name), "zip", root_dir=str(CBOT_OUTPUT_DIR.parent), base_dir=CBOT_OUTPUT_DIR.name
     )
