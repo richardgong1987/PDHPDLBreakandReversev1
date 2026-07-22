@@ -53,6 +53,8 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("输出文件名", DefaultValue = "pdhpdl-trades.csv")]
     public string FileName { get; set; }
 
+    [Parameter("中文配置信息", DefaultValue = "")] public string ConfigZhInfo { get; set; }
+
     [Parameter("显示均线 (RMA 1 + RMA 2)", DefaultValue = true, Group = "均线")]
     public bool ShowMovingAverages { get; set; }
 
