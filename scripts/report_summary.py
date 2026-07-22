@@ -22,8 +22,8 @@ def parse_args(argv):
     parser = argparse.ArgumentParser(description="汇总回测报告 JSON，生成 final_report.png。")
     parser.add_argument(
         "--dir",
-        default=str(Path.home() / "Documents"),
-        help="报告 JSON 所在目录（默认 ~/Documents，与 cBot 输出一致）。",
+        default=str(Path.home() / "Documents" / "trading_reports"),
+        help="报告 JSON 所在目录（默认 ~/Documents/trading_reports，与回测输出一致）。",
     )
     return parser.parse_args(argv)
 

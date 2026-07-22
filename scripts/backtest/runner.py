@@ -42,6 +42,17 @@ def generate_final_report():
         print(f"*****元数据已生成：{outputs.metadata_path}", flush=True)
 
 
+def archive_reports():
+    """把报告目录打包成 zip 存档。打包是附带产物，任何异常都不该拖垮回测批次。"""
+    try:
+        archive_path = command.archive_output_dir()
+    except Exception as error:  # noqa: BLE001
+        print(f"*****报告打包失败（已跳过）：{error}", flush=True)
+        return
+
+    print(f"*****报告已打包：{archive_path}", flush=True)
+
+
 def run_tasks_sequentially(tasks, config):
     """逐条串行执行（jobs 1）：保持顺序。"""
     total = len(tasks)
@@ -62,6 +73,9 @@ def run_tasks_in_parallel(tasks, config, jobs):
 
 
 def run_tasks(tasks, config, jobs):
+    # 首条回测写盘前先清空并重建 trading_reports 目录，确保只保留本次批量生成的数据。
+    print(f"清空并重建报告目录：{command.CBOT_OUTPUT_DIR}", flush=True)
+    command.reset_output_dir()
     if jobs <= 1:
         run_tasks_sequentially(tasks, config)
     else:
