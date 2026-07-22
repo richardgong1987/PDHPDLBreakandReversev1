@@ -43,7 +43,7 @@ public class Utils {
             case StrategyModel.Weak:
                 return IsWeakTrend(signalModel, current, side);
             case StrategyModel.StopWhenVolatility:
-                return !IsVolatility(signalModel, current, side);
+                return IsVolatility(signalModel, current, side);
             default:
                 return true; // All：不作隔离
         }
@@ -87,6 +87,6 @@ public class Utils {
             return signalModel.FastRma < signalModel.SlowRma && signalModel.SlowRma < current.Close;
         }
 
-        return true; // 方向未知时按不可交易处理，与 Strong / Weak 的 return false 一致
+        return false;
     }
 }
