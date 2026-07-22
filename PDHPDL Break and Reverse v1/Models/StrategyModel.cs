@@ -5,6 +5,4 @@ namespace cAlgo.Robots;
 public enum StrategyModel {
     All, // 全部条件。不作隔离
     Strong, // 强多头：K线收盘价格>RMA13>RMA55 | 强空头：K线收盘价格<RMA13<RMA55
-    Weak, // 弱多头：RMA13>K线收盘价格>RMA55   | 弱空头：RMA13<K线收盘价格<RMA55
-    StopWhenVolatility // 趋势转换或者震荡：RMA13>RMA55>K线收盘价格  （不交易） | 趋势转换或者震荡：RMA13<RMA55<K线收盘价格 （不交易）
 }
