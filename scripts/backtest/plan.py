@@ -30,9 +30,7 @@ ENTRY_MODEL_CODES = {
 # 所以这份白名单是唯一能挡住“回测跑的其实是 All”的防线。
 STRATEGY_MODEL_NAMES = [
     "All",  # 全部条件，不作隔离
-    "Strong",  # 强多头 Close>RMA13>RMA55 | 强空头 Close<RMA13<RMA55
-    "Weak",  # 弱多头 RMA13>Close>RMA55 | 弱空头 RMA13<Close<RMA55
-    "StopWhenVolatility",  # 排除震荡排列 RMA13>RMA55>Close（多）/ RMA13<RMA55<Close（空）
+    "MultiplePosition",  # 只在允许多笔持仓的排列下开仓
 ]
 
 # 计划表列名（用列名匹配，避免依赖列顺序）
