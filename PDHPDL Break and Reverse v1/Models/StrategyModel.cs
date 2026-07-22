@@ -4,5 +4,5 @@ namespace cAlgo.Robots;
 // 由 Utils.IsStrategyModeSatisfied 翻译成 MainBiz 多空两侧的准入判断。
 public enum StrategyModel {
     All, // 全部条件。不作隔离
-    Strong, // 强多头：K线收盘价格>RMA13>RMA55 | 强空头：K线收盘价格<RMA13<RMA55
+    MultiplePosition,
 }

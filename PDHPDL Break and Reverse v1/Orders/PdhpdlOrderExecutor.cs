@@ -63,13 +63,8 @@ public class PdhpdlOrderExecutor {
             return false;
         }
 
-        if (HasOpenSymbolPosition()) {
+        if (signalModel.Strategy != StrategyModel.MultiplePosition && (HasOpenSymbolPosition() || HasOpenSymbolPendingOrder())) {
             _robot.Print("*****Order skipped | Existing position found on symbol: {0}", _symbolName);
-            return false;
-        }
-
-        if (HasOpenSymbolPendingOrder()) {
-            _robot.Print("*****Order skipped | Existing pending order found on symbol: {0}", _symbolName);
             return false;
         }
 
