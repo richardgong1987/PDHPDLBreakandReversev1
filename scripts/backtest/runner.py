@@ -39,6 +39,7 @@ def generate_final_report():
     if outputs is not None:
         print(f"*****汇总图已生成：{outputs.chart_path}", flush=True)
         print(f"*****汇总表已生成：{outputs.csv_path}", flush=True)
+        print(f"*****元数据已生成：{outputs.metadata_path}", flush=True)
 
 
 def run_tasks_sequentially(tasks, config):
