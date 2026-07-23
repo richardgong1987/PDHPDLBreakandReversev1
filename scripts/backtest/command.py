@@ -26,13 +26,17 @@ def reset_output_dir():
     CBOT_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def archive_output_dir():
+def archive_output_dir(timestamp=None):
     """把报告目录打包成带时间戳的 zip 存档，供以后使用；返回 zip 路径。
 
     zip 放在报告目录的上级（~/Documents），刻意不放进 trading_reports 内部，否则下次批量回测
     reset_output_dir 会把它一并删掉。带时间戳使多次批量的存档可以并存、互不覆盖。
+
+    timestamp 传汇总产物用的那个 YYYYMMDDHHmmss（来自 update_final_report），让 zip 后缀与
+    final_report_<ts>.png 完全一致：trading_reports_<ts>.zip。没有汇总产物时回落到当前时间。
     """
-    base_name = CBOT_OUTPUT_DIR.parent / f"{CBOT_OUTPUT_DIR.name}"
+    timestamp = timestamp or datetime.now().strftime("%Y%m%d%H%M%S")
+    base_name = CBOT_OUTPUT_DIR.parent / f"{CBOT_OUTPUT_DIR.name}_{timestamp}"
     archive_path = shutil.make_archive(
         str(base_name), "zip", root_dir=str(CBOT_OUTPUT_DIR.parent), base_dir=CBOT_OUTPUT_DIR.name
     )

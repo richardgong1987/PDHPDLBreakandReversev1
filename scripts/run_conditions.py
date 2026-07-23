@@ -65,10 +65,11 @@ def main(argv=None):
     run_tasks(tasks, config, jobs)
 
     # 全部跑完后，扫描所有报告生成一次汇总图（不再每条任务都刷新一次）
-    generate_final_report()
+    outputs = generate_final_report()
 
-    # 汇总产物齐了，再把整个报告目录打包成 zip 存档，供以后使用
-    archive_reports()
+    # 汇总产物齐了，再把整个报告目录打包成 zip 存档，供以后使用；
+    # 复用汇总产物的时间戳，让 zip 后缀与 final_report_<ts>.png 一致。
+    archive_reports(outputs.timestamp if outputs is not None else None)
 
     print("\n全部回测执行完毕。")
     return 0

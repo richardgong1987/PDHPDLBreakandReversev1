@@ -29,23 +29,30 @@ def run_task(task, index, total, config):
 
 
 def generate_final_report():
-    """全部回测结束后，扫描输出目录里的所有报告，生成一次汇总图和汇总表。生成失败不应中断批次。"""
+    """全部回测结束后，扫描输出目录里的所有报告，生成一次汇总图和汇总表。生成失败不应中断批次。
+
+    返回 SummaryOutputs（含各产物路径与共用时间戳）供打包复用；无报告或生成失败时返回 None。
+    """
     try:
         outputs = update_final_report(command.CBOT_OUTPUT_DIR)
     except Exception as error:  # noqa: BLE001 — 汇总产物是附带结果，任何异常都不该拖垮回测
         print(f"*****汇总报告生成失败（已跳过）：{error}", flush=True)
-        return
+        return None
 
     if outputs is not None:
         print(f"*****汇总图已生成：{outputs.chart_path}", flush=True)
         print(f"*****汇总表已生成：{outputs.csv_path}", flush=True)
         print(f"*****元数据已生成：{outputs.metadata_path}", flush=True)
+    return outputs
 
 
-def archive_reports():
-    """把报告目录打包成 zip 存档。打包是附带产物，任何异常都不该拖垮回测批次。"""
+def archive_reports(timestamp=None):
+    """把报告目录打包成 zip 存档。打包是附带产物，任何异常都不该拖垮回测批次。
+
+    传入汇总产物的时间戳，让 zip 后缀与 final_report_<ts>.png 一致（trading_reports_<ts>.zip）。
+    """
     try:
-        archive_path = command.archive_output_dir()
+        archive_path = command.archive_output_dir(timestamp)
     except Exception as error:  # noqa: BLE001
         print(f"*****报告打包失败（已跳过）：{error}", flush=True)
         return

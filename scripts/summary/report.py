@@ -12,8 +12,9 @@ from .table import write_summary_csv
 IMAGE_NAME = "final_report.png"
 CSV_NAME = "final_summary_report.csv"
 
-# 一次汇总产出的三个文件：柱状图 + CSV 表 + 可入库的 metadata.json
-SummaryOutputs = namedtuple("SummaryOutputs", ["chart_path", "csv_path", "metadata_path"])
+# 一次汇总产出的三个文件：柱状图 + CSV 表 + 可入库的 metadata.json；
+# timestamp 是三个文件共用的 YYYYMMDDHHmmss，供打包时给 zip 取同款后缀（见 archive_output_dir）。
+SummaryOutputs = namedtuple("SummaryOutputs", ["chart_path", "csv_path", "metadata_path", "timestamp"])
 
 
 def update_final_report(output_dir, image_path=None):
@@ -36,7 +37,9 @@ def update_final_report(output_dir, image_path=None):
     render_report_chart(frame, chart_path)
     write_summary_csv(frame, csv_path)
     write_metadata_json(frame, metadata_path)
-    return SummaryOutputs(chart_path=chart_path, csv_path=csv_path, metadata_path=metadata_path)
+    return SummaryOutputs(
+        chart_path=chart_path, csv_path=csv_path, metadata_path=metadata_path, timestamp=timestamp
+    )
 
 
 def _with_timestamp(file_name, timestamp):
