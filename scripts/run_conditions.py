@@ -22,7 +22,13 @@ from pathlib import Path
 
 from backtest.config import load_config
 from backtest.plan import read_condition_rows
-from backtest.runner import DEFAULT_JOBS, archive_reports, generate_final_report, run_tasks
+from backtest.runner import (
+    DEFAULT_JOBS,
+    archive_reports,
+    generate_final_report,
+    run_tasks,
+    upload_report_archive,
+)
 
 SCRIPTS_DIR = Path(__file__).resolve().parent
 DEFAULT_ENV_FILE = SCRIPTS_DIR / ".env"
@@ -69,7 +75,10 @@ def main(argv=None):
 
     # 汇总产物齐了，再把整个报告目录打包成 zip 存档，供以后使用；
     # 复用汇总产物的时间戳，让 zip 后缀与 final_report_<ts>.png 一致。
-    archive_reports(outputs.timestamp if outputs is not None else None)
+    archive_path = archive_reports(outputs.timestamp if outputs is not None else None)
+
+    # zip 存档就绪后，按当前环境（.env 的 REPORT_UPLOAD_URL）把它上传到后端。
+    upload_report_archive(config.report_upload_url, archive_path)
 
     print("\n全部回测执行完毕。")
     return 0

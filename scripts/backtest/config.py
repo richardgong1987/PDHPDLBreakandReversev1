@@ -34,6 +34,8 @@ class Config:
         self.account = values["ACCOUNT"]
         self.data_mode = values.get("DATA_MODE") or DEFAULT_DATA_MODE
         self.balance = values.get("BALANCE") or DEFAULT_BALANCE
+        # 上传接口地址随环境不同（开发/生产）；未配置时留空，批量结束后跳过上传。
+        self.report_upload_url = values.get("REPORT_UPLOAD_URL") or ""
 
 
 def parse_env_file(env_file):

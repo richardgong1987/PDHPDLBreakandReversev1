@@ -8,6 +8,7 @@ import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from summary import update_final_report
+from upload_reports import upload_zip
 
 from . import command
 
@@ -47,17 +48,38 @@ def generate_final_report():
 
 
 def archive_reports(timestamp=None):
-    """把报告目录打包成 zip 存档。打包是附带产物，任何异常都不该拖垮回测批次。
+    """把报告目录打包成 zip 存档，返回 zip 路径供上传复用；无产物或失败时返回 None。
 
     传入汇总产物的时间戳，让 zip 后缀与 final_report_<ts>.png 一致（trading_reports_<ts>.zip）。
+    打包是附带产物，任何异常都不该拖垮回测批次。
     """
     try:
         archive_path = command.archive_output_dir(timestamp)
     except Exception as error:  # noqa: BLE001
         print(f"*****报告打包失败（已跳过）：{error}", flush=True)
-        return
+        return None
 
     print(f"*****报告已打包：{archive_path}", flush=True)
+    return archive_path
+
+
+def upload_report_archive(upload_url, archive_path):
+    """把刚打包的报告 zip 上传到后端。上传是附带产物，任何异常都不该拖垮调用方。
+
+    上传地址随环境不同，由调用方从 .env 的 REPORT_UPLOAD_URL 读入；未配置则跳过。
+    只上传本次生成的这一个 zip（archive_path），不扫描目录，避免误传旧存档。
+    """
+    if not upload_url:
+        print("*****未配置 REPORT_UPLOAD_URL，跳过上传。", flush=True)
+        return
+    if archive_path is None:
+        print("*****没有可上传的报告 zip，跳过上传。", flush=True)
+        return
+
+    try:
+        upload_zip(upload_url, archive_path)
+    except Exception as error:  # noqa: BLE001
+        print(f"*****报告上传失败（已跳过）：{error}", flush=True)
 
 
 def run_tasks_sequentially(tasks, config):
