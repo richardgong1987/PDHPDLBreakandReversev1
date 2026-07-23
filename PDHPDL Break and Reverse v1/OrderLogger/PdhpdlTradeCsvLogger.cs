@@ -14,14 +14,30 @@ public class PdhpdlTradeCsvLogger {
     // resetOnStart: overwrite the file with a fresh header so it holds only this run.
     // The file is fixed and append-only, so without this every backtest run stacks another
     // copy of the same trades. Turn it off to keep history across runs.
-    public PdhpdlTradeCsvLogger(bool resetOnStart, string fileName) {
-        string documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-        _filePath = Path.Combine(documentsPath, fileName);
+    //
+    // reportsDirectory: 按运行模式选定的输出目录（回测/模拟/实盘各一个，见组合根）。
+    // fileName 传绝对路径时（回测经 run_conditions 指定完整路径）直接采用、忽略 reportsDirectory。
+    public PdhpdlTradeCsvLogger(bool resetOnStart, string reportsDirectory, string fileName) {
+        _filePath = ResolveFilePath(reportsDirectory, fileName);
+        EnsureDirectoryExists(_filePath);
 
         if (resetOnStart)
             System.IO.File.WriteAllText(_filePath, BuildHeader() + Environment.NewLine, CsvEncoding);
         else
             EnsureFileExists();
+    }
+
+    private static string ResolveFilePath(string reportsDirectory, string fileName) {
+        if (Path.IsPathRooted(fileName))
+            return fileName;
+
+        return Path.Combine(reportsDirectory, fileName);
+    }
+
+    private static void EnsureDirectoryExists(string filePath) {
+        string directory = Path.GetDirectoryName(filePath);
+        if (!string.IsNullOrEmpty(directory))
+            Directory.CreateDirectory(directory);
     }
 
     public string FilePath => _filePath;

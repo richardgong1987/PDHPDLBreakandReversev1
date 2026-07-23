@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using cAlgo.API;
 using cAlgo.API.Collections;
 using cAlgo.API.Indicators;
@@ -11,7 +12,7 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("策略模式", DefaultValue = StrategyModel.All)]
     public StrategyModel Strategy { get; set; }
 
-    [Parameter("启动时清空交易记录CSV", DefaultValue = true)]
+    [Parameter("启动时清空交易记录CSV", DefaultValue = false)]
     public bool ResetTradeLogOnStart { get; set; }
 
     [Parameter("关键位连续最大次数", DefaultValue = 0, MinValue = 0, MaxValue = 50)]
@@ -100,7 +101,7 @@ public class PDHPDLBreakandReversev1 : Robot {
         _signalDetector = new PdhpdlSignalDetector(Bars, dailyBars, _rmaSeries, keyLevelLimit);
         _signalMarkers = new PdhpdlSignalMarkers(Chart, Symbol.TickSize);
 
-        _csvLogger = new PdhpdlTradeCsvLogger(ResetTradeLogOnStart, FileName);
+        _csvLogger = new PdhpdlTradeCsvLogger(ResetTradeLogOnStart, ResolveReportsDirectory(), FileName);
         Print("****CSV logger path: {0}", _csvLogger.FilePath);
 
         var riskGuard = new PdhpdlRiskGuard(BuildRiskGuardConfig());
@@ -114,6 +115,20 @@ public class PDHPDLBreakandReversev1 : Robot {
         return new DualRmaLinesConfigModel {
             Source = MaSource, FastPeriod = MaFastPeriod, SlowPeriod = MaSlowPeriod, HigherTimeFrameMinutes = MaTimeFrameMinutes
         };
+    }
+
+    // 输出目录按运行模式分开、互不覆盖：回测目录由脚本每次清空重建，模拟/实盘目录只追加、从不删除。
+    // 回测经 run_conditions 传入绝对路径 FileName，此目录会被忽略（见 PdhpdlTradeCsvLogger）。
+    private string ResolveReportsDirectory() {
+        string documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        return Path.Combine(documentsPath, ResolveReportsFolderName());
+    }
+
+    private string ResolveReportsFolderName() {
+        if (IsBacktesting)
+            return "trading_reports";
+
+        return Account.IsLive ? "release_trading_reports" : "simulate_trading_reports";
     }
 
     private PdhpdlRiskGuardConfigModel BuildRiskGuardConfig() {
