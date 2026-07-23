@@ -18,11 +18,16 @@ CBOT_OUTPUT_DIR = Path.home() / "Documents" / "trading_reports"
 def reset_output_dir():
     """删除并重建报告输出目录：先清掉上次批量的残留文件，再建空目录接收本次生成的数据。
 
+    同时删掉上次批量留在上级目录（~/Documents）的对应 zip 存档（trading_reports_<ts>.zip），
+    避免历次存档在 ~/Documents 里越堆越多；这些 zip 由 archive_output_dir 生成，与本目录一一对应。
+
     只在批量回测开始前调用（run_tasks）。report_summary.py 复用已有报告，不应调用它，否则会把
     要汇总的 JSON 一并删掉。
     """
     if CBOT_OUTPUT_DIR.exists():
         shutil.rmtree(CBOT_OUTPUT_DIR)
+    for archive_path in CBOT_OUTPUT_DIR.parent.glob(f"{CBOT_OUTPUT_DIR.name}_*.zip"):
+        archive_path.unlink()
     CBOT_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
