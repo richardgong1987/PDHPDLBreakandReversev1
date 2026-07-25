@@ -43,8 +43,7 @@ public class PdhpdlRiskGuard {
         }
 
         if (_configModel.MinStopLossPips > 0.0 && stopLossPips < _configModel.MinStopLossPips) {
-            rejectReason =
-                $"Stop loss distance is too small. StopLossPips={stopLossPips}, MinStopLossPips={_configModel.MinStopLossPips}";
+            rejectReason = $"Stop loss distance is too small. StopLossPips={stopLossPips}, MinStopLossPips={_configModel.MinStopLossPips}";
             return true;
         }
 
