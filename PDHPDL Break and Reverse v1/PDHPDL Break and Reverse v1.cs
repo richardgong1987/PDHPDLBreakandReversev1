@@ -54,9 +54,6 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("输出文件名", DefaultValue = "pdhpdl-trades.csv")]
     public string FileName { get; set; }
 
-    [Parameter("显示均线 (RMA 1 + RMA 2)", DefaultValue = true, Group = "均线")]
-    public bool ShowMovingAverages { get; set; }
-
     [Parameter("均线来源", DefaultValue = MovingAverageSourceModel.HigherTimeFrame, Group = "均线")]
     public MovingAverageSourceModel MaSource { get; set; }
 
@@ -78,23 +75,9 @@ public class PDHPDLBreakandReversev1 : Robot {
     private PdhpdlTradeCsvLogger _csvLogger;
 
     protected override void OnStart() {
-        if (IsDebug) {
-            bool result = System.Diagnostics.Debugger.Launch();
-            if (!result) {
-                Print("Debugger launch failed");
-            }
-        }
-
-        _pdhpdlLines = new PdhpdlLines(Chart, MarketData, SymbolName, Bars, 3);
-        _pdhpdlLines.Draw();
-
-        DualRmaLinesConfigModel rmaConfig = BuildMovingAverageConfig();
-        _rmaSeries = new DualRmaSeries(MarketData, Indicators, SymbolName, Bars, rmaConfig);
-
-        if (ShowMovingAverages) {
-            _movingAverageLines = new DualRmaLines(Chart, Bars, _rmaSeries, rmaConfig.Thickness);
-            _movingAverageLines.Draw();
-        }
+        LaunchDebug();
+        DrawPdhPdl();
+        DrawDualRmaLines();
 
         Bars dailyBars = MarketData.GetBars(TimeFrame.Daily, SymbolName);
         ConsecutiveKeyLevelOrderLimit keyLevelLimit = new(MaxKeylevelTimes);
@@ -109,6 +92,27 @@ public class PDHPDLBreakandReversev1 : Robot {
         _orderExecutor =
             new PdhpdlOrderExecutor(this, SymbolName, Bars.TimeFrame.ToString(), planner, riskGuard, _csvLogger, keyLevelLimit);
         Print("*****PDH/PDL Break and Reverse started.");
+    }
+
+    private void DrawDualRmaLines() {
+        DualRmaLinesConfigModel rmaConfig = BuildMovingAverageConfig();
+        _rmaSeries = new DualRmaSeries(MarketData, Indicators, SymbolName, Bars, rmaConfig);
+        _movingAverageLines = new DualRmaLines(Chart, Bars, _rmaSeries, rmaConfig.Thickness);
+        _movingAverageLines.Draw();
+    }
+
+    private void DrawPdhPdl() {
+        _pdhpdlLines = new PdhpdlLines(Chart, MarketData, SymbolName, Bars, 3);
+        _pdhpdlLines.Draw();
+    }
+
+    private void LaunchDebug() {
+        if (IsDebug) {
+            bool result = System.Diagnostics.Debugger.Launch();
+            if (!result) {
+                Print("Debugger launch failed");
+            }
+        }
     }
 
     private DualRmaLinesConfigModel BuildMovingAverageConfig() {
