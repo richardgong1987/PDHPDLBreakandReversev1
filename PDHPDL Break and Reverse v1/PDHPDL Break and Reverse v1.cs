@@ -1,9 +1,7 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using cAlgo.API;
-using cAlgo.API.Collections;
-using cAlgo.API.Indicators;
-using cAlgo.API.Internals;
 
 namespace cAlgo.Robots;
 
@@ -11,6 +9,9 @@ namespace cAlgo.Robots;
 public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("策略模式", DefaultValue = StrategyModel.All)]
     public StrategyModel Strategy { get; set; }
+
+    [Parameter("ATR倍数", DefaultValue = 1.5)]
+    public double maxBarRangeAtr { get; set; }
 
     [Parameter("启动时清空交易记录CSV", DefaultValue = false)]
     public bool ResetTradeLogOnStart { get; set; }
@@ -73,12 +74,13 @@ public class PDHPDLBreakandReversev1 : Robot {
     private PdhpdlSignalMarkers _signalMarkers;
     private PdhpdlOrderExecutor _orderExecutor;
     private PdhpdlTradeCsvLogger _csvLogger;
+    private Atr14Series _atr14;
 
     protected override void OnStart() {
         LaunchDebug();
         DrawPdhPdl();
         DrawDualRmaLines();
-
+        _atr14 = new Atr14Series(Indicators, Bars);
         Bars dailyBars = MarketData.GetBars(TimeFrame.Daily, SymbolName);
         ConsecutiveKeyLevelOrderLimit keyLevelLimit = new(MaxKeylevelTimes);
         _signalDetector = new PdhpdlSignalDetector(Bars, dailyBars, _rmaSeries, keyLevelLimit);
@@ -108,7 +110,7 @@ public class PDHPDLBreakandReversev1 : Robot {
 
     private void LaunchDebug() {
         if (IsDebug) {
-            bool result = System.Diagnostics.Debugger.Launch();
+            bool result = Debugger.Launch();
             if (!result) {
                 Print("Debugger launch failed");
             }
@@ -174,6 +176,11 @@ public class PDHPDLBreakandReversev1 : Robot {
         if (signalModel.IsShortSignal) {
             Print("*****SHORT trigger | Time: {0}, High: {1}, Close: {2}, PDH: {3}", signalModel.BarTime, signalModel.High,
                 signalModel.Close, signalModel.Pdh);
+        }
+
+        if (_atr14.IsBarRangeTooLarge(signalModel.BarIndex, signalModel.High, signalModel.Low, maxBarRangeAtr)) {
+            Print("Skip signal: bar range {0} exceeds {1} x ATR14.", signalModel.High - signalModel.Low, maxBarRangeAtr);
+            // return;
         }
 
         if (_orderExecutor.ExecuteIfSignal(signalModel)) {
