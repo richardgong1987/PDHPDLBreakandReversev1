@@ -10,8 +10,8 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("策略模式", DefaultValue = StrategyModel.All)]
     public StrategyModel Strategy { get; set; }
 
-    [Parameter("ATR倍数", DefaultValue = 1.5)]
-    public double maxBarRangeAtr { get; set; }
+    [Parameter("ATR倍数", DefaultValue = 2)]
+    public double MaxBarRangeAtr { get; set; }
 
     [Parameter("启动时清空交易记录CSV", DefaultValue = false)]
     public bool ResetTradeLogOnStart { get; set; }
@@ -178,8 +178,8 @@ public class PDHPDLBreakandReversev1 : Robot {
                 signalModel.Close, signalModel.Pdh);
         }
 
-        if (_atr14.IsBarRangeTooLarge(signalModel.BarIndex, signalModel.High, signalModel.Low, maxBarRangeAtr)) {
-            Print("Skip signal: bar range {0} exceeds {1} x ATR14.", signalModel.High - signalModel.Low, maxBarRangeAtr);
+        if (_atr14.IsBarRangeTooLarge(signalModel.BarIndex, signalModel.High, signalModel.Low, MaxBarRangeAtr)) {
+            Print("Skip signal: bar range {0} exceeds {1} x ATR14.", signalModel.High - signalModel.Low, MaxBarRangeAtr);
             // return;
         }
 
