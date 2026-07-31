@@ -18,7 +18,6 @@ public class PdhpdlOrderExecutor {
     private readonly PdhpdlOrderPlanner _planner;
     private readonly PdhpdlRiskGuard _riskGuard;
     private readonly PdhpdlTradeCsvLogger _csvLogger;
-    private readonly ConsecutiveKeyLevelOrderLimit _keyLevelLimit;
 
     private readonly Dictionary<string, string> _pendingCsvIdsByLabel = new();
     private readonly Dictionary<string, double> _pendingEntryEquitiesByLabel = new();
@@ -26,14 +25,13 @@ public class PdhpdlOrderExecutor {
     private readonly Dictionary<int, double> _positionEntryEquities = new();
 
     public PdhpdlOrderExecutor(Robot robot, string symbolName, string timeFrame, PdhpdlOrderPlanner planner, PdhpdlRiskGuard riskGuard,
-        PdhpdlTradeCsvLogger csvLogger, ConsecutiveKeyLevelOrderLimit keyLevelLimit) {
+        PdhpdlTradeCsvLogger csvLogger) {
         _robot = robot;
         _symbolName = symbolName;
         _timeFrame = timeFrame;
         _planner = planner;
         _riskGuard = riskGuard;
         _csvLogger = csvLogger;
-        _keyLevelLimit = keyLevelLimit;
 
         if (_riskGuard.NewsBlackoutWindowCount > 0)
             _robot.Print("*****News blackout windows loaded. Count: {0}", _riskGuard.NewsBlackoutWindowCount);
@@ -78,11 +76,7 @@ public class PdhpdlOrderExecutor {
         planModel.SignalName = signalModel.Label;
         planModel.KeyLevel = signalModel.KeyLevel;
 
-        if (!ExecutePlan(planModel))
-            return false;
-
-        _keyLevelLimit.RecordPlacedOrder(signalModel.KeyLevel);
-        return true;
+        return ExecutePlan(planModel);
     }
 
     private bool HasOpenSymbolPosition() {

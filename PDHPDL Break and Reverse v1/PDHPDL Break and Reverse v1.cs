@@ -16,9 +16,6 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("启动时清空交易记录CSV", DefaultValue = false)]
     public bool ResetTradeLogOnStart { get; set; }
 
-    [Parameter("关键位连续最大次数", DefaultValue = 0, MinValue = 0, MaxValue = 50)]
-    public int MaxKeylevelTimes { get; set; }
-
     [Parameter("每笔交易风险百分比，默认1%", DefaultValue = 1.0, MinValue = 0.1, MaxValue = 10.0, Step = 0.1)]
     public double RiskPct { get; set; }
 
@@ -82,8 +79,7 @@ public class PDHPDLBreakandReversev1 : Robot {
         DrawDualRmaLines();
         _atr14 = new Atr14Series(Indicators, Bars);
         Bars dailyBars = MarketData.GetBars(TimeFrame.Daily, SymbolName);
-        ConsecutiveKeyLevelOrderLimit keyLevelLimit = new(MaxKeylevelTimes);
-        _signalDetector = new PdhpdlSignalDetector(Bars, dailyBars, _rmaSeries, keyLevelLimit);
+        _signalDetector = new PdhpdlSignalDetector(Bars, dailyBars, _rmaSeries);
         _signalMarkers = new PdhpdlSignalMarkers(Chart, Symbol.TickSize);
 
         _csvLogger = new PdhpdlTradeCsvLogger(ResetTradeLogOnStart, ResolveReportsDirectory(), FileName);
@@ -92,7 +88,7 @@ public class PDHPDLBreakandReversev1 : Robot {
         var riskGuard = new PdhpdlRiskGuard(BuildRiskGuardConfig());
         var planner = new PdhpdlOrderPlanner(new CAlgoSymbolModel(Symbol), riskGuard, StopOffsetTicks, TakeProfitR, EntryModel, RiskPct);
         _orderExecutor =
-            new PdhpdlOrderExecutor(this, SymbolName, Bars.TimeFrame.ToString(), planner, riskGuard, _csvLogger, keyLevelLimit);
+            new PdhpdlOrderExecutor(this, SymbolName, Bars.TimeFrame.ToString(), planner, riskGuard, _csvLogger);
         Print("*****PDH/PDL Break and Reverse started.");
     }
 
