@@ -1,39 +1,18 @@
 """读取 conditions.numbers 计划表，把每一行变成一个回测任务对象 ConditionRow。
 
-计划表每一行是一条回测任务，按“列名”（不是列顺序）读取以下字段：
+计划表每一行是一条回测任务，按“列名”（不是列顺序）读取。读哪些列、每列怎么校验、
+对应哪个 cBot 参数，全部登记在 parameters.PARAMETERS——加减参数请改那张表，不要改这里。
 
-    种类             -> symbol
-    周期             -> period
-    回撤开仓模式     -> entry_model_name（映射成 EntryModel 数值）
-    止盈目标         -> take_profit_r
-    N次止损Lock      -> nlock（连亏达到这个笔数后锁仓，见 Orders/PdhpdlOrderExecutor）
-    策略模式         -> strategy_name（StrategyModel 成员名，按 RMA 排列强度隔离；留空=All）
-    起始日期         -> start_date（DD/MM/YYYY, UTC）
-    结束日期         -> end_date（DD/MM/YYYY, UTC）
+报告文件名的拼法仍写在本文件的 ConditionRow.file_name 里：文件名只放需要区分回测结果的
+字段，与参数表不是一一对应的关系。
 """
 
-from datetime import date, datetime
+from datetime import datetime
 
 from numbers_parser import Document
 
-# 回撤开仓模式的名称 -> cBot 的 EntryModel 数值
-ENTRY_MODEL_CODES = {
-    "Close": 0,
-    "Pb25": 1,
-    "Pb382": 2,
-    "Pb50": 3,
-}
+from .parameters import PARAMETERS, PARAMETER_COLUMNS
 
-# 合法的「策略模式」取值，必须与 Models/StrategyModel.cs 的成员名一致（顺序无关）。
-# CLI 传枚举时成员名和整数值都接受，这里用成员名：C# 枚举中间插入成员时整数值会整体偏移，
-# 成员名不会。实测非法取值（拼错的名字、越界的整数）CLI 不报错、静默退回默认值 All，
-# 所以这份白名单是唯一能挡住“回测跑的其实是 All”的防线。
-STRATEGY_MODEL_NAMES = [
-    "All",  # 全部条件，不作隔离
-    "MultiplePosition",  # 只在允许多笔持仓的排列下开仓
-]
-
-# 计划表列名（用列名匹配，避免依赖列顺序）
 COLUMN_SYMBOL = "种类"
 COLUMN_PERIOD = "周期"
 COLUMN_ENTRY_MODEL = "回撤开仓模式"
@@ -43,121 +22,65 @@ COLUMN_STRATEGY = "策略模式"
 COLUMN_START_DATE = "起始日期"
 COLUMN_END_DATE = "结束日期"
 
-REQUIRED_COLUMNS = [
+# 这几列留空说明这一行还没填完（Numbers 表尾常有空行），整行跳过而不是报错。
+UNFINISHED_ROW_COLUMNS = [
     COLUMN_SYMBOL,
     COLUMN_PERIOD,
     COLUMN_ENTRY_MODEL,
     COLUMN_TAKE_PROFIT,
-    COLUMN_NLOCK,
-    COLUMN_STRATEGY,
-    COLUMN_START_DATE,
-    COLUMN_END_DATE,
 ]
 
 
 class ConditionRow:
-    """计划表中的一条回测任务。"""
+    """计划表中的一条回测任务。参数值按列名存放，校验在 Parameter.parse 里做。"""
 
-    def __init__(
-        self,
-        symbol,
-        period,
-        entry_model_name,
-        take_profit_r,
-        nlock,
-        strategy_name,
-        start_date,
-        end_date,
-    ):
-        self.symbol = symbol
-        self.period = period
-        self.entry_model_name = entry_model_name
-        self.take_profit_r = take_profit_r
-        self.nlock = nlock
-        self.strategy_name = strategy_name
-        self.start_date = start_date
-        self.end_date = end_date
+    def __init__(self, cells):
+        self._cells = dict(cells)
+        self._values = {
+            parameter.column: parameter.parse(cells[parameter.column])
+            for parameter in PARAMETERS
+        }
+
+    def cli_args(self):
+        """这条任务的 cBot 参数命令行片段，顺序与 PARAMETERS 一致。"""
+        return [
+            parameter.cli_arg(self._values[parameter.column]) for parameter in PARAMETERS
+        ]
 
     @property
-    def entry_model_code(self):
-        return ENTRY_MODEL_CODES[self.entry_model_name]
+    def symbol(self):
+        return self._values[COLUMN_SYMBOL]
 
     @property
-    def take_profit_text(self):
-        """把 2.0 显示成 "2"，把 1.75 保留成 "1.75"。"""
-        value = self.take_profit_r
-        if float(value).is_integer():
-            return str(int(value))
-        return str(value)
+    def period(self):
+        return self._values[COLUMN_PERIOD]
 
     @property
-    def nlock_text(self):
-        """文件名里用的锁仓笔数文本，带 n 前缀便于人眼区分。"""
-        return f"n{self.nlock}"
+    def start_date(self):
+        return self._values[COLUMN_START_DATE]
+
+    @property
+    def end_date(self):
+        return self._values[COLUMN_END_DATE]
 
     @property
     def file_name(self):
         return (
-            f"{self.symbol}-{self.period}-{self.entry_model_name}-"
-            f"{self.entry_model_code}-{self.take_profit_text}-"
-            f"{self.nlock_text}-{self.strategy_name}-"
+            f"{self.symbol}-{self.period}-{self._entry_model_name}-"
+            f"{self._values[COLUMN_ENTRY_MODEL]}-{self._values[COLUMN_TAKE_PROFIT]}-"
+            f"n{self._values[COLUMN_NLOCK]}-{self._values[COLUMN_STRATEGY]}-"
             f"{to_compact_date(self.start_date)}-{to_compact_date(self.end_date)}.csv"
         )
 
     @property
     def report_file_name(self):
         """回测报告文件名：与 CSV 同名，只把 .csv 换成 .json。"""
-        return self.file_name[:-len(".csv")] + ".json"
+        return self.file_name[: -len(".csv")] + ".json"
 
-
-def format_backtest_date(value, column_name):
-    """把计划表里的日期单元格格式化成 cTrader 需要的 DD/MM/YYYY。
-
-    计划表要求填 DD/MM/YYYY。为避免非法日期（如月份>12）被直接送进 cTrader
-    才报错，这里先校验：Numbers 日期格按 DD/MM/YYYY 输出；文本必须能按
-    DD/MM/YYYY 解析，否则明确指出是哪一列格式不对。
-    """
-    if isinstance(value, (datetime, date)):
-        return value.strftime("%d/%m/%Y")
-    text = str(value).strip()
-    if not text:
-        raise ValueError(f"计划表列「{column_name}」为空，请填写回测日期。")
-    try:
-        parsed = datetime.strptime(text, "%d/%m/%Y")
-    except ValueError:
-        raise ValueError(
-            f"计划表列「{column_name}」的日期 {text!r} 不是合法的 DD/MM/YYYY 格式，"
-            "请按 日/月/年 填写（例如 01/06/2026）。"
-        )
-    return parsed.strftime("%d/%m/%Y")
-
-
-def parse_nlock(value):
-    """把计划表单元格转成 cBot 需要的整数笔数（Numbers 数字格会给出 2.0 这样的浮点）。"""
-    if value is None or str(value).strip() == "":
-        raise ValueError(f"计划表列「{COLUMN_NLOCK}」为空，请填 0 或正整数。")
-    try:
-        count = int(float(str(value).strip()))
-    except ValueError:
-        raise ValueError(
-            f"计划表列「{COLUMN_NLOCK}」的值 {value!r} 不是整数，请填 0 或正整数。"
-        )
-    if count < 0:
-        raise ValueError(f"计划表列「{COLUMN_NLOCK}」不能为负数：{value!r}。")
-    return count
-
-
-def parse_strategy_name(value):
-    """把计划表单元格转成 StrategyModel 的成员名；留空按 All（不作隔离）处理。"""
-    name = "" if value is None else str(value).strip()
-    if not name:
-        return "All"
-    if name not in STRATEGY_MODEL_NAMES:
-        raise ValueError(
-            f"计划表列「{COLUMN_STRATEGY}」的值 {value!r} 不是已知的策略模式。"
-            "可填：" + "、".join(STRATEGY_MODEL_NAMES)
-        )
-    return name
+    @property
+    def _entry_model_name(self):
+        """文件名里用模式名（Close/Pb25/…），命令行里用它对应的数值。"""
+        return str(self._cells[COLUMN_ENTRY_MODEL]).strip()
 
 
 def to_compact_date(backtest_date):
@@ -170,7 +93,7 @@ def resolve_column_indexes(header_row):
     header = [str(cell).strip() if cell is not None else "" for cell in header_row]
     indexes = {}
     missing = []
-    for column_name in REQUIRED_COLUMNS:
+    for column_name in PARAMETER_COLUMNS:
         if column_name in header:
             indexes[column_name] = header.index(column_name)
         else:
@@ -178,13 +101,13 @@ def resolve_column_indexes(header_row):
     if missing:
         raise ValueError(
             "计划表缺少必需列：" + "、".join(missing) + "。\n"
-            "请在 conditions.numbers 里补上这些列（起始日期/结束日期用于回测区间）。"
+            "请在 conditions.numbers 里补上这些列（列名需与参数表里的写法逐字一致）。"
         )
     return indexes
 
 
 def read_condition_rows(conditions_file):
-    """读取计划表，返回有效的任务列表（跳过表头与空行）。"""
+    """读取计划表，返回有效的任务列表（跳过表头与未填完的行）。"""
     document = Document(str(conditions_file))
     table = document.sheets[0].tables[0]
     rows = table.rows(values_only=True)
@@ -195,34 +118,16 @@ def read_condition_rows(conditions_file):
 
     tasks = []
     for row in rows[1:]:
-        symbol = row[indexes[COLUMN_SYMBOL]]
-        period = row[indexes[COLUMN_PERIOD]]
-        entry_model_name = row[indexes[COLUMN_ENTRY_MODEL]]
-        take_profit_r = row[indexes[COLUMN_TAKE_PROFIT]]
-        nlock_cell = row[indexes[COLUMN_NLOCK]]
-        strategy_cell = row[indexes[COLUMN_STRATEGY]]
-        start_cell = row[indexes[COLUMN_START_DATE]]
-        end_cell = row[indexes[COLUMN_END_DATE]]
-
-        if not all([symbol, period, entry_model_name]) or take_profit_r is None:
+        cells = {column: row[indexes[column]] for column in PARAMETER_COLUMNS}
+        if _is_unfinished_row(cells):
             continue
-        if entry_model_name not in ENTRY_MODEL_CODES:
-            raise ValueError(f"未知的回撤开仓模式: {entry_model_name!r}")
-
-        nlock = parse_nlock(nlock_cell)
-        strategy_name = parse_strategy_name(strategy_cell)
-        start_date = format_backtest_date(start_cell, COLUMN_START_DATE)
-        end_date = format_backtest_date(end_cell, COLUMN_END_DATE)
-        tasks.append(
-            ConditionRow(
-                symbol,
-                period,
-                entry_model_name,
-                take_profit_r,
-                nlock,
-                strategy_name,
-                start_date,
-                end_date,
-            )
-        )
+        tasks.append(ConditionRow(cells))
     return tasks
+
+
+def _is_unfinished_row(cells):
+    return any(_is_blank(cells[column]) for column in UNFINISHED_ROW_COLUMNS)
+
+
+def _is_blank(cell):
+    return cell is None or str(cell).strip() == ""

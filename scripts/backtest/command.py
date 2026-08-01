@@ -47,12 +47,10 @@ def archive_output_dir(timestamp=None):
     )
     return Path(archive_path)
 
-# cBot 自定义参数（回测计划表覆盖之外的固定项，保持与手工命令一致）
+# cBot 自定义参数（每条回测都一样的固定项，保持与手工命令一致）
+# 计划表能逐行改的那些参数不在这里，它们登记在 parameters.PARAMETERS，由 task.cli_args() 拼出。
 # 名称必须与 cBot 的 C# 属性名逐字一致（cTrader CLI 按属性名匹配，不是按中文显示名）。
-# 枚举成员名和整数值 CLI 都接受（实测）。这里 MaSource / EntryModel 沿用整数值，
-# Strategy 用成员名（枚举中间插入成员时整数值会整体偏移，成员名不会）：
 #   MaSource -> MovingAverageSourceModel: HigherTimeFrame=0, ChartTimeFrame=1
-# 注意：非法枚举取值 CLI 不报错，会静默退回参数默认值，所以取值由 plan.py 校验。
 CBOT_FIXED_PARAMS = {
     "ResetTradeLogOnStart": "True",
     "RiskPct": "1",
@@ -81,10 +79,6 @@ def build_command(task, config):
         config.algo_path,
         f"--ctid={config.ctid}",
         f"--account={config.account}",
-        f"--symbol={task.symbol}",
-        f"--period={task.period}",
-        f"--start={task.start_date}",
-        f"--end={task.end_date}",
         f"--data-mode=ticks",
         "--commission=30",
         "--balance=10000",
@@ -98,10 +92,8 @@ def build_command(task, config):
     for name, value in CBOT_FIXED_PARAMS.items():
         command.append(f"--{name}={value}")
 
-    command.append(f"--EntryModel={task.entry_model_code}")
-    command.append(f"--TakeProfitR={task.take_profit_text}")
-    command.append(f"--Nlock={task.nlock}")
-    command.append(f"--Strategy={task.strategy_name}")
+    # 计划表里的每一列都在这里变成命令行参数，加减参数只改 parameters.PARAMETERS。
+    command.extend(task.cli_args())
     # 传绝对路径：cBot 内部会 Path.Combine(我的文档, FileName)，第二参为绝对路径时 .NET 直接返回它，
     # 于是交易 CSV 也落到 trading_reports，与 report-json 同目录。
     command.append(f"--FileName={CBOT_OUTPUT_DIR / task.file_name}")
