@@ -19,6 +19,9 @@ public class PdhpdlOrderExecutor {
     private readonly PdhpdlRiskGuard _riskGuard;
     private readonly PdhpdlTradeCsvLogger _csvLogger;
 
+    // 只用来观测「目前已经连续亏了多少笔」，不参与任何下单决策，唯一出口是 OnPositionClosed 的日志。
+    private readonly ConsecutiveLossCounter _lossCounter = new();
+
     private readonly Dictionary<string, string> _pendingCsvIdsByLabel = new();
     private readonly Dictionary<string, double> _pendingEntryEquitiesByLabel = new();
     private readonly Dictionary<int, string> _positionCsvIds = new();
@@ -38,6 +41,10 @@ public class PdhpdlOrderExecutor {
 
         _robot.Positions.Closed += OnPositionClosed;
         _robot.Positions.Opened += OnPositionOpened;
+    }
+
+    public int LossCount() {
+        return _lossCounter.Count;
     }
 
     public void Stop() {
@@ -195,6 +202,8 @@ public class PdhpdlOrderExecutor {
 
         if (!string.IsNullOrWhiteSpace(closeRecordId))
             _robot.Print("*****CSV close record added. Id: {0}, ProfitLoss: {1}", closeRecordId, args.Position.NetProfit);
+
+        _lossCounter.RecordClosedTrade(args.Position.NetProfit);
     }
 
     private bool IsStrategyPosition(Position position) {
