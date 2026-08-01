@@ -1,7 +1,7 @@
 """导出层：把每份回测报告的配置写成 metadata.json。
 
 用途：CSV 便于人看，但不便于机器入库查询。metadata.json 以「生成的交易 CSV 文件名」为 key，
-value 里放解析出来的配置（种类/周期/回撤开仓模式/止盈目标/策略模式/起止日期），
+value 里放解析出来的配置（种类/周期/回撤开仓模式/止盈目标/N次止损Lock/策略模式/起止日期），
 方便日后原样导入数据库按条件检索；同时在 raw 里保留未加工的原始字段（含报告名与报告 JSON 的
 指标），做到既可查询又不丢信息。
 
@@ -35,6 +35,7 @@ def _build_entry(row):
         "周期": name.period,
         "回撤开仓模式": name.entry_mode,
         "止盈目标": name.take_profit,
+        "N次止损Lock": name.nlock,
         "策略模式": name.strategy,
         "起始日期": _to_slash_date(name.start_date),
         "结束日期": _to_slash_date(name.end_date),

@@ -6,6 +6,7 @@
     周期             -> period
     回撤开仓模式     -> entry_model_name（映射成 EntryModel 数值）
     止盈目标         -> take_profit_r
+    N次止损Lock      -> nlock（连亏达到这个笔数后锁仓，见 Orders/PdhpdlOrderExecutor）
     策略模式         -> strategy_name（StrategyModel 成员名，按 RMA 排列强度隔离；留空=All）
     起始日期         -> start_date（DD/MM/YYYY, UTC）
     结束日期         -> end_date（DD/MM/YYYY, UTC）
@@ -37,6 +38,7 @@ COLUMN_SYMBOL = "种类"
 COLUMN_PERIOD = "周期"
 COLUMN_ENTRY_MODEL = "回撤开仓模式"
 COLUMN_TAKE_PROFIT = "止盈目标"
+COLUMN_NLOCK = "N次止损Lock"
 COLUMN_STRATEGY = "策略模式"
 COLUMN_START_DATE = "起始日期"
 COLUMN_END_DATE = "结束日期"
@@ -46,6 +48,7 @@ REQUIRED_COLUMNS = [
     COLUMN_PERIOD,
     COLUMN_ENTRY_MODEL,
     COLUMN_TAKE_PROFIT,
+    COLUMN_NLOCK,
     COLUMN_STRATEGY,
     COLUMN_START_DATE,
     COLUMN_END_DATE,
@@ -61,6 +64,7 @@ class ConditionRow:
         period,
         entry_model_name,
         take_profit_r,
+        nlock,
         strategy_name,
         start_date,
         end_date,
@@ -69,6 +73,7 @@ class ConditionRow:
         self.period = period
         self.entry_model_name = entry_model_name
         self.take_profit_r = take_profit_r
+        self.nlock = nlock
         self.strategy_name = strategy_name
         self.start_date = start_date
         self.end_date = end_date
@@ -86,10 +91,16 @@ class ConditionRow:
         return str(value)
 
     @property
+    def nlock_text(self):
+        """文件名里用的锁仓笔数文本，带 n 前缀便于人眼区分。"""
+        return f"n{self.nlock}"
+
+    @property
     def file_name(self):
         return (
             f"{self.symbol}-{self.period}-{self.entry_model_name}-"
-            f"{self.entry_model_code}-{self.take_profit_text}-{self.strategy_name}-"
+            f"{self.entry_model_code}-{self.take_profit_text}-"
+            f"{self.nlock_text}-{self.strategy_name}-"
             f"{to_compact_date(self.start_date)}-{to_compact_date(self.end_date)}.csv"
         )
 
@@ -119,6 +130,21 @@ def format_backtest_date(value, column_name):
             "请按 日/月/年 填写（例如 01/06/2026）。"
         )
     return parsed.strftime("%d/%m/%Y")
+
+
+def parse_nlock(value):
+    """把计划表单元格转成 cBot 需要的整数笔数（Numbers 数字格会给出 2.0 这样的浮点）。"""
+    if value is None or str(value).strip() == "":
+        raise ValueError(f"计划表列「{COLUMN_NLOCK}」为空，请填 0 或正整数。")
+    try:
+        count = int(float(str(value).strip()))
+    except ValueError:
+        raise ValueError(
+            f"计划表列「{COLUMN_NLOCK}」的值 {value!r} 不是整数，请填 0 或正整数。"
+        )
+    if count < 0:
+        raise ValueError(f"计划表列「{COLUMN_NLOCK}」不能为负数：{value!r}。")
+    return count
 
 
 def parse_strategy_name(value):
@@ -173,6 +199,7 @@ def read_condition_rows(conditions_file):
         period = row[indexes[COLUMN_PERIOD]]
         entry_model_name = row[indexes[COLUMN_ENTRY_MODEL]]
         take_profit_r = row[indexes[COLUMN_TAKE_PROFIT]]
+        nlock_cell = row[indexes[COLUMN_NLOCK]]
         strategy_cell = row[indexes[COLUMN_STRATEGY]]
         start_cell = row[indexes[COLUMN_START_DATE]]
         end_cell = row[indexes[COLUMN_END_DATE]]
@@ -182,6 +209,7 @@ def read_condition_rows(conditions_file):
         if entry_model_name not in ENTRY_MODEL_CODES:
             raise ValueError(f"未知的回撤开仓模式: {entry_model_name!r}")
 
+        nlock = parse_nlock(nlock_cell)
         strategy_name = parse_strategy_name(strategy_cell)
         start_date = format_backtest_date(start_cell, COLUMN_START_DATE)
         end_date = format_backtest_date(end_cell, COLUMN_END_DATE)
@@ -191,6 +219,7 @@ def read_condition_rows(conditions_file):
                 period,
                 entry_model_name,
                 take_profit_r,
+                nlock,
                 strategy_name,
                 start_date,
                 end_date,

@@ -10,7 +10,7 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("策略模式", DefaultValue = StrategyModel.All)]
     public StrategyModel Strategy { get; set; }
 
-    [Parameter("N次止损Lock", DefaultValue = 2)]
+    [Parameter("N次止损Lock", DefaultValue = 3)]
     public int Nlock { get; set; }
 
     [Parameter("ATR倍数", DefaultValue = 2)] public double MaxBarRangeAtr { get; set; }

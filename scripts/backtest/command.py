@@ -100,6 +100,7 @@ def build_command(task, config):
 
     command.append(f"--EntryModel={task.entry_model_code}")
     command.append(f"--TakeProfitR={task.take_profit_text}")
+    command.append(f"--Nlock={task.nlock}")
     command.append(f"--Strategy={task.strategy_name}")
     # 传绝对路径：cBot 内部会 Path.Combine(我的文档, FileName)，第二参为绝对路径时 .NET 直接返回它，
     # 于是交易 CSV 也落到 trading_reports，与 report-json 同目录。

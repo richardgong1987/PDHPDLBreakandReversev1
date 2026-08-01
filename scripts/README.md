@@ -83,6 +83,8 @@ these column names (the names are Chinese literals that the code matches exactly
 | `周期` | Timeframe | `--period` | e.g. `m5`, `m15`, `h1`, `H4` |
 | `回撤开仓模式` | Entry mode | `--EntryModel` | see mapping below |
 | `止盈目标` | Take-profit multiple (R) | `--TakeProfitR` | `2.0` becomes `2`; `1.75` kept as is |
+| `N次止损Lock` | Consecutive-loss lock threshold | `--Nlock` | `0` or a positive integer |
+| `策略模式` | Strategy mode | `--Strategy` | `StrategyModel` member name; blank = `All` |
 | `起始日期` | Backtest start | `--start` | **DD/MM/YYYY** (day/month/year, UTC) |
 | `结束日期` | Backtest end | `--end` | **DD/MM/YYYY** |
 | `最大浮盈` | — | not used yet | read but ignored |
@@ -103,17 +105,17 @@ Blank rows and rows missing required fields are skipped automatically.
 Built by joining the plan fields (dates use the compact `YYYYMMDD` form):
 
 ```
-<symbol>-<period>-<entry-mode>-<EntryModel value>-<take-profit>-<start-date>-<end-date>.csv
+<symbol>-<period>-<entry-mode>-<EntryModel value>-<take-profit>-n<Nlock>-<strategy>-<start-date>-<end-date>.csv
 ```
 
-Example: `XAUUSD-h1-Close-0-2-20260601-20260630.csv`. Files are written to `~/Documents/`
+Example: `XAUUSD-h1-Close-0-2-n2-All-20260601-20260630.csv`. Files are written to `~/Documents/`
 (the path is decided by the cBot's own logger).
 
 Each backtest also produces a **backtest report JSON** (`--report-json`), in the **same
 directory with the same name** as the CSV, only with the extension changed to `.json`:
 
 ```
-~/Documents/XAUUSD-h1-Close-0-2-20260601-20260630.json
+~/Documents/XAUUSD-h1-Close-0-2-n2-All-20260601-20260630.json
 ```
 
 This way each run's CSV (trade details) and report.json (backtest statistics) sit together
@@ -134,8 +136,8 @@ directory, summarizes them with `pandas`, and writes two files to `~/Documents/`
 **2. `final_summary_report.csv`** — one row per report, columns:
 
 ```
-文件名, 起始日期, 结束日期, 周期, 止盈目标, 胜率%, 盈利金额, 盈利率%
-XAUUSD-m5-Close-0-2-20240101-20240131, 20240101, 20240131, m5, 2R, 29%, -509$, -5.09%
+文件名, 起始日期, 结束日期, 周期, 止盈目标, N次止损Lock, 策略模式, 胜率%, 盈利金额, 盈利率%
+XAUUSD-m5-Close-0-2-n2-All-20240101-20240131, 20240101, 20240131, m5, 2R, 2, All, 29%, -509$, -5.09%
 ```
 
 `胜率%` (win rate), `盈利金额` (net profit) and `盈利率%` (return on capital) come from the
