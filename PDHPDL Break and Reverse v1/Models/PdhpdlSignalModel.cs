@@ -40,4 +40,7 @@ public class PdhpdlSignalModel {
     public double SL { get; set; }
 
     public StrategyModel Strategy { get; set; }
+    public int Nlock { get; set; }
+    public int LossCount { get; set; }
+    public bool GreaterThanATR { get; set; }
 }

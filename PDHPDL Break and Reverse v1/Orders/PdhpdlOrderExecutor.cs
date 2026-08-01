@@ -73,6 +73,7 @@ public class PdhpdlOrderExecutor {
             return false;
         }
 
+
         PdhpdlOrderPlanModel planModel = _planner.CreatePlan(signalModel, _robot.Account.Equity);
 
         if (!planModel.IsValid) {
@@ -82,6 +83,10 @@ public class PdhpdlOrderExecutor {
 
         planModel.SignalName = signalModel.Label;
         planModel.KeyLevel = signalModel.KeyLevel;
+
+        if (signalModel.LossCount >= signalModel.Nlock && signalModel.GreaterThanATR == false) {
+            return false;
+        }
 
         return ExecutePlan(planModel);
     }

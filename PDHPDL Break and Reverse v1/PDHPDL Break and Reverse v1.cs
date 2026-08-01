@@ -176,10 +176,9 @@ public class PDHPDLBreakandReversev1 : Robot {
                 signalModel.Close, signalModel.Pdh);
         }
 
-        if (_atr14.IsBarRangeTooLarge(signalModel.BarIndex, signalModel.High, signalModel.Low, MaxBarRangeAtr)) {
-            Print("Skip signal: bar range {0} exceeds {1} x ATR14.", signalModel.High - signalModel.Low, MaxBarRangeAtr);
-            // return;
-        }
+        signalModel.GreaterThanATR = _atr14.IsBarRangeTooLarge(signalModel.BarIndex, signalModel.High, signalModel.Low, MaxBarRangeAtr);
+        signalModel.Nlock = Nlock;
+        signalModel.LossCount = _orderExecutor.LossCount();
 
         if (_orderExecutor.ExecuteIfSignal(signalModel)) {
             _signalMarkers.Draw(signalModel);
