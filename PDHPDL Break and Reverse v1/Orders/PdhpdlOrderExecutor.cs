@@ -19,13 +19,15 @@ public class PdhpdlOrderExecutor {
     private readonly PdhpdlRiskGuard _riskGuard;
     private readonly PdhpdlTradeCsvLogger _csvLogger;
 
-    // 只用来观测「目前已经连续亏了多少笔」，不参与任何下单决策，唯一出口是 OnPositionClosed 的日志。
+    // 连亏笔数 + 最近那笔亏损单开仓时的 ATR，驱动下面的连亏锁仓。
     private readonly ConsecutiveLossCounter _lossCounter = new();
 
     private readonly Dictionary<string, string> _pendingCsvIdsByLabel = new();
     private readonly Dictionary<string, double> _pendingEntryEquitiesByLabel = new();
+    private readonly Dictionary<string, double> _pendingEntryAtrByLabel = new();
     private readonly Dictionary<int, string> _positionCsvIds = new();
     private readonly Dictionary<int, double> _positionEntryEquities = new();
+    private readonly Dictionary<int, double> _positionEntryAtr = new();
 
     public PdhpdlOrderExecutor(Robot robot, string symbolName, string timeFrame, PdhpdlOrderPlanner planner, PdhpdlRiskGuard riskGuard,
         PdhpdlTradeCsvLogger csvLogger) {
@@ -84,12 +86,39 @@ public class PdhpdlOrderExecutor {
         planModel.SignalName = signalModel.Label;
         planModel.KeyLevel = signalModel.KeyLevel;
 
-        if (signalModel.LossCount >= signalModel.Nlock && signalModel.GreaterThanATR == false) {
+        if (IsLockedByConsecutiveLosses(signalModel))
             return false;
-        }
 
+        return ExecutePlan(planModel, signalModel.Atr);
+    }
 
-        return ExecutePlan(planModel);
+    // 连亏达到 Nlock 笔后锁仓，直到某根信号 K 线的振幅超过「最近那笔亏损单开仓时 ATR」的
+    // MaxBarRangeAtr 倍——行情比我上次入场时活跃这么多，才算走出来，放行这一单。
+    // 参照用的是当时冻结的 ATR 而不是当前 ATR：行情冷下来时当前 ATR 会一起降、门槛跟着降，
+    // 等于自动解锁，锁仓就白锁了。
+    private bool IsLockedByConsecutiveLosses(PdhpdlSignalModel signalModel) {
+        if (signalModel.Nlock <= 0 || signalModel.LossCount < signalModel.Nlock)
+            return false;
+
+        if (HasLeftLossRegime(signalModel))
+            return false;
+
+        _robot.Print("*****Order skipped | Locked after {0} consecutive losses. BarRange: {1}, Needed: > {2} ({3} x ATR {4} at last losing entry)",
+            _lossCounter.Count, signalModel.High - signalModel.Low, RequiredBarRange(signalModel), signalModel.MaxBarRangeAtr,
+            _lossCounter.AtrAtLastLossEntry);
+        return true;
+    }
+
+    private bool HasLeftLossRegime(PdhpdlSignalModel signalModel) {
+        // 没记到参照 ATR（例如重启后连亏计数还在但开仓 ATR 已丢）时不拦，宁可放行也不无限期锁死。
+        if (_lossCounter.AtrAtLastLossEntry <= 0.0)
+            return true;
+
+        return signalModel.High - signalModel.Low > RequiredBarRange(signalModel);
+    }
+
+    private double RequiredBarRange(PdhpdlSignalModel signalModel) {
+        return _lossCounter.AtrAtLastLossEntry * signalModel.MaxBarRangeAtr;
     }
 
     private bool HasOpenSymbolPosition() {
@@ -119,7 +148,7 @@ public class PdhpdlOrderExecutor {
         }
     }
 
-    private bool ExecutePlan(PdhpdlOrderPlanModel planModel) {
+    private bool ExecutePlan(PdhpdlOrderPlanModel planModel, double entryAtr) {
         _robot.Print(
             "*****Order plan | Side: {0}, EntryMode: {1}, Entry: {2}, Stop: {3}, TakeProfit: {4}, RiskPrice: {5}, StopLossPips: {6}, RiskMoney: {7}, EstimatedRiskMoney: {8}, Lots: {9}, VolumeUnits: {10}",
             planModel.DirectionModel, planModel.EntryModel, planModel.EntryPrice, planModel.StopPrice, planModel.TakeProfitPrice,
@@ -136,10 +165,10 @@ public class PdhpdlOrderExecutor {
         _robot.Print("*****Order submitted | Label: {0}", planModel.Label);
 
         if (planModel.IsMarketOrder) {
-            return RecordMarketEntry(planModel, result.Position);
+            return RecordMarketEntry(planModel, result.Position, entryAtr);
         }
 
-        return RecordPendingEntry(planModel, result.PendingOrder);
+        return RecordPendingEntry(planModel, result.PendingOrder, entryAtr);
     }
 
     private TradeResult SubmitOrder(PdhpdlOrderPlanModel planModel) {
@@ -154,7 +183,7 @@ public class PdhpdlOrderExecutor {
             planModel.StopLossPips, planModel.TakeProfitPips, ProtectionType.Relative, null, EntryComment);
     }
 
-    private bool RecordMarketEntry(PdhpdlOrderPlanModel planModel, Position position) {
+    private bool RecordMarketEntry(PdhpdlOrderPlanModel planModel, Position position, double entryAtr) {
         string csvId = _csvLogger.AppendEntry(planModel, position, _symbolName, _timeFrame);
 
         if (string.IsNullOrWhiteSpace(csvId))
@@ -162,11 +191,12 @@ public class PdhpdlOrderExecutor {
 
         _positionCsvIds[position.Id] = csvId;
         _positionEntryEquities[position.Id] = planModel.AccountEquity;
+        _positionEntryAtr[position.Id] = entryAtr;
         _robot.Print("*****CSV trade record added. Path: {0}", _csvLogger.FilePath);
         return true;
     }
 
-    private bool RecordPendingEntry(PdhpdlOrderPlanModel planModel, PendingOrder order) {
+    private bool RecordPendingEntry(PdhpdlOrderPlanModel planModel, PendingOrder order, double entryAtr) {
         string csvId = _csvLogger.AppendPendingEntry(planModel, order, _symbolName, _timeFrame);
 
         if (string.IsNullOrWhiteSpace(csvId))
@@ -174,6 +204,7 @@ public class PdhpdlOrderExecutor {
 
         _pendingCsvIdsByLabel[order.Label] = csvId;
         _pendingEntryEquitiesByLabel[order.Label] = planModel.AccountEquity;
+        _pendingEntryAtrByLabel[order.Label] = entryAtr;
         _robot.Print("*****CSV pending order record added. Id: {0}, Path: {1}", csvId, _csvLogger.FilePath);
         return true;
     }
@@ -191,6 +222,11 @@ public class PdhpdlOrderExecutor {
             _positionEntryEquities[args.Position.Id] = entryEquity;
             _pendingEntryEquitiesByLabel.Remove(args.Position.Label);
         }
+
+        if (_pendingEntryAtrByLabel.TryGetValue(args.Position.Label, out double entryAtr)) {
+            _positionEntryAtr[args.Position.Id] = entryAtr;
+            _pendingEntryAtrByLabel.Remove(args.Position.Label);
+        }
     }
 
     private void OnPositionClosed(PositionClosedEventArgs args) {
@@ -203,13 +239,18 @@ public class PdhpdlOrderExecutor {
         string closeRecordId = _csvLogger.AppendClose(args.Position, args.Reason, csvId, _symbolName, _timeFrame, _robot.Server.Time,
             closePrice, entryEquity, _robot.Account.Equity);
 
+        double entryAtr = GetPositionEntryAtr(args.Position);
+
         _positionCsvIds.Remove(args.Position.Id);
         _positionEntryEquities.Remove(args.Position.Id);
+        _positionEntryAtr.Remove(args.Position.Id);
 
         if (!string.IsNullOrWhiteSpace(closeRecordId))
             _robot.Print("*****CSV close record added. Id: {0}, ProfitLoss: {1}", closeRecordId, args.Position.NetProfit);
 
-        _lossCounter.RecordClosedTrade(args.Position.NetProfit);
+        _lossCounter.RecordClosedTrade(args.Position.NetProfit, entryAtr);
+        _robot.Print("*****Consecutive losses | Count: {0}, AtrAtLastLossEntry: {1}", _lossCounter.Count,
+            _lossCounter.AtrAtLastLossEntry);
     }
 
     private bool IsStrategyPosition(Position position) {
@@ -227,6 +268,10 @@ public class PdhpdlOrderExecutor {
 
     private double GetPositionEntryEquity(Position position) {
         return _positionEntryEquities.TryGetValue(position.Id, out double entryEquity) ? entryEquity : 0.0;
+    }
+
+    private double GetPositionEntryAtr(Position position) {
+        return _positionEntryAtr.TryGetValue(position.Id, out double entryAtr) ? entryAtr : 0.0;
     }
 
     private double GetClosePrice(Position position) {

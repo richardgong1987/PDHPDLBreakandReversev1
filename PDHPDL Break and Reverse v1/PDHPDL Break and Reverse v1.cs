@@ -176,8 +176,9 @@ public class PDHPDLBreakandReversev1 : Robot {
                 signalModel.Close, signalModel.Pdh);
         }
 
-        signalModel.GreaterThanATR = _atr14.IsBarRangeTooLarge(signalModel.BarIndex, signalModel.High, signalModel.Low, MaxBarRangeAtr);
         signalModel.IsBigK = _atr14.IsBarRangeTooLarge(signalModel.BarIndex, signalModel.High, signalModel.Low, 3);
+        signalModel.Atr = _atr14.TryGetValue(signalModel.BarIndex, out double atr) ? atr : 0.0;
+        signalModel.MaxBarRangeAtr = MaxBarRangeAtr;
         signalModel.Nlock = Nlock;
         signalModel.LossCount = _orderExecutor.LossCount();
 
