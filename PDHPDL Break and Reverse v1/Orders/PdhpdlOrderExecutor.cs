@@ -19,8 +19,8 @@ public class PdhpdlOrderExecutor {
     private readonly PdhpdlRiskGuard _riskGuard;
     private readonly PdhpdlTradeCsvLogger _csvLogger;
 
-    // 连亏笔数 + 最近那笔亏损单开仓时的 ATR，驱动下面的连亏锁仓。
-    private readonly ConsecutiveLossCounter _lossCounter = new();
+    // 连亏锁仓。上锁/解锁的状态机在它自己里面，这里只负责喂平仓结果、以及开单前问一句锁没锁。
+    private readonly ConsecutiveLossLock _lossLock;
 
     private readonly Dictionary<string, string> _pendingCsvIdsByLabel = new();
     private readonly Dictionary<string, double> _pendingEntryEquitiesByLabel = new();
@@ -30,23 +30,20 @@ public class PdhpdlOrderExecutor {
     private readonly Dictionary<int, double> _positionEntryAtr = new();
 
     public PdhpdlOrderExecutor(Robot robot, string symbolName, string timeFrame, PdhpdlOrderPlanner planner, PdhpdlRiskGuard riskGuard,
-        PdhpdlTradeCsvLogger csvLogger) {
+        PdhpdlTradeCsvLogger csvLogger, ConsecutiveLossLock lossLock) {
         _robot = robot;
         _symbolName = symbolName;
         _timeFrame = timeFrame;
         _planner = planner;
         _riskGuard = riskGuard;
         _csvLogger = csvLogger;
+        _lossLock = lossLock;
 
         if (_riskGuard.NewsBlackoutWindowCount > 0)
             _robot.Print("*****News blackout windows loaded. Count: {0}", _riskGuard.NewsBlackoutWindowCount);
 
         _robot.Positions.Closed += OnPositionClosed;
         _robot.Positions.Opened += OnPositionOpened;
-    }
-
-    public int LossCount() {
-        return _lossCounter.Count;
     }
 
     public void Stop() {
@@ -86,39 +83,20 @@ public class PdhpdlOrderExecutor {
         planModel.SignalName = signalModel.Label;
         planModel.KeyLevel = signalModel.KeyLevel;
 
-        if (IsLockedByConsecutiveLosses(signalModel))
+        if (IsLockedByConsecutiveLosses())
             return false;
 
         return ExecutePlan(planModel, signalModel.Atr);
     }
 
-    // 连亏达到 Nlock 笔后锁仓，直到某根信号 K 线的振幅超过「最近那笔亏损单开仓时 ATR」的
-    // MaxBarRangeAtr 倍——行情比我上次入场时活跃这么多，才算走出来，放行这一单。
-    // 参照用的是当时冻结的 ATR 而不是当前 ATR：行情冷下来时当前 ATR 会一起降、门槛跟着降，
-    // 等于自动解锁，锁仓就白锁了。
-    private bool IsLockedByConsecutiveLosses(PdhpdlSignalModel signalModel) {
-        if (signalModel.Nlock <= 0 || signalModel.LossCount < signalModel.Nlock)
+    // 锁仓期间不开新单。解锁由 ConsecutiveLossLock 在每根收盘 K 线上判断，与信号无关。
+    private bool IsLockedByConsecutiveLosses() {
+        if (!_lossLock.IsLocked)
             return false;
 
-        if (HasLeftLossRegime(signalModel))
-            return false;
-
-        _robot.Print("*****Order skipped | Locked after {0} consecutive losses. BarRange: {1}, Needed: > {2} ({3} x ATR {4} at last losing entry)",
-            _lossCounter.Count, signalModel.High - signalModel.Low, RequiredBarRange(signalModel), signalModel.MaxBarRangeAtr,
-            _lossCounter.AtrAtLastLossEntry);
+        _robot.Print("*****Order skipped | Locked after {0} consecutive losses. Needs a bar wider than {1} (frozen ATR {2})",
+            _lossLock.ConsecutiveLosses, _lossLock.RequiredBarRange, _lossLock.LockedAtr);
         return true;
-    }
-
-    private bool HasLeftLossRegime(PdhpdlSignalModel signalModel) {
-        // 没记到参照 ATR（例如重启后连亏计数还在但开仓 ATR 已丢）时不拦，宁可放行也不无限期锁死。
-        if (_lossCounter.AtrAtLastLossEntry <= 0.0)
-            return true;
-
-        return signalModel.High - signalModel.Low > RequiredBarRange(signalModel);
-    }
-
-    private double RequiredBarRange(PdhpdlSignalModel signalModel) {
-        return _lossCounter.AtrAtLastLossEntry * signalModel.MaxBarRangeAtr;
     }
 
     private bool HasOpenSymbolPosition() {
@@ -248,9 +226,9 @@ public class PdhpdlOrderExecutor {
         if (!string.IsNullOrWhiteSpace(closeRecordId))
             _robot.Print("*****CSV close record added. Id: {0}, ProfitLoss: {1}", closeRecordId, args.Position.NetProfit);
 
-        _lossCounter.RecordClosedTrade(args.Position.NetProfit, entryAtr);
-        _robot.Print("*****Consecutive losses | Count: {0}, AtrAtLastLossEntry: {1}", _lossCounter.Count,
-            _lossCounter.AtrAtLastLossEntry);
+        _lossLock.RecordClosedTrade(args.Position.NetProfit, entryAtr);
+        _robot.Print("*****Consecutive losses | Count: {0}, Locked: {1}, NeedsBarWiderThan: {2}", _lossLock.ConsecutiveLosses,
+            _lossLock.IsLocked, _lossLock.RequiredBarRange);
     }
 
     private bool IsStrategyPosition(Position position) {
