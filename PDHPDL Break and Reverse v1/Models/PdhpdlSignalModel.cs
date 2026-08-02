@@ -42,6 +42,10 @@ public class PdhpdlSignalModel {
     public StrategyModel Strategy { get; set; }
     public int Nlock { get; set; }
     public int LossCount { get; set; }
-    public bool GreaterThanATR { get; set; }
+    // 这根信号 K 线上的 ATR14，以及「振幅算大」的倍数门槛。
+    // 下单成功时 Atr 会被记下来，作为这笔单万一亏损后的锁仓参照。
+    public double Atr { get; set; }
+
+    public double MaxBarRangeAtr { get; set; }
     public bool IsBigK { get; set; }
 }
