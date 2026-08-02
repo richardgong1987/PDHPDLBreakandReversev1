@@ -132,6 +132,7 @@ PARAMETERS = [
     Parameter("回撤开仓模式", "--EntryModel", to_value=entry_model_code),
     Parameter("止盈目标", "--TakeProfitR", to_value=number_text),
     Parameter("N次止损Lock", "--Nlock", to_value=whole_number),
+    Parameter("ATR倍数", "--MaxBarRangeAtr", to_value=number_text),
     Parameter("策略模式", "--Strategy", to_value=strategy_name),
     Parameter("起始日期", "--start", to_value=backtest_date),
     Parameter("结束日期", "--end", to_value=backtest_date),
