@@ -32,4 +32,8 @@ public readonly struct CandleModel {
 
     // +1 bullish, -1 bearish, 0 doji. Pine's bodyDirAt.
     public int BodyDirection => Close > Open ? 1 : Close < Open ? -1 : 0;
+
+    public bool IsBullish => BodyDirection == 1;
+
+    public bool IsBearish => BodyDirection == -1;
 }

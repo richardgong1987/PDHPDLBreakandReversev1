@@ -16,7 +16,7 @@ public class Utils {
 
     public static bool AnyBarIsLong(params CandleModel[] candles) {
         foreach (CandleModel candle in candles) {
-            if (candle.BodyDirection != 1) {
+            if (!candle.IsBullish) {
                 return false;
             }
         }
@@ -26,7 +26,7 @@ public class Utils {
 
     public static bool AnyBarIsShort(params CandleModel[] candles) {
         foreach (CandleModel candle in candles) {
-            if (candle.BodyDirection != -1) {
+            if (!candle.IsBearish) {
                 return false;
             }
         }
