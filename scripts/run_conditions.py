@@ -13,7 +13,7 @@
 
     python3 run_conditions.py                          # 默认读 scripts/.env
     python3 run_conditions.py --env-file scripts/.env-prod   # 读生产配置
-    python3 run_conditions.py --jobs 4                 # 最多同时跑 4 条（默认 = 核数一半）
+    python3 run_conditions.py --jobs 4                 # 最多同时跑 4 条（默认 1 = 逐条串行）
 """
 
 import argparse
@@ -25,7 +25,9 @@ from backtest.plan import read_condition_rows
 from backtest.runner import (
     DEFAULT_JOBS,
     archive_reports,
+    find_missing_reports,
     generate_final_report,
+    print_batch_summary,
     run_tasks,
     upload_report_archive,
 )
@@ -48,7 +50,7 @@ def parse_args(argv):
         "--jobs",
         type=int,
         default=DEFAULT_JOBS,
-        help=f"并发回测的任务数（默认 {DEFAULT_JOBS} = CPU 核数的一半）；设为 1 则逐条串行。",
+        help=f"并发回测的任务数（默认 {DEFAULT_JOBS} = 逐条串行）；>1 才开启并发。",
     )
     return parser.parse_args(argv)
 
@@ -68,9 +70,11 @@ def main(argv=None):
     else:
         print(f"共 {len(tasks)} 条回测任务，将按顺序逐条执行。")
 
-    run_tasks(tasks, config, jobs)
+    failures = run_tasks(tasks, config, jobs)
+    missing_reports = find_missing_reports(tasks)
 
-    # 全部跑完后，扫描所有报告生成一次汇总图（不再每条任务都刷新一次）
+    # 全部跑完后，扫描所有报告生成一次汇总图（不再每条任务都刷新一次）。
+    # 即使有失败也照常汇总：跑成的那些结果仍然有用，缺口由下面的结论行点名。
     outputs = generate_final_report()
 
     # 汇总产物齐了，再把整个报告目录打包成 zip 存档，供以后使用；
@@ -80,8 +84,10 @@ def main(argv=None):
     # zip 存档就绪后，按当前环境（.env 的 REPORT_UPLOAD_URL）把它上传到后端。
     upload_report_archive(config.report_upload_url, archive_path)
 
-    print("\n全部回测执行完毕。")
-    return 0
+    print_batch_summary(tasks, failures, missing_reports)
+
+    # 有任何一条没跑成就以非零码退出：批次照常跑完，但调用方（和你）不该以为这批是完整的。
+    return 1 if failures or missing_reports else 0
 
 
 if __name__ == "__main__":

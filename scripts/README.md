@@ -45,8 +45,7 @@ never committed; only the `.env.example` template is version-controlled.
    ```bash
    python3 scripts/run_conditions.py                          # reads scripts/.env by default
    python3 scripts/run_conditions.py --env-file scripts/.env-prod   # use the production config
-   python3 scripts/run_conditions.py --jobs 4                 # run up to 4 at a time
-   python3 scripts/run_conditions.py --jobs 1                 # run one at a time (sequential)
+   python3 scripts/run_conditions.py --jobs 4                 # run up to 4 at a time (opt-in)
    ```
 
 3. Each run's result CSV is written to `~/Documents/`.
@@ -57,8 +56,12 @@ with a broken config.
 
 ### Parallel backtests (--jobs)
 
-`--jobs N` controls how many backtests run at once. **The default is half the CPU cores**
-(leaving headroom for the system); `--jobs 1` restores sequential execution. Backtesting is
+`--jobs N` controls how many backtests run at once. **The default is 1 (sequential).**
+Running several cTrader processes at once has been observed to make backtests fail
+intermittently inside cTrader's own report-saving step
+(`InvalidOperationException: Message expected`), and a failed task disappears from the summary
+without stopping the batch — so parallelism is opt-in. If you do use `--jobs N`, check that the
+number of report JSONs matches the number of plan rows. Backtesting is
 CPU/memory intensive — going beyond the physical core count usually isn't faster and just
 makes the runs contend for resources.
 
