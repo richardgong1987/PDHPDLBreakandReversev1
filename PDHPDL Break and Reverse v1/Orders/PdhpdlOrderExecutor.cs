@@ -94,8 +94,8 @@ public class PdhpdlOrderExecutor {
         if (!_lossLock.IsLocked)
             return false;
 
-        _robot.Print("*****Order skipped | Locked after {0} consecutive losses. Needs a bar wider than {1} (frozen ATR {2})",
-            _lossLock.ConsecutiveLosses, _lossLock.RequiredBarRange, _lossLock.LockedAtr);
+        _robot.Print("*****Order skipped | Locked after {0} consecutive losses. Price must move {1} from {2} (frozen ATR {3})",
+            _lossLock.ConsecutiveLosses, _lossLock.RequiredDistance, _lossLock.AnchorPrice, _lossLock.LockedAtr);
         return true;
     }
 
@@ -226,9 +226,9 @@ public class PdhpdlOrderExecutor {
         if (!string.IsNullOrWhiteSpace(closeRecordId))
             _robot.Print("*****CSV close record added. Id: {0}, ProfitLoss: {1}", closeRecordId, args.Position.NetProfit);
 
-        _lossLock.RecordClosedTrade(args.Position.NetProfit, entryAtr);
-        _robot.Print("*****Consecutive losses | Count: {0}, Locked: {1}, NeedsBarWiderThan: {2}", _lossLock.ConsecutiveLosses,
-            _lossLock.IsLocked, _lossLock.RequiredBarRange);
+        _lossLock.RecordClosedTrade(args.Position.NetProfit, entryAtr, args.Position.EntryPrice);
+        _robot.Print("*****Consecutive losses | Count: {0}, Locked: {1}, Anchor: {2}, NeedsMoveOf: {3}", _lossLock.ConsecutiveLosses,
+            _lossLock.IsLocked, _lossLock.AnchorPrice, _lossLock.RequiredDistance);
     }
 
     private bool IsStrategyPosition(Position position) {

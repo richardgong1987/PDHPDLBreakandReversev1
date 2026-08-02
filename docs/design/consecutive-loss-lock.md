@@ -11,37 +11,55 @@ than the one we were trading on when we started losing.
 
 ## 2. Use Case
 
-After `Nlock` consecutive losing trades the bot stops opening positions, and resumes as soon as
-any later candle is wider than `MaxBarRangeAtr` times the ATR frozen at lock time.
+After `Nlock` consecutive losing trades the bot stops opening positions, and resumes once price
+has travelled `MaxBarRangeAtr × frozen ATR` away from where that losing trade was entered.
 
 ## 3. Input Model
 
 - `Nlock` — consecutive losses that arm the lock (`<= 0` disables it).
-- `MaxBarRangeAtr` — bar-range multiple required to release it.
-- Per closed trade: `Position.NetProfit` and the ATR14 of the bar that trade was **entered** on.
+- `MaxBarRangeAtr` — ATR multiple of price travel required to release it.
+- Per closed trade: `Position.NetProfit`, `Position.EntryPrice`, and the ATR14 of the bar that
+  trade was **entered** on.
 - Per closed bar: its `High` and `Low`.
 
 ## 4. Output Model
 
 `ConsecutiveLossLock.IsLocked`. `PdhpdlOrderExecutor` refuses to open anything while it is true.
-`ConsecutiveLosses`, `LockedAtr` and `RequiredBarRange` exist for logging.
+`ConsecutiveLosses`, `LockedAtr`, `AnchorPrice` and `RequiredDistance` exist for logging.
 
 ## 5. Domain Rules
 
 - The streak is global: every closed strategy position counts, regardless of key level or
   direction. `NetProfit < 0` extends it; profit or exact breakeven resets it to zero and
   unlocks. That matches the `盈利 / 亏损` split the trade CSV writes.
-- The lock arms the moment the streak reaches `Nlock`, freezing the ATR of the bar the **most
-  recent losing trade was entered on**. Re-arming later overwrites it with the newest one, so
-  the reference always tracks the most recent losing regime.
+- The lock arms the moment the streak reaches `Nlock`, freezing both the ATR and the **entry
+  price** of the most recent losing trade. Re-arming later overwrites both, so the reference
+  always tracks the most recent loss.
+- **Release measures how far price travelled, not how tall one candle is.** A move is usually
+  built by many small bars; requiring a single bar wider than `3 × ATR` almost never fires. See
+  the worked example below.
+- Direction is irrelevant: moving far enough either way counts as having left the regime.
 - **The frozen ATR is used, never the live ATR.** When volatility drops the live ATR drops with
   it, lowering the bar and effectively self-releasing — which defeats the purpose.
 - Release is evaluated on **every closed bar**, not only on bars that produce a signal, and it
-  is one-way: once any bar's range exceeds `MaxBarRangeAtr × LockedAtr` the lock is gone and
-  later small bars do not restore it. Only a fresh streak re-arms it.
-- The threshold is strict: a bar exactly equal to `MaxBarRangeAtr × LockedAtr` does not release.
+  is one-way: once any bar reaches the distance the lock is gone, and price coming back does not
+  restore it. Only a fresh streak re-arms it.
+- The threshold is strict: a bar exactly at `MaxBarRangeAtr × LockedAtr` away does not release.
 - If the frozen ATR is missing (`<= 0`), the next bar releases the lock. Letting one extra trade
   through beats locking the bot out indefinitely.
+
+### Worked example (why single-bar range was wrong)
+
+`S_Pin_2`, XAUUSD m5, 2026-06-11 09:45, entry `4063.52`, stopped out 09:52. `Nlock = 1`, so the
+lock armed with frozen ATR `11.6129` → threshold `34.84`.
+
+Over the next 32 bars price climbed to `4118.04` — **54.52 away from the anchor, 4.7× the ATR**.
+But the widest single bar in that stretch was only `17.04`, and **no bar at all** exceeded
+`34.84` for the rest of that day. Under the old rule the bot stayed locked through the entire
+move. Under the distance rule it releases at 10:15 (`High 4099.35`, 35.83 away), in time for the
+fractal-top signal that followed.
+
+`ConsecutiveLossLockTests.unlocks_on_the_real_s_pin_2_hill` pins this case with the real numbers.
 
 ## 6. Application Flow
 
