@@ -59,7 +59,6 @@ CBOT_FIXED_PARAMS = {
     "MinStopLossPips": "5",
     "SaturdayForceCloseHour": "5",
     "SaturdayForceCloseMinute": "30",
-    "ShowMovingAverages": "True",
     "MaSource": "0",
     "MaFastPeriod": "13",
     "MaSlowPeriod": "55",
