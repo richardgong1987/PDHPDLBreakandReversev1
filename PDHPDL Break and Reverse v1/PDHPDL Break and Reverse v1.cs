@@ -74,6 +74,7 @@ public class PDHPDLBreakandReversev1 : Robot {
     private PdhpdlSignalMarkers _signalMarkers;
     private PdhpdlOrderExecutor _orderExecutor;
     private PdhpdlTradeCsvLogger _csvLogger;
+    private ConsecutiveLossLock _lossLock;
     private Atr14Series _atr14;
 
     protected override void OnStart() {
@@ -90,7 +91,9 @@ public class PDHPDLBreakandReversev1 : Robot {
 
         var riskGuard = new PdhpdlRiskGuard(BuildRiskGuardConfig());
         var planner = new PdhpdlOrderPlanner(new CAlgoSymbolModel(Symbol), riskGuard, StopOffsetTicks, TakeProfitR, EntryModel, RiskPct);
-        _orderExecutor = new PdhpdlOrderExecutor(this, SymbolName, Bars.TimeFrame.ToString(), planner, riskGuard, _csvLogger);
+        _lossLock = new ConsecutiveLossLock(Nlock, MaxBarRangeAtr);
+        _orderExecutor =
+            new PdhpdlOrderExecutor(this, SymbolName, Bars.TimeFrame.ToString(), planner, riskGuard, _csvLogger, _lossLock);
         Print("*****PDH/PDL Break and Reverse started.");
     }
 
@@ -178,9 +181,9 @@ public class PDHPDLBreakandReversev1 : Robot {
 
         signalModel.IsBigK = _atr14.IsBarRangeTooLarge(signalModel.BarIndex, signalModel.High, signalModel.Low, 3);
         signalModel.Atr = _atr14.TryGetValue(signalModel.BarIndex, out double atr) ? atr : 0.0;
-        signalModel.MaxBarRangeAtr = MaxBarRangeAtr;
-        signalModel.Nlock = Nlock;
-        signalModel.LossCount = _orderExecutor.LossCount();
+
+        // 每根收盘 K 线都问一次「走出来了没」，与有没有信号无关：解锁不能只在出信号那一刻才有机会。
+        _lossLock.RecordClosedBar(signalModel.High, signalModel.Low);
 
         if (_orderExecutor.ExecuteIfSignal(signalModel)) {
             _signalMarkers.Draw(signalModel);
