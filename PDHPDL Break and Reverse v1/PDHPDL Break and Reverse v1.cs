@@ -13,7 +13,7 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("N次止损Lock", DefaultValue = 3)]
     public int Nlock { get; set; }
 
-    [Parameter("大K的ATR倍数", DefaultValue = 3)] public double MaxBarRangeAtr { get; set; }
+    [Parameter("ATR倍数", DefaultValue = 3)] public double MaxBarRangeAtr { get; set; }
 
 
     [Parameter("启动时清空交易记录CSV", DefaultValue = false)]
@@ -177,7 +177,7 @@ public class PDHPDLBreakandReversev1 : Robot {
         }
 
         signalModel.GreaterThanATR = _atr14.IsBarRangeTooLarge(signalModel.BarIndex, signalModel.High, signalModel.Low, MaxBarRangeAtr);
-        signalModel.IsBigK = _atr14.IsBarRangeTooLarge(signalModel.BarIndex, signalModel.High, signalModel.Low, MaxBarRangeAtr);
+        signalModel.IsBigK = _atr14.IsBarRangeTooLarge(signalModel.BarIndex, signalModel.High, signalModel.Low, 3);
         signalModel.Nlock = Nlock;
         signalModel.LossCount = _orderExecutor.LossCount();
 
