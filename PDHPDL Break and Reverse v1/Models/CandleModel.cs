@@ -36,4 +36,13 @@ public readonly struct CandleModel {
     public bool IsBullish => BodyDirection == 1;
 
     public bool IsBearish => BodyDirection == -1;
+
+    // 长引线的门槛：引线超过整根 K 线振幅的 40%。
+    private const double LongWickMinFraction = 0.4;
+
+    // 是否上引线过大，超过40%
+    public bool HasLongUpperWick => HasRange && (High - BodyTop) / Range > LongWickMinFraction;
+
+    // 是否下引线过大，超过40%
+    public bool HasLongLowerWick => HasRange && (BodyBottom - Low) / Range > LongWickMinFraction;
 }
