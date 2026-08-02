@@ -52,10 +52,18 @@ public static class HanJinSignals26 {
 
     // ── ② Engulfing 吞没───────────────────────────────────────────────────────────
     public static SignalSideModel Engulf(CandleModel current, CandleModel previous) {
-        bool isEngulfing = current.High > previous.High && current.Low < previous.Low && current.BodyTop >= previous.BodyTop &&
-                           current.BodyBottom <= previous.BodyBottom;
+        bool isEngulfing = current.High > previous.High && current.Low < previous.Low;
+        if (isEngulfing) {
+            if (current.IsBullish && current.HasLongUpperWick) {
+                return SignalSideModel.Buy;
+            }
 
-        return isEngulfing ? FollowBody(current.BodyDirection) : SignalSideModel.None;
+            if (current.IsBearish && current.HasLongLowerWick) {
+                return SignalSideModel.Sell;
+            }
+        }
+
+        return SignalSideModel.None;
     }
 
     // Continuation: the signal follows the body direction (up -> Buy).
