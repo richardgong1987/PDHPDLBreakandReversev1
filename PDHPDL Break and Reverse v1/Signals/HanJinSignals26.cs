@@ -54,11 +54,11 @@ public static class HanJinSignals26 {
     public static SignalSideModel Engulf(CandleModel current, CandleModel previous) {
         bool isEngulfing = current.High > previous.High && current.Low < previous.Low;
         if (isEngulfing) {
-            if (current.IsBullish && current.HasLongUpperWick) {
+            if (current.IsBullish && !current.HasLongUpperWick) {
                 return SignalSideModel.Buy;
             }
 
-            if (current.IsBearish && current.HasLongLowerWick) {
+            if (current.IsBearish && !current.HasLongLowerWick) {
                 return SignalSideModel.Sell;
             }
         }
