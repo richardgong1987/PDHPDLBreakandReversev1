@@ -43,4 +43,5 @@ public class PdhpdlSignalModel {
     public int Nlock { get; set; }
     public int LossCount { get; set; }
     public bool GreaterThanATR { get; set; }
+    public bool IsBigK { get; set; }
 }

@@ -14,7 +14,7 @@ public class PdhpdlOrderPlanner {
     private readonly PdhpdlRiskGuard _riskGuard;
     private readonly int _stopOffsetTicks;
     private readonly double _takeProfitR;
-    private readonly PdhpdlEntryModel _entryModel;
+    private PdhpdlEntryModel _entryModel;
     private readonly double _riskPct;
 
     public PdhpdlOrderPlanner(IPdhpdlSymbolModel symbolModel, PdhpdlRiskGuard riskGuard, int stopOffsetTicks, double takeProfitR,
@@ -27,10 +27,15 @@ public class PdhpdlOrderPlanner {
         _riskPct = riskPct;
     }
 
+    public void UpdateEntryMode(PdhpdlEntryModel entryModel) {
+        _entryModel = entryModel;
+    }
+
     public PdhpdlOrderPlanModel CreatePlan(PdhpdlSignalModel signalModel, double accountEquity) {
         PdhpdlOrderPlanModel planModel = new();
 
-        PdhpdlTradeDirectionModel directionModel = signalModel.IsLongSignal ? PdhpdlTradeDirectionModel.Long : PdhpdlTradeDirectionModel.Short;
+        PdhpdlTradeDirectionModel directionModel =
+            signalModel.IsLongSignal ? PdhpdlTradeDirectionModel.Long : PdhpdlTradeDirectionModel.Short;
         FillGeometry(signalModel, directionModel, out double entry, out double stop, out double riskPrice, out double takeProfit);
         double stopLossPips = riskPrice / _symbolModel.PipSize;
 
@@ -56,8 +61,8 @@ public class PdhpdlOrderPlanner {
             return planModel;
         }
 
-        FillPlan(planModel, directionModel, entry, stop, takeProfit, riskPrice, stopLossPips, takeProfitPips, volume,
-            accountEquity, riskMoney);
+        FillPlan(planModel, directionModel, entry, stop, takeProfit, riskPrice, stopLossPips, takeProfitPips, volume, accountEquity,
+            riskMoney);
         return planModel;
     }
 
@@ -97,8 +102,9 @@ public class PdhpdlOrderPlanner {
         return false;
     }
 
-    private void FillPlan(PdhpdlOrderPlanModel planModel, PdhpdlTradeDirectionModel directionModel, double entry, double stop, double takeProfit,
-        double riskPrice, double stopLossPips, double takeProfitPips, double volume, double accountEquity, double riskMoney) {
+    private void FillPlan(PdhpdlOrderPlanModel planModel, PdhpdlTradeDirectionModel directionModel, double entry, double stop,
+        double takeProfit, double riskPrice, double stopLossPips, double takeProfitPips, double volume, double accountEquity,
+        double riskMoney) {
         string side = directionModel == PdhpdlTradeDirectionModel.Long ? "L" : "S";
 
         planModel.IsValid = true;
