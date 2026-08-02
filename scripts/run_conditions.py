@@ -70,8 +70,9 @@ def main(argv=None):
     else:
         print(f"共 {len(tasks)} 条回测任务，将按顺序逐条执行。")
 
-    failures = run_tasks(tasks, config, jobs)
+    results = run_tasks(tasks, config, jobs)
     missing_reports = find_missing_reports(tasks)
+    has_gap = missing_reports or any(not result.is_successful for result in results)
 
     # 全部跑完后，扫描所有报告生成一次汇总图（不再每条任务都刷新一次）。
     # 即使有失败也照常汇总：跑成的那些结果仍然有用，缺口由下面的结论行点名。
@@ -84,10 +85,10 @@ def main(argv=None):
     # zip 存档就绪后，按当前环境（.env 的 REPORT_UPLOAD_URL）把它上传到后端。
     upload_report_archive(config.report_upload_url, archive_path)
 
-    print_batch_summary(tasks, failures, missing_reports)
+    print_batch_summary(tasks, results, missing_reports)
 
     # 有任何一条没跑成就以非零码退出：批次照常跑完，但调用方（和你）不该以为这批是完整的。
-    return 1 if failures or missing_reports else 0
+    return 1 if has_gap else 0
 
 
 if __name__ == "__main__":
