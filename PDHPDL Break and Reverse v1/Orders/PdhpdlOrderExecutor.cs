@@ -11,6 +11,9 @@ public class PdhpdlOrderExecutor {
     private const string StrategyLabelPrefix = PdhpdlOrderPlanner.LabelPrefix + "_";
     private const string EntryComment = "ENTRY";
 
+    // 挂单最多等 3 根收盘 K 线；等不到回撤就撤单。
+    private const int PendingOrderExpiryBars = 3;
+
     private readonly Robot _robot;
     private readonly string _symbolName;
     private readonly string _timeFrame;
@@ -25,6 +28,7 @@ public class PdhpdlOrderExecutor {
     private readonly Dictionary<string, string> _pendingCsvIdsByLabel = new();
     private readonly Dictionary<string, double> _pendingEntryEquitiesByLabel = new();
     private readonly Dictionary<string, double> _pendingEntryAtrByLabel = new();
+    private readonly Dictionary<int, int> _pendingOrderBarIndexById = new();
     private readonly Dictionary<int, string> _positionCsvIds = new();
     private readonly Dictionary<int, double> _positionEntryEquities = new();
     private readonly Dictionary<int, double> _positionEntryAtr = new();
@@ -82,6 +86,7 @@ public class PdhpdlOrderExecutor {
 
         planModel.SignalName = signalModel.Label;
         planModel.KeyLevel = signalModel.KeyLevel;
+        planModel.SignalBarIndex = signalModel.BarIndex;
 
         if (IsLockedByConsecutiveLosses())
             return false;
@@ -107,16 +112,64 @@ public class PdhpdlOrderExecutor {
         return _robot.PendingOrders.Any(order => order.SymbolName == _symbolName);
     }
 
+    // 大 K 线的挂单是「等价格回撤到中点」，回撤没来就说明这笔已经作废：只给它 PendingOrderExpiryBars
+    // 根收盘 K 线的时间，超时撤单，避免行情早已走远后挂单还在原地等着被扫。
+    public void CancelExpiredPendingOrders(int closedBarIndex) {
+        ForgetFilledPendingOrders();
+
+        foreach (PendingOrder order in _robot.PendingOrders.Where(IsStrategyPendingOrder).ToArray()) {
+            if (!IsPendingOrderExpired(order, closedBarIndex))
+                continue;
+
+            CancelPendingOrder(order, $"unfilled after {PendingOrderExpiryBars} bars");
+        }
+    }
+
+    private bool IsPendingOrderExpired(PendingOrder order, int closedBarIndex) {
+        // 本次运行之前就存在的挂单没有下单 K 线记录，不归这条规则管。
+        if (!_pendingOrderBarIndexById.TryGetValue(order.Id, out int placedBarIndex))
+            return false;
+
+        return closedBarIndex - placedBarIndex >= PendingOrderExpiryBars;
+    }
+
+    private void ForgetFilledPendingOrders() {
+        HashSet<int> liveOrderIds = new(_robot.PendingOrders.Select(order => order.Id));
+
+        foreach (int orderId in _pendingOrderBarIndexById.Keys.Where(id => !liveOrderIds.Contains(id)).ToArray())
+            _pendingOrderBarIndexById.Remove(orderId);
+    }
+
+    private void CancelPendingOrder(PendingOrder order, string reason) {
+        TradeResult result = _robot.CancelPendingOrder(order);
+
+        if (!result.IsSuccessful) {
+            _robot.Print("*****Pending cancel failed | Order: {0}, Reason: {1}, Error: {2}", order.Id, reason, result.Error);
+            return;
+        }
+
+        ForgetCancelledPendingOrder(order);
+        _robot.Print("*****Pending order cancelled | Order: {0}, Reason: {1}", order.Id, reason);
+    }
+
+    // 撤单后必须把这笔挂单的 CSV 行号/权益/ATR 一起丢掉，否则同 label 的下一笔持仓会认领到它的旧记录。
+    private void ForgetCancelledPendingOrder(PendingOrder order) {
+        _pendingOrderBarIndexById.Remove(order.Id);
+
+        if (_robot.PendingOrders.Any(other => other.Id != order.Id && other.Label == order.Label))
+            return;
+
+        _pendingCsvIdsByLabel.Remove(order.Label);
+        _pendingEntryEquitiesByLabel.Remove(order.Label);
+        _pendingEntryAtrByLabel.Remove(order.Label);
+    }
+
     private void CloseExposureBeforeRiskWindow() {
         if (!_riskGuard.ShouldForceClose(_robot.Server.Time))
             return;
 
-        foreach (PendingOrder order in _robot.PendingOrders.Where(IsStrategyPendingOrder).ToArray()) {
-            TradeResult result = _robot.CancelPendingOrder(order);
-
-            if (!result.IsSuccessful)
-                _robot.Print("*****Risk guard pending cancel failed | Order: {0}, Error: {1}", order.Id, result.Error);
-        }
+        foreach (PendingOrder order in _robot.PendingOrders.Where(IsStrategyPendingOrder).ToArray())
+            CancelPendingOrder(order, "risk guard force close");
 
         foreach (Position position in _robot.Positions.Where(IsStrategyPosition).ToArray()) {
             TradeResult result = _robot.ClosePosition(position);
@@ -183,6 +236,7 @@ public class PdhpdlOrderExecutor {
         _pendingCsvIdsByLabel[order.Label] = csvId;
         _pendingEntryEquitiesByLabel[order.Label] = planModel.AccountEquity;
         _pendingEntryAtrByLabel[order.Label] = entryAtr;
+        _pendingOrderBarIndexById[order.Id] = planModel.SignalBarIndex;
         _robot.Print("*****CSV pending order record added. Id: {0}, Path: {1}", csvId, _csvLogger.FilePath);
         return true;
     }

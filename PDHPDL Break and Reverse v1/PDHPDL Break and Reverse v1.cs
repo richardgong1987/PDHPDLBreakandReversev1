@@ -152,6 +152,8 @@ public class PDHPDLBreakandReversev1 : Robot {
         _pdhpdlLines.Draw();
         _movingAverageLines?.Draw();
         _orderExecutor?.ManageOpenPositions();
+        // 先撤过期挂单再看新信号：让作废的挂单不再占住「本品种已有挂单」这个名额。
+        _orderExecutor?.CancelExpiredPendingOrders(Bars.Count - 2);
         HandleClosedBarSignal();
     }
 
