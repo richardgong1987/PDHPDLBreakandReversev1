@@ -26,4 +26,7 @@ public class PdhpdlOrderPlanModel {
 
     public string KeyLevel { get; set; } = "";
     public string SignalName { get; set; } = "";
+
+    // 产生该计划的那根收盘 K 线。挂单用它计时：过了 N 根 K 线还没成交就撤单。
+    public int SignalBarIndex { get; set; }
 }
