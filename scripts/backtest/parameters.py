@@ -28,7 +28,10 @@ ENTRY_MODEL_CODES = {
 # 成员名不会。这份白名单是唯一能挡住“回测跑的其实是 All”的防线。
 STRATEGY_MODEL_NAMES = [
     "All",  # 全部条件，不作隔离
-    "MultiplePosition",  # 只在允许多笔持仓的排列下开仓
+    "MultiplePosition",  # 只在允许多笔持仓的排列下开仓,
+    "Strong",  # 只在允许多笔持仓的排列下开仓,
+    "Weak",  # 只在允许多笔持仓的排列下开仓,
+    "StopWhenVolatility",  # 只在允许多笔持仓的排列下开仓,
 ]
 
 
@@ -129,11 +132,11 @@ class Parameter:
 PARAMETERS = [
     Parameter("种类", "--symbol"),
     Parameter("周期", "--period"),
+    Parameter("策略模式", "--Strategy", to_value=strategy_name),
     Parameter("回撤开仓模式", "--EntryModel", to_value=entry_model_code),
     Parameter("止盈目标", "--TakeProfitR", to_value=number_text),
     Parameter("N次止损Lock", "--Nlock", to_value=whole_number),
     Parameter("ATR倍数", "--MaxBarRangeAtr", to_value=number_text),
-    Parameter("策略模式", "--Strategy", to_value=strategy_name),
     Parameter("起始日期", "--start", to_value=backtest_date),
     Parameter("结束日期", "--end", to_value=backtest_date),
 ]
