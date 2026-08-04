@@ -14,6 +14,51 @@ public class Utils {
         return candle.Low <= level && candle.High >= level;
     }
 
+    // 上方一组关键价位：日线 PDH，加上手工输入的 Pdh1、Pdh2。
+    // 数组顺序就是命中优先级：日线价位先判断，手工价位按 1、2 顺序补上。
+    public static PdhpdlKeyLevelModel[] PdhLevels(PdhpdlSignalModel signalModel) {
+        return new[] {
+            new PdhpdlKeyLevelModel("PDH", signalModel.Pdh), new PdhpdlKeyLevelModel("Pdh1", signalModel.Pdh1),
+            new PdhpdlKeyLevelModel("Pdh2", signalModel.Pdh2)
+        };
+    }
+
+    // 下方一组关键价位：日线 PDL，加上手工输入的 Pdl1、Pdl2。
+    public static PdhpdlKeyLevelModel[] PdlLevels(PdhpdlSignalModel signalModel) {
+        return new[] {
+            new PdhpdlKeyLevelModel("PDL", signalModel.Pdl), new PdhpdlKeyLevelModel("Pdl1", signalModel.Pdl1),
+            new PdhpdlKeyLevelModel("Pdl2", signalModel.Pdl2)
+        };
+    }
+
+    // 看跌确认：K线接触到该价位，且收盘价低于该价位。返回第一个命中的价位名。
+    public static bool TryFindSellKeyLevel(PdhpdlKeyLevelModel[] levels, double closePrice, CandleModel[] touchCandles,
+        out string keyLevel) {
+        foreach (PdhpdlKeyLevelModel level in levels) {
+            if (level.IsConfigured && AnyBarTouchesLevel(level.Price, touchCandles) && closePrice < level.Price) {
+                keyLevel = level.Name;
+                return true;
+            }
+        }
+
+        keyLevel = "";
+        return false;
+    }
+
+    // 看涨确认：K线接触到该价位，且收盘价高于该价位。返回第一个命中的价位名。
+    public static bool TryFindBuyKeyLevel(PdhpdlKeyLevelModel[] levels, double closePrice, CandleModel[] touchCandles,
+        out string keyLevel) {
+        foreach (PdhpdlKeyLevelModel level in levels) {
+            if (level.IsConfigured && AnyBarTouchesLevel(level.Price, touchCandles) && closePrice > level.Price) {
+                keyLevel = level.Name;
+                return true;
+            }
+        }
+
+        keyLevel = "";
+        return false;
+    }
+
     public static bool AnyBarIsLong(params CandleModel[] candles) {
         foreach (CandleModel candle in candles) {
             if (!candle.IsBullish) {
