@@ -10,10 +10,17 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("策略模式", DefaultValue = StrategyModel.All)]
     public StrategyModel Strategy { get; set; }
 
-    [Parameter("Pdh1", DefaultValue = 0.0)] public double Pdh1 { get; set; }
-    [Parameter("Pdh2", DefaultValue = 0.0)] public double Pdh2 { get; set; }
-    [Parameter("Pdl1", DefaultValue = 0.0)] public double Pdl1 { get; set; }
-    [Parameter("Pdl2", DefaultValue = 0.0)] public double Pdl2 { get; set; }
+    [Parameter("Pdh1", DefaultValue = 0.0)]
+    public double Pdh1 { get; set; }
+
+    [Parameter("Pdh2", DefaultValue = 0.0)]
+    public double Pdh2 { get; set; }
+
+    [Parameter("Pdl1", DefaultValue = 0.0)]
+    public double Pdl1 { get; set; }
+
+    [Parameter("Pdl2", DefaultValue = 0.0)]
+    public double Pdl2 { get; set; }
 
     [Parameter("N次止损Lock", DefaultValue = 3)]
     public int Nlock { get; set; }
@@ -81,6 +88,7 @@ public class PDHPDLBreakandReversev1 : Robot {
     private PdhpdlTradeCsvLogger _csvLogger;
     private ConsecutiveLossLock _lossLock;
     private Atr14Series _atr14;
+    private ParameterModel _parameterModel;
 
     protected override void OnStart() {
         LaunchDebug();
@@ -98,6 +106,7 @@ public class PDHPDLBreakandReversev1 : Robot {
         var planner = new PdhpdlOrderPlanner(new CAlgoSymbolModel(Symbol), riskGuard, StopOffsetTicks, TakeProfitR, EntryModel, RiskPct);
         _lossLock = new ConsecutiveLossLock(Nlock, MaxBarRangeAtr);
         _orderExecutor = new PdhpdlOrderExecutor(this, SymbolName, Bars.TimeFrame.ToString(), planner, riskGuard, _csvLogger, _lossLock);
+        _parameterModel = new ParameterModel { Pdh1 = Pdh1, Pdh2 = Pdh2, Pdl1 = Pdl1, Pdl2 = Pdl2 };
         Print("*****PDH/PDL Break and Reverse started.");
     }
 
@@ -166,7 +175,7 @@ public class PDHPDLBreakandReversev1 : Robot {
     }
 
     private void HandleClosedBarSignal() {
-        PdhpdlSignalModel signalModel = _signalDetector.DetectOnClosedBar(Strategy);
+        PdhpdlSignalModel signalModel = _signalDetector.DetectOnClosedBar(Strategy, _parameterModel);
         if (!signalModel.HasData)
             return;
 
