@@ -41,8 +41,8 @@ class ConditionRow:
         self.period = _required_text(record.get("period"), "缺少 period。")
         self._fields = _read_fields(record)
         # 下面三项在构造时就算出来：接口数据有问题要在批量开跑之前报错，而不是跑到一半才炸。
-        self.start_date = to_cli_date(self._value(FIELD_START_DATE))
-        self.end_date = to_cli_date(self._value(FIELD_END_DATE))
+        self.start_date = self._formatted(FIELD_START_DATE, to_cli_date)
+        self.end_date = self._formatted(FIELD_END_DATE, to_cli_date)
         self.file_name = self._build_file_name()
 
     def cli_args(self):
@@ -57,14 +57,25 @@ class ConditionRow:
     def _build_file_name(self):
         return (
             f"{self.symbol}-{self.period}-"
-            f"{enum_member_name(ENTRY_MODEL_NAMES, self._value(FIELD_ENTRY_MODEL))}-"
-            f"{to_whole_number_text(self._value(FIELD_ENTRY_MODEL))}-"
-            f"{to_number_text(self._value(FIELD_TAKE_PROFIT))}-"
-            f"n{to_whole_number_text(self._value(FIELD_NLOCK))}-"
-            f"{enum_member_name(STRATEGY_MODEL_NAMES, self._value(FIELD_STRATEGY))}-"
-            f"{to_compact_date(self._value(FIELD_START_DATE))}-"
-            f"{to_compact_date(self._value(FIELD_END_DATE))}.csv"
+            f"{self._enum_name(FIELD_ENTRY_MODEL, ENTRY_MODEL_NAMES)}-"
+            f"{self._formatted(FIELD_ENTRY_MODEL, to_whole_number_text)}-"
+            f"{self._formatted(FIELD_TAKE_PROFIT, to_number_text)}-"
+            f"n{self._formatted(FIELD_NLOCK, to_whole_number_text)}-"
+            f"{self._enum_name(FIELD_STRATEGY, STRATEGY_MODEL_NAMES)}-"
+            f"{self._formatted(FIELD_START_DATE, to_compact_date)}-"
+            f"{self._formatted(FIELD_END_DATE, to_compact_date)}.csv"
         )
+
+    def _enum_name(self, field_name, member_names):
+        return enum_member_name(member_names, self._value(field_name))
+
+    def _formatted(self, field_name, to_text):
+        """格式化一个字段的值，出错时补上字段名——否则「不是合法的 YYYY-MM-DD」看不出是哪个字段。"""
+        value = self._value(field_name)
+        try:
+            return to_text(value)
+        except ValueError as error:
+            raise ValueError(f"参数「{field_name}」{error}") from error
 
     def _value(self, field_name):
         field = self._fields.get(field_name)

@@ -19,7 +19,7 @@ TaskResult = namedtuple("TaskResult", ["index", "task", "return_code", "attempts
 
 # 默认串行。并发跑多个 cTrader 进程时，回测偶发在写 report-json 那一步抛
 # InvalidOperationException: Message expected，且失败的那条会静默从汇总里消失，
-# 得不偿失。需要提速时用 --jobs N 显式开启，自行确认报告份数与计划表行数一致。
+# 得不偿失。需要提速时用 --jobs N 显式开启，自行确认报告份数与接口记录条数一致。
 DEFAULT_JOBS = 1
 
 # 首次 + 重试一次。上面那个异常是 cTrader 关闭时序上的竞争，重跑通常就过；
@@ -131,7 +131,7 @@ def run_tasks_sequentially(tasks, config):
 
 
 def run_tasks_in_parallel(tasks, config, jobs):
-    """有界并发执行（jobs N）：最多同时跑 jobs 条。返回按计划表顺序排好的 TaskResult。"""
+    """有界并发执行（jobs N）：最多同时跑 jobs 条。返回按接口记录顺序排好的 TaskResult。"""
     total = len(tasks)
     results = []
     with ThreadPoolExecutor(max_workers=jobs) as executor:
@@ -158,7 +158,7 @@ def find_missing_reports(tasks):
     """收尾复核：哪些任务最终没有可用的报告 JSON。
 
     正常情况下这与 TaskResult 的失败集一致；两者对不上说明报告在跑完之后又丢了或被覆盖
-    （例如两行计划只差一个不进文件名的参数，后一条盖掉了前一条）。
+    （例如两条记录只差一个不进文件名的参数，后一条盖掉了前一条）。
     """
     return [task for task in tasks if not has_usable_report(task)]
 
@@ -184,4 +184,4 @@ def print_batch_summary(tasks, results, missing_reports):
 
     if not failures and not missing_reports:
         note = f"，其中 {len(retried)} 条靠重试才过" if retried else ""
-        print(f"  全部成功，报告份数与计划表一致{note}。")
+        print(f"  全部成功，报告份数与接口记录一致{note}。")

@@ -210,10 +210,12 @@ summary/              Summarizing results
   report.py           scan dir -> summarize -> chart + csv (public: update_final_report)
 ```
 
-Dependency direction: `run_conditions → backtest.runner → {backtest.command, summary}`, and
-`report_summary → summary`. Within `summary`: `report → {metrics, chart, table}` and
-`table → naming`. Leaf modules (`config` / `plan` / `command` / `metrics` / `naming` /
-`chart` / `table`) don't depend back on their orchestrators.
+Dependency direction: `run_conditions → {backtest.plan, backtest.runner}`,
+`backtest.plan → {backtest.records, backtest.parameters}`,
+`backtest.runner → {backtest.command, summary}`, and `report_summary → summary`.
+Within `summary`: `report → {metrics, chart, table}` and `table → naming`. Leaf modules
+(`config` / `records` / `parameters` / `command` / `metrics` / `naming` / `chart` / `table`)
+don't depend back on their orchestrators.
 
 ## Key design notes
 
