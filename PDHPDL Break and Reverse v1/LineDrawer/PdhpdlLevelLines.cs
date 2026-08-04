@@ -24,8 +24,10 @@ public class PdhpdlLevelLines {
         Clear();
         DrawLevel("PDH1", parameter.Pdh1, PdhColor);
         DrawLevel("PDH2", parameter.Pdh2, PdhColor);
+        DrawLevel("PDH3", parameter.Pdh3, PdhColor);
         DrawLevel("PDL1", parameter.Pdl1, PdlColor);
         DrawLevel("PDL2", parameter.Pdl2, PdlColor);
+        DrawLevel("PDL3", parameter.Pdl3, PdlColor);
     }
 
     public void Clear() {

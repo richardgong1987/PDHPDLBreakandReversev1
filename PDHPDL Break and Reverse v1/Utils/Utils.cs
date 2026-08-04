@@ -18,8 +18,10 @@ public class Utils {
     // 数组顺序就是命中优先级：日线价位先判断，手工价位按 1、2 顺序补上。
     public static PdhpdlKeyLevelModel[] PdhLevels(PdhpdlSignalModel signalModel) {
         return new[] {
-            new PdhpdlKeyLevelModel("PDH", signalModel.Pdh), new PdhpdlKeyLevelModel("Pdh1", signalModel.Pdh1),
-            new PdhpdlKeyLevelModel("Pdh2", signalModel.Pdh2)
+            new PdhpdlKeyLevelModel("PDH", signalModel.Pdh),
+            new PdhpdlKeyLevelModel("Pdh1", signalModel.Pdh1),
+            new PdhpdlKeyLevelModel("Pdh2", signalModel.Pdh2),
+            new PdhpdlKeyLevelModel("Pdh3", signalModel.Pdh3),
         };
     }
 
@@ -27,7 +29,7 @@ public class Utils {
     public static PdhpdlKeyLevelModel[] PdlLevels(PdhpdlSignalModel signalModel) {
         return new[] {
             new PdhpdlKeyLevelModel("PDL", signalModel.Pdl), new PdhpdlKeyLevelModel("Pdl1", signalModel.Pdl1),
-            new PdhpdlKeyLevelModel("Pdl2", signalModel.Pdl2)
+            new PdhpdlKeyLevelModel("Pdl2", signalModel.Pdl2), new PdhpdlKeyLevelModel("Pdl3", signalModel.Pdl3)
         };
     }
 
