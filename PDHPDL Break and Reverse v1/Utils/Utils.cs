@@ -111,12 +111,12 @@ public class Utils {
     private static bool IsWeakTrend(PdhpdlSignalModel signalModel, CandleModel current, SignalSideModel side) {
         // 弱多头：RMA13>K线收盘价格>RMA55
         if (side == SignalSideModel.Buy) {
-            return signalModel.FastRma > current.Close && current.Close > signalModel.SlowRma;
+            return true;
         }
 
         // 弱空头：RMA13<K线收盘价格<RMA55
         if (side == SignalSideModel.Sell) {
-            return signalModel.FastRma < current.Close && current.Close < signalModel.SlowRma;
+            return true;
         }
 
         return false;
