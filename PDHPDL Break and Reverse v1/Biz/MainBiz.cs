@@ -115,22 +115,22 @@ public class MainBiz {
 
     private static bool ShortTop(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current, CandleModel previous,
         CandleModel earlier) {
-        if (scanResult.FractalTop == SignalSideModel.Sell) {
+        if (scanResult.FractalTop == SignalSideModel.Sell && Utils.AnyBarIsShort(current)) {
+            CandleModel[] touchCandles = { current, previous, earlier };
+
             // (1).假突破/反转
-            if (Utils.AnyBarTouchesLevel(signalModel.Pdh, current, previous, earlier) && Utils.AnyBarIsShort(current) &&
-                current.Close < signalModel.Pdh) {
+            if (Utils.TryFindSellKeyLevel(Utils.PdhLevels(signalModel), current.Close, touchCandles, out string reversalLevel)) {
                 signalModel.Label = "S_Top_1";
                 signalModel.SL = previous.High;
-                signalModel.KeyLevel = "PDH";
+                signalModel.KeyLevel = reversalLevel;
                 return true;
             }
 
             // (2).真突破/延续
-            if (Utils.AnyBarTouchesLevel(signalModel.Pdl, current, previous, earlier) && Utils.AnyBarIsShort(current) &&
-                current.Close < signalModel.Pdl) {
+            if (Utils.TryFindSellKeyLevel(Utils.PdlLevels(signalModel), current.Close, touchCandles, out string continuationLevel)) {
                 signalModel.Label = "S_Top_2";
                 signalModel.SL = previous.High;
-                signalModel.KeyLevel = "PDL";
+                signalModel.KeyLevel = continuationLevel;
                 return true;
             }
         }
@@ -141,19 +141,21 @@ public class MainBiz {
     private static bool ShortHarami(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current,
         CandleModel previous, CandleModel earlier) {
         if (scanResult.HaramiSingle == SignalSideModel.Sell) {
+            CandleModel[] touchCandles = { current, previous, earlier };
+
             // (1).假突破/反转
-            if (Utils.AnyBarTouchesLevel(signalModel.Pdh, current, previous, earlier) && current.Close < signalModel.Pdh) {
+            if (Utils.TryFindSellKeyLevel(Utils.PdhLevels(signalModel), current.Close, touchCandles, out string reversalLevel)) {
                 signalModel.Label = "S_Harami_1";
                 signalModel.SL = Math.Max(previous.High, current.High);
-                signalModel.KeyLevel = "PDH";
+                signalModel.KeyLevel = reversalLevel;
                 return true;
             }
 
             // (2).真突破/延续
-            if (Utils.AnyBarTouchesLevel(signalModel.Pdl, current, previous, earlier) && current.Close < signalModel.Pdl) {
+            if (Utils.TryFindSellKeyLevel(Utils.PdlLevels(signalModel), current.Close, touchCandles, out string continuationLevel)) {
                 signalModel.Label = "S_Harami_2";
                 signalModel.SL = Math.Max(previous.High, current.High);
-                signalModel.KeyLevel = "PDL";
+                signalModel.KeyLevel = continuationLevel;
                 return true;
             }
         }
@@ -178,19 +180,21 @@ public class MainBiz {
          */
 
         if (scanResult.HaramiSingle == SignalSideModel.Buy) {
+            CandleModel[] touchCandles = { current, previous, earlier };
+
             // (1).假突破/反转
-            if (Utils.AnyBarTouchesLevel(signalModel.Pdl, current, previous, earlier) && current.Close > signalModel.Pdl) {
+            if (Utils.TryFindBuyKeyLevel(Utils.PdlLevels(signalModel), current.Close, touchCandles, out string reversalLevel)) {
                 signalModel.Label = "L_Harami_1";
                 signalModel.SL = Math.Min(previous.Low, current.Low);
-                signalModel.KeyLevel = "PDL";
+                signalModel.KeyLevel = reversalLevel;
                 return true;
             }
 
             // (2).真突破/延续
-            if (Utils.AnyBarTouchesLevel(signalModel.Pdh, current, previous, earlier) && current.Close > signalModel.Pdh) {
+            if (Utils.TryFindBuyKeyLevel(Utils.PdhLevels(signalModel), current.Close, touchCandles, out string continuationLevel)) {
                 signalModel.Label = "L_Harami_2";
                 signalModel.SL = Math.Min(previous.Low, current.Low);
-                signalModel.KeyLevel = "PDH";
+                signalModel.KeyLevel = continuationLevel;
                 return true;
             }
         }
@@ -201,19 +205,21 @@ public class MainBiz {
     private static bool ShortEngulf(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current,
         CandleModel previous) {
         if (scanResult.Engulf == SignalSideModel.Sell) {
+            CandleModel[] touchCandles = { current, previous };
+
             // (1).假突破/反转
-            if (Utils.AnyBarTouchesLevel(signalModel.Pdh, current, previous) && current.Close < signalModel.Pdh) {
+            if (Utils.TryFindSellKeyLevel(Utils.PdhLevels(signalModel), current.Close, touchCandles, out string reversalLevel)) {
                 signalModel.Label = "S_Eng_1";
                 signalModel.SL = current.High;
-                signalModel.KeyLevel = "PDH";
+                signalModel.KeyLevel = reversalLevel;
                 return true;
             }
 
             // (2).真突破/延续
-            if (Utils.AnyBarTouchesLevel(signalModel.Pdl, current, previous) && current.Close < signalModel.Pdl) {
+            if (Utils.TryFindSellKeyLevel(Utils.PdlLevels(signalModel), current.Close, touchCandles, out string continuationLevel)) {
                 signalModel.Label = "S_Eng_2";
                 signalModel.SL = current.High;
-                signalModel.KeyLevel = "PDL";
+                signalModel.KeyLevel = continuationLevel;
                 return true;
             }
         }
@@ -223,19 +229,21 @@ public class MainBiz {
 
     private static bool ShortPinBar(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current) {
         if (scanResult.Pinbar == SignalSideModel.Sell) {
+            CandleModel[] touchCandles = { current };
+
             // (1).假突破/反转
-            if (Utils.AnyBarTouchesLevel(signalModel.Pdh, current) && current.Close < signalModel.Pdh) {
+            if (Utils.TryFindSellKeyLevel(Utils.PdhLevels(signalModel), current.Close, touchCandles, out string reversalLevel)) {
                 signalModel.Label = "S_Pin_1";
                 signalModel.SL = current.High;
-                signalModel.KeyLevel = "PDH";
+                signalModel.KeyLevel = reversalLevel;
                 return true;
             }
 
             // (2).真突破/延续
-            if (Utils.AnyBarTouchesLevel(signalModel.Pdl, current) && current.Close < signalModel.Pdl) {
+            if (Utils.TryFindSellKeyLevel(Utils.PdlLevels(signalModel), current.Close, touchCandles, out string continuationLevel)) {
                 signalModel.Label = "S_Pin_2";
                 signalModel.SL = current.High;
-                signalModel.KeyLevel = "PDL";
+                signalModel.KeyLevel = continuationLevel;
                 return true;
             }
         }
@@ -247,22 +255,22 @@ public class MainBiz {
 
     private static bool LongBottom(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current,
         CandleModel previous, CandleModel earlier) {
-        if (scanResult.FractalBottom == SignalSideModel.Buy) {
+        if (scanResult.FractalBottom == SignalSideModel.Buy && Utils.AnyBarIsLong(current)) {
+            CandleModel[] touchCandles = { current, previous, earlier };
+
             // (1).假突破/反转
-            if (Utils.AnyBarTouchesLevel(signalModel.Pdl, current, previous, earlier) && Utils.AnyBarIsLong(current) &&
-                current.Close > signalModel.Pdl) {
+            if (Utils.TryFindBuyKeyLevel(Utils.PdlLevels(signalModel), current.Close, touchCandles, out string reversalLevel)) {
                 signalModel.Label = "L_Bot_1";
                 signalModel.SL = previous.Low;
-                signalModel.KeyLevel = "PDL";
+                signalModel.KeyLevel = reversalLevel;
                 return true;
             }
 
             // (2).真突破/延续
-            if (Utils.AnyBarTouchesLevel(signalModel.Pdh, current, previous, earlier) && Utils.AnyBarIsLong(current) &&
-                current.Close > signalModel.Pdh) {
+            if (Utils.TryFindBuyKeyLevel(Utils.PdhLevels(signalModel), current.Close, touchCandles, out string continuationLevel)) {
                 signalModel.Label = "L_Bot_2";
                 signalModel.SL = previous.Low;
-                signalModel.KeyLevel = "PDH";
+                signalModel.KeyLevel = continuationLevel;
                 return true;
             }
         }
@@ -274,19 +282,21 @@ public class MainBiz {
     private static bool LongEngulf(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current,
         CandleModel previous) {
         if (scanResult.Engulf == SignalSideModel.Buy) {
+            CandleModel[] touchCandles = { current, previous };
+
             // (1).假突破/反转
-            if (Utils.AnyBarTouchesLevel(signalModel.Pdl, current, previous) && current.Close > signalModel.Pdl) {
+            if (Utils.TryFindBuyKeyLevel(Utils.PdlLevels(signalModel), current.Close, touchCandles, out string reversalLevel)) {
                 signalModel.Label = "L_Eng_1";
                 signalModel.SL = current.Low;
-                signalModel.KeyLevel = "PDL";
+                signalModel.KeyLevel = reversalLevel;
                 return true;
             }
 
             // (2).真突破/延续
-            if (Utils.AnyBarTouchesLevel(signalModel.Pdh, current, previous) && current.Close > signalModel.Pdh) {
+            if (Utils.TryFindBuyKeyLevel(Utils.PdhLevels(signalModel), current.Close, touchCandles, out string continuationLevel)) {
                 signalModel.Label = "L_Eng_2";
                 signalModel.SL = current.Low;
-                signalModel.KeyLevel = "PDH";
+                signalModel.KeyLevel = continuationLevel;
                 return true;
             }
         }
@@ -296,19 +306,21 @@ public class MainBiz {
 
     private static bool LongPinbar(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current) {
         if (scanResult.Pinbar == SignalSideModel.Buy) {
+            CandleModel[] touchCandles = { current };
+
             // (1).假突破/反转
-            if (Utils.AnyBarTouchesLevel(signalModel.Pdl, current) && current.Close > signalModel.Pdl) {
+            if (Utils.TryFindBuyKeyLevel(Utils.PdlLevels(signalModel), current.Close, touchCandles, out string reversalLevel)) {
                 signalModel.Label = "L_Pin_1";
                 signalModel.SL = current.Low;
-                signalModel.KeyLevel = "PDL";
+                signalModel.KeyLevel = reversalLevel;
                 return true;
             }
 
             // (2).真突破/延续
-            if (Utils.AnyBarTouchesLevel(signalModel.Pdh, current) && current.Close > signalModel.Pdh) {
+            if (Utils.TryFindBuyKeyLevel(Utils.PdhLevels(signalModel), current.Close, touchCandles, out string continuationLevel)) {
                 signalModel.Label = "L_Pin_2";
                 signalModel.SL = current.Low;
-                signalModel.KeyLevel = "PDH";
+                signalModel.KeyLevel = continuationLevel;
                 return true;
             }
         }
