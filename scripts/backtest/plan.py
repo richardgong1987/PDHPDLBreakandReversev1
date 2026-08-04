@@ -1,133 +1,103 @@
-"""读取 conditions.numbers 计划表，把每一行变成一个回测任务对象 ConditionRow。
+"""把参数接口返回的每条记录变成一个回测任务 ConditionRow。
 
-计划表每一行是一条回测任务，按“列名”（不是列顺序）读取。读哪些列、每列怎么校验、
-对应哪个 cBot 参数，全部登记在 parameters.PARAMETERS——加减参数请改那张表，不要改这里。
+一条 record = 一次回测：symbol / period 决定跑哪个品种周期，parameterFields 里的每一项直接
+翻译成一个 cTrader CLI 参数（见 parameters.ParameterField）。参数的增删由后端那张记录表决定，
+脚本这边不再维护列名或白名单。
 
-报告文件名的拼法仍写在本文件的 ConditionRow.file_name 里：文件名只放需要区分回测结果的
-字段，与参数表不是一一对应的关系。
+报告文件名的拼法写在 ConditionRow.file_name：文件名只放需要区分回测结果的字段，
+summary/naming.py 按这个格式反解析出汇总表的各列，改格式要两边一起改。
 """
 
-from datetime import datetime
+from .parameters import (
+    ENTRY_MODEL_NAMES,
+    STRATEGY_MODEL_NAMES,
+    ParameterField,
+    enum_member_name,
+    to_cli_date,
+    to_compact_date,
+    to_number_text,
+    to_whole_number_text,
+)
+from .records import fetch_parameter_records
 
-from numbers_parser import Document
+FIELD_STRATEGY = "Strategy"
+FIELD_ENTRY_MODEL = "EntryModel"
+FIELD_TAKE_PROFIT = "TakeProfitR"
+FIELD_NLOCK = "Nlock"
+FIELD_START_DATE = "start"
+FIELD_END_DATE = "end"
 
-from .parameters import PARAMETERS, PARAMETER_COLUMNS
-
-COLUMN_SYMBOL = "种类"
-COLUMN_PERIOD = "周期"
-COLUMN_ENTRY_MODEL = "回撤开仓模式"
-COLUMN_TAKE_PROFIT = "止盈目标"
-COLUMN_NLOCK = "N次止损Lock"
-COLUMN_STRATEGY = "策略模式"
-COLUMN_START_DATE = "起始日期"
-COLUMN_END_DATE = "结束日期"
-
-# 这几列留空说明这一行还没填完（Numbers 表尾常有空行），整行跳过而不是报错。
-UNFINISHED_ROW_COLUMNS = [
-    COLUMN_SYMBOL,
-    COLUMN_PERIOD,
-    COLUMN_ENTRY_MODEL,
-    COLUMN_TAKE_PROFIT,
-]
+# 交易 CSV 的落盘路径由 command.py 统一给（绝对路径，与 report-json 同目录、同名）；
+# 接口里的 FileName 只是后台展示用的默认值，一起传下去会和它冲突，所以在这里丢掉。
+IGNORED_FIELD_NAMES = {"FileName"}
 
 
 class ConditionRow:
-    """计划表中的一条回测任务。参数值按列名存放，校验在 Parameter.parse 里做。"""
+    """一条回测任务，来自参数接口的一条 record。"""
 
-    def __init__(self, cells):
-        self._cells = dict(cells)
-        self._values = {
-            parameter.column: parameter.parse(cells[parameter.column])
-            for parameter in PARAMETERS
-        }
+    def __init__(self, record):
+        self.record_id = record.get("recordId")
+        self.symbol = _required_text(record.get("symbol"), "缺少 symbol。")
+        self.period = _required_text(record.get("period"), "缺少 period。")
+        self._fields = _read_fields(record)
+        # 下面三项在构造时就算出来：接口数据有问题要在批量开跑之前报错，而不是跑到一半才炸。
+        self.start_date = to_cli_date(self._value(FIELD_START_DATE))
+        self.end_date = to_cli_date(self._value(FIELD_END_DATE))
+        self.file_name = self._build_file_name()
 
     def cli_args(self):
-        """这条任务的 cBot 参数命令行片段，顺序与 PARAMETERS 一致。"""
-        return [
-            parameter.cli_arg(self._values[parameter.column]) for parameter in PARAMETERS
-        ]
-
-    @property
-    def symbol(self):
-        return self._values[COLUMN_SYMBOL]
-
-    @property
-    def period(self):
-        return self._values[COLUMN_PERIOD]
-
-    @property
-    def start_date(self):
-        return self._values[COLUMN_START_DATE]
-
-    @property
-    def end_date(self):
-        return self._values[COLUMN_END_DATE]
-
-    @property
-    def file_name(self):
-        return (
-            f"{self.symbol}-{self.period}-{self._entry_model_name}-"
-            f"{self._values[COLUMN_ENTRY_MODEL]}-{self._values[COLUMN_TAKE_PROFIT]}-"
-            f"n{self._values[COLUMN_NLOCK]}-{self._values[COLUMN_STRATEGY]}-"
-            f"{to_compact_date(self.start_date)}-{to_compact_date(self.end_date)}.csv"
-        )
+        """这条任务的 cBot 参数命令行片段，顺序与接口返回的字段顺序一致。"""
+        return [field.cli_arg() for field in self._fields.values() if not field.is_blank]
 
     @property
     def report_file_name(self):
         """回测报告文件名：与 CSV 同名，只把 .csv 换成 .json。"""
         return self.file_name[: -len(".csv")] + ".json"
 
-    @property
-    def _entry_model_name(self):
-        """文件名里用模式名（Close/Pb25/…），命令行里用它对应的数值。"""
-        return str(self._cells[COLUMN_ENTRY_MODEL]).strip()
-
-
-def to_compact_date(backtest_date):
-    """把 DD/MM/YYYY（传给 CLI 的格式）转成文件名用的紧凑 YYYYMMDD。"""
-    return datetime.strptime(backtest_date, "%d/%m/%Y").strftime("%Y%m%d")
-
-
-def resolve_column_indexes(header_row):
-    """按列名定位每个必需列的下标，缺列时抛出清晰的错误。"""
-    header = [str(cell).strip() if cell is not None else "" for cell in header_row]
-    indexes = {}
-    missing = []
-    for column_name in PARAMETER_COLUMNS:
-        if column_name in header:
-            indexes[column_name] = header.index(column_name)
-        else:
-            missing.append(column_name)
-    if missing:
-        raise ValueError(
-            "计划表缺少必需列：" + "、".join(missing) + "。\n"
-            "请在 conditions.numbers 里补上这些列（列名需与参数表里的写法逐字一致）。"
+    def _build_file_name(self):
+        return (
+            f"{self.symbol}-{self.period}-"
+            f"{enum_member_name(ENTRY_MODEL_NAMES, self._value(FIELD_ENTRY_MODEL))}-"
+            f"{to_whole_number_text(self._value(FIELD_ENTRY_MODEL))}-"
+            f"{to_number_text(self._value(FIELD_TAKE_PROFIT))}-"
+            f"n{to_whole_number_text(self._value(FIELD_NLOCK))}-"
+            f"{enum_member_name(STRATEGY_MODEL_NAMES, self._value(FIELD_STRATEGY))}-"
+            f"{to_compact_date(self._value(FIELD_START_DATE))}-"
+            f"{to_compact_date(self._value(FIELD_END_DATE))}.csv"
         )
-    return indexes
+
+    def _value(self, field_name):
+        field = self._fields.get(field_name)
+        if field is None:
+            raise ValueError(f"缺少参数「{field_name}」，无法确定这条回测跑什么。")
+        return field.value
 
 
-def read_condition_rows(conditions_file):
-    """读取计划表，返回有效的任务列表（跳过表头与未填完的行）。"""
-    document = Document(str(conditions_file))
-    table = document.sheets[0].tables[0]
-    rows = table.rows(values_only=True)
-    if not rows:
-        return []
+def read_condition_rows(records_url):
+    """拉取参数接口，返回回测任务列表（顺序与接口返回一致）。"""
+    return [_to_condition_row(record) for record in fetch_parameter_records(records_url)]
 
-    indexes = resolve_column_indexes(rows[0])
 
-    tasks = []
-    for row in rows[1:]:
-        cells = {column: row[indexes[column]] for column in PARAMETER_COLUMNS}
-        if _is_unfinished_row(cells):
+def _to_condition_row(record):
+    """接口数据有问题时补上 recordId 再抛出，让人一眼看出该改后端的哪条记录。"""
+    try:
+        return ConditionRow(record)
+    except ValueError as error:
+        raise ValueError(f"参数记录 recordId={record.get('recordId')}：{error}") from error
+
+
+def _read_fields(record):
+    fields = {}
+    for raw_field in record.get("parameterFields") or []:
+        field = ParameterField(raw_field)
+        if field.name in IGNORED_FIELD_NAMES:
             continue
-        tasks.append(ConditionRow(cells))
-    return tasks
+        fields[field.name] = field
+    return fields
 
 
-def _is_unfinished_row(cells):
-    return any(_is_blank(cells[column]) for column in UNFINISHED_ROW_COLUMNS)
-
-
-def _is_blank(cell):
-    return cell is None or str(cell).strip() == ""
+def _required_text(value, message):
+    text = "" if value is None else str(value).strip()
+    if not text:
+        raise ValueError(message)
+    return text

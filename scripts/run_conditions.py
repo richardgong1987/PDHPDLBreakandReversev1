@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""按 conditions.numbers 中的计划批量运行 cTrader 历史回测（backtest）。
+"""按后端参数接口下发的计划批量运行 cTrader 历史回测（backtest）。
 
-命令行入口（组合根）：解析参数、读环境配置、读计划表，再交给 runner 逐条/并发执行。
-具体实现按职责拆在 backtest/ 包里：
+命令行入口（组合根）：解析参数、读环境配置、拉取回测计划，再交给 runner 逐条/并发执行。
+回测计划来自 .env 里的 CTRADER_PARAMETER_RECORDS_URL——接口返回几条记录就跑几条回测，
+每条记录自带全部 cBot 参数，脚本这边不再维护参数清单。具体实现按职责拆在 backtest/ 包里：
 
-    backtest/config   —— 从 .env 读环境配置（账户/路径/鉴权/回测资金/数据模式）
-    backtest/plan     —— 读 conditions.numbers 计划表，产出回测任务 ConditionRow
+    backtest/config   —— 从 .env 读环境配置（账户/路径/鉴权/接口地址/回测资金/数据模式）
+    backtest/records  —— 请求参数接口，取回参数记录（HTTP 细节）
+    backtest/plan     —— 把每条参数记录变成回测任务 ConditionRow
     backtest/command  —— 把任务翻译成 cTrader CLI 的 backtest 命令
     backtest/runner   —— 串行/并发执行任务，并刷新汇总图 final_report.png
 
@@ -34,12 +36,11 @@ from backtest.runner import (
 
 SCRIPTS_DIR = Path(__file__).resolve().parent
 DEFAULT_ENV_FILE = SCRIPTS_DIR / ".env"
-CONDITIONS_FILE = SCRIPTS_DIR / "backtester/conditions.numbers"
 
 
 def parse_args(argv):
     parser = argparse.ArgumentParser(
-        description="按 conditions.numbers 计划表逐条运行 cTrader 历史回测。"
+        description="按后端参数接口下发的计划逐条运行 cTrader 历史回测。"
     )
     parser.add_argument(
         "--env-file",
@@ -59,9 +60,9 @@ def main(argv=None):
     args = parse_args(argv)
     config = load_config(Path(args.env_file))
 
-    tasks = read_condition_rows(CONDITIONS_FILE)
+    tasks = read_condition_rows(config.parameter_records_url)
     if not tasks:
-        print("计划表中没有有效任务。")
+        print("参数接口没有返回任何回测记录。")
         return 0
 
     jobs = max(1, args.jobs)

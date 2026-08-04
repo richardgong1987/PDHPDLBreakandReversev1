@@ -1,8 +1,7 @@
 # run_conditions.py 的 Python 依赖
 # 安装： pip install -r scripts/requirements.txt
 
-# 读取 conditions.numbers（Apple Numbers 表格）
-numbers-parser>=4.18.5
+# 回测计划来自后端参数接口，用标准库 urllib 请求，无需额外依赖。
 
 # 汇总回测报告 JSON、生成胜率/盈亏柱状图 final_report.png
 pandas>=2.0

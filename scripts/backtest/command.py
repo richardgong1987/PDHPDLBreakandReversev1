@@ -1,7 +1,7 @@
 """把一条回测任务翻译成 cTrader CLI 的 backtest 命令。
 
 重要：用的是 cTrader CLI 的 `backtest` 子命令（历史回测，跑完区间自动结束），不是 `run`
-（实时/前向运行，会一直连着实盘账户）。任务字段 + 环境配置 + 固定参数拼成完整命令行。
+（实时/前向运行，会一直连着实盘账户）。环境配置 + 任务自带的 cBot 参数拼成完整命令行。
 """
 
 import shutil
@@ -47,26 +47,6 @@ def archive_output_dir(timestamp=None):
     )
     return Path(archive_path)
 
-# cBot 自定义参数（每条回测都一样的固定项，保持与手工命令一致）
-# 计划表能逐行改的那些参数不在这里，它们登记在 parameters.PARAMETERS，由 task.cli_args() 拼出。
-# 名称必须与 cBot 的 C# 属性名逐字一致（cTrader CLI 按属性名匹配，不是按中文显示名）。
-#   MaSource -> MovingAverageSourceModel: HigherTimeFrame=0, ChartTimeFrame=1
-CBOT_FIXED_PARAMS = {
-    "ResetTradeLogOnStart": "True",
-    "RiskPct": "1",
-    "RiskSafetyFactor": "1",
-    "StopOffsetTicks": "15",
-    "MinStopLossPips": "5",
-    "SaturdayForceCloseHour": "5",
-    "SaturdayForceCloseMinute": "30",
-    "MaSource": "0",
-    "MaFastPeriod": "13",
-    "MaSlowPeriod": "55",
-    "MaTimeFrameMinutes": "120",
-    "ShowDebugLogs": "False",
-    "IsDebug": "False",
-}
-
 
 def build_command(task, config):
     """把一条任务翻译成完整的 cTrader backtest 命令。"""
@@ -88,10 +68,12 @@ def build_command(task, config):
         "--exit-on-stop",
     ]
 
-    for name, value in CBOT_FIXED_PARAMS.items():
-        command.append(f"--{name}={value}")
+    # 品种/周期是 CLI 自己的选项（不是 cBot 参数），在接口记录里也是独立字段，单独拼。
+    command.append(f"--symbol={task.symbol}")
+    command.append(f"--period={task.period}")
 
-    # 计划表里的每一列都在这里变成命令行参数，加减参数只改 parameters.PARAMETERS。
+    # 接口那条记录里的每个参数字段都在这里变成命令行参数；本脚本不再固定任何 cBot 参数，
+    # 要改回测参数就改后端记录（没填的字段留给 cBot 自己的默认值）。
     command.extend(task.cli_args())
     # 传绝对路径：cBot 内部会 Path.Combine(我的文档, FileName)，第二参为绝对路径时 .NET 直接返回它，
     # 于是交易 CSV 也落到 trading_reports，与 report-json 同目录。

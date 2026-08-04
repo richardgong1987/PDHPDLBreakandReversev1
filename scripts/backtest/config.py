@@ -1,4 +1,4 @@
-"""从 .env 文件读入环境相关配置（账户、鉴权、cTrader 路径、回测资金/数据模式）。
+"""从 .env 文件读入环境相关配置（账户、鉴权、cTrader 路径、接口地址、回测资金/数据模式）。
 
 账户、路径、鉴权等“环境相关”配置不写死在脚本里，而是从 .env 文件读取，这样同一套代码
 用不同 env 文件即可切换环境（开发 / 生产）。
@@ -10,8 +10,15 @@
 
 from pathlib import Path
 
-# .env 必填项；DATA_MODE / BALANCE 选填，未填用默认值
-REQUIRED_ENV_KEYS = ["AUTH_TOKEN", "CTRADER_BIN", "CTID", "ACCOUNT"]
+# .env 必填项；DATA_MODE / BALANCE 选填，未填用默认值。
+# CTRADER_PARAMETER_RECORDS_URL 是回测计划的唯一来源，缺了就一条任务也跑不了，所以必填。
+REQUIRED_ENV_KEYS = [
+    "AUTH_TOKEN",
+    "CTRADER_BIN",
+    "CTID",
+    "ACCOUNT",
+    "CTRADER_PARAMETER_RECORDS_URL",
+]
 DEFAULT_DATA_MODE = "m1"
 DEFAULT_BALANCE = "10000"
 
@@ -32,6 +39,8 @@ class Config:
         self.algo_path = str(resolve_algo_path())
         self.ctid = values["CTID"]
         self.account = values["ACCOUNT"]
+        # 回测计划（跑哪些参数组合）来自后端接口，地址随环境不同（开发/生产）。
+        self.parameter_records_url = values["CTRADER_PARAMETER_RECORDS_URL"]
         self.data_mode = values.get("DATA_MODE") or DEFAULT_DATA_MODE
         self.balance = values.get("BALANCE") or DEFAULT_BALANCE
         # 上传接口地址随环境不同（开发/生产）；未配置时留空，批量结束后跳过上传。
