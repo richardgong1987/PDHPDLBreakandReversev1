@@ -10,6 +10,11 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("策略模式", DefaultValue = StrategyModel.All)]
     public StrategyModel Strategy { get; set; }
 
+    [Parameter("Pdh1", DefaultValue = 0.0)] public double Pdh1 { get; set; }
+    [Parameter("Pdh2", DefaultValue = 0.0)] public double Pdh2 { get; set; }
+    [Parameter("Pdl1", DefaultValue = 0.0)] public double Pdl1 { get; set; }
+    [Parameter("Pdl2", DefaultValue = 0.0)] public double Pdl2 { get; set; }
+
     [Parameter("N次止损Lock", DefaultValue = 3)]
     public int Nlock { get; set; }
 
@@ -92,8 +97,7 @@ public class PDHPDLBreakandReversev1 : Robot {
         var riskGuard = new PdhpdlRiskGuard(BuildRiskGuardConfig());
         var planner = new PdhpdlOrderPlanner(new CAlgoSymbolModel(Symbol), riskGuard, StopOffsetTicks, TakeProfitR, EntryModel, RiskPct);
         _lossLock = new ConsecutiveLossLock(Nlock, MaxBarRangeAtr);
-        _orderExecutor =
-            new PdhpdlOrderExecutor(this, SymbolName, Bars.TimeFrame.ToString(), planner, riskGuard, _csvLogger, _lossLock);
+        _orderExecutor = new PdhpdlOrderExecutor(this, SymbolName, Bars.TimeFrame.ToString(), planner, riskGuard, _csvLogger, _lossLock);
         Print("*****PDH/PDL Break and Reverse started.");
     }
 
