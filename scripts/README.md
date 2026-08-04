@@ -11,8 +11,8 @@ pip install -r scripts/requirements.txt
 ```
 
 Third-party dependencies: `pandas` + `matplotlib` (summarize backtest reports and draw the bar
-chart); everything else is the Python standard library — the parameter API is fetched with
-`urllib`.
+chart) and `python-dotenv` (parse `.env`); everything else is the Python standard library — the
+parameter API is fetched with `urllib`.
 
 ## Environment config (.env)
 

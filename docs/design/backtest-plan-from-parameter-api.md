@@ -77,8 +77,11 @@ only on the `ConditionRow` interface, not on where the plan came from.
 
 ## 8. Dependencies
 
-Standard library only for the new code (`urllib.request`, `json`, `datetime`). `numbers-parser`
-was removed from `scripts/requirements.txt`.
+Standard library only for the plan path itself (`urllib.request`, `json`, `datetime`).
+`numbers-parser` was removed from `scripts/requirements.txt`; `python-dotenv` was added, replacing
+the hand-rolled `.env` line parser in `config.py` (it also handles inline comments, quoting, and
+`export` prefixes). `dotenv_values` is used rather than `load_dotenv` so the config stays a plain
+dict and nothing mutates `os.environ`.
 
 ## 9. External Details
 

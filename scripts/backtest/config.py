@@ -10,6 +10,8 @@
 
 from pathlib import Path
 
+from dotenv import dotenv_values
+
 # .env 必填项；DATA_MODE / BALANCE 选填，未填用默认值。
 # CTRADER_PARAMETER_RECORDS_URL 是回测计划的唯一来源，缺了就一条任务也跑不了，所以必填。
 REQUIRED_ENV_KEYS = [
@@ -48,20 +50,18 @@ class Config:
 
 
 def parse_env_file(env_file):
-    """把 .env 文件解析成 key->value 字典（忽略空行与 # 注释，去掉两侧引号）。"""
+    """把 .env 文件解析成 key->value 字典。
+
+    解析交给 python-dotenv：注释（含值后面的行内注释）、引号、转义、export 前缀这些边角
+    它都处理好了，自己写一遍只会少处理几种。文件不存在时 dotenv_values 静默返回空字典，
+    所以这里先自己检查一次，好告诉人该怎么办。
+    """
     if not env_file.exists():
         raise FileNotFoundError(
             f"找不到环境配置文件：{env_file}\n"
             "请复制 scripts/.env.example 为 .env（或 .env-prod）并填好里面的值。"
         )
-    values = {}
-    for raw_line in env_file.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, _, value = line.partition("=")
-        values[key.strip()] = value.strip().strip('"').strip("'")
-    return values
+    return dotenv_values(env_file)
 
 
 def load_config(env_file):
