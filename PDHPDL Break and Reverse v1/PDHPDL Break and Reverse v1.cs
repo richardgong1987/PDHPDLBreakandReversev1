@@ -80,6 +80,7 @@ public class PDHPDLBreakandReversev1 : Robot {
     public int MaTimeFrameMinutes { get; set; }
 
     private PdhpdlLines _pdhpdlLines;
+    private PdhpdlLevelLines _pdhpdlLevelLines;
     private DualRmaSeries _rmaSeries;
     private DualRmaLines _movingAverageLines;
     private PdhpdlSignalDetector _signalDetector;
@@ -107,6 +108,7 @@ public class PDHPDLBreakandReversev1 : Robot {
         _lossLock = new ConsecutiveLossLock(Nlock, MaxBarRangeAtr);
         _orderExecutor = new PdhpdlOrderExecutor(this, SymbolName, Bars.TimeFrame.ToString(), planner, riskGuard, _csvLogger, _lossLock);
         _parameterModel = new ParameterModel { Pdh1 = Pdh1, Pdh2 = Pdh2, Pdl1 = Pdl1, Pdl2 = Pdl2 };
+        DrawManualLevels();
         Print("*****PDH/PDL Break and Reverse started.");
     }
 
@@ -115,6 +117,12 @@ public class PDHPDLBreakandReversev1 : Robot {
         _rmaSeries = new DualRmaSeries(MarketData, Indicators, SymbolName, Bars, rmaConfig);
         _movingAverageLines = new DualRmaLines(Chart, Bars, _rmaSeries, rmaConfig.Thickness);
         _movingAverageLines.Draw();
+    }
+
+    private void DrawManualLevels() {
+        _pdhpdlLevelLines = new PdhpdlLevelLines(Chart, 2);
+        _pdhpdlLevelLines.Draw(_parameterModel);
+        Print("*****Manual levels | Pdh1: {0}, Pdh2: {1}, Pdl1: {2}, Pdl2: {3}", Pdh1, Pdh2, Pdl1, Pdl2);
     }
 
     private void DrawPdhPdl() {
@@ -210,6 +218,7 @@ public class PDHPDLBreakandReversev1 : Robot {
         _orderExecutor?.Stop();
         _signalMarkers?.Clear();
         _pdhpdlLines?.Clear();
+        _pdhpdlLevelLines?.Clear();
         _movingAverageLines?.Clear();
     }
 }
