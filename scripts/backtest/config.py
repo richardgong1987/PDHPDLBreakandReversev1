@@ -3,6 +3,10 @@
 账户、路径、鉴权等“环境相关”配置不写死在脚本里，而是从 .env 文件读取，这样同一套代码
 用不同 env 文件即可切换环境（开发 / 生产）。
 
+env 文件分两层：scripts/.env 是各环境共用的底稿，环境专用文件（如 .env-prod）叠在它
+上面，只写与底稿不同的键。这样账户、鉴权这类共用值只维护一份，不会两个文件各抄一遍
+而后改一处忘另一处。
+
 .algo 的位置不进 .env：cTrader.Automate 编译后固定把 .algo 发布到「仓库根目录的上一层」，
 文件名等于仓库根目录名（见 cTrader.Automate.targets 的 _AlgoRootDirectoryName / _AlgoPublish），
 所以它可以从仓库路径直接推导出来。
@@ -25,6 +29,8 @@ DEFAULT_DATA_MODE = "m1"
 DEFAULT_BALANCE = "10000"
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+# 各环境共用的底稿；环境专用文件（.env-prod 等）只写差异，同名键覆盖它。
+BASE_ENV_FILE = Path(__file__).resolve().parents[1] / ".env"
 
 
 def resolve_algo_path():
@@ -50,7 +56,7 @@ class Config:
 
 
 def parse_env_file(env_file):
-    """把 .env 文件解析成 key->value 字典。
+    """把 env 文件解析成 key->value 字典：先读共用底稿 .env，再让指定文件覆盖同名键。
 
     解析交给 python-dotenv：注释（含值后面的行内注释）、引号、转义、export 前缀这些边角
     它都处理好了，自己写一遍只会少处理几种。文件不存在时 dotenv_values 静默返回空字典，
@@ -61,7 +67,11 @@ def parse_env_file(env_file):
             f"找不到环境配置文件：{env_file}\n"
             "请复制 scripts/.env.example 为 .env（或 .env-prod）并填好里面的值。"
         )
-    return dotenv_values(env_file)
+    values = {}
+    if BASE_ENV_FILE.exists() and env_file.resolve() != BASE_ENV_FILE:
+        values.update(dotenv_values(BASE_ENV_FILE))
+    values.update(dotenv_values(env_file))
+    return values
 
 
 def load_config(env_file):

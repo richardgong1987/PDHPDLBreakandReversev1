@@ -14,7 +14,7 @@
 用法：
 
     python3 run_conditions.py                          # 默认读 scripts/.env
-    python3 run_conditions.py --env-file scripts/.env-prod   # 读生产配置
+    python3 run_conditions.py --env-file scripts/.env-prod   # scripts/.env + 生产差异覆盖
     python3 run_conditions.py --jobs 4                 # 最多同时跑 4 条（默认 1 = 逐条串行）
 """
 
@@ -45,7 +45,8 @@ def parse_args(argv):
     parser.add_argument(
         "--env-file",
         default=str(DEFAULT_ENV_FILE),
-        help="环境配置文件路径（默认 scripts/.env；生产用 --env-file scripts/.env-prod）",
+        help="环境配置文件路径（默认 scripts/.env；生产用 --env-file scripts/.env-prod，"
+        "它继承 scripts/.env 并覆盖同名键）",
     )
     parser.add_argument(
         "--jobs",
