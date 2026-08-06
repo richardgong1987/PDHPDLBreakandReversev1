@@ -18,10 +18,8 @@ public class Utils {
     // 数组顺序就是命中优先级：日线价位先判断，手工价位按 1、2 顺序补上。
     public static PdhpdlKeyLevelModel[] PdhLevels(PdhpdlSignalModel signalModel) {
         return new[] {
-            new PdhpdlKeyLevelModel("PDH", signalModel.Pdh),
-            new PdhpdlKeyLevelModel("Pdh1", signalModel.Pdh1),
-            new PdhpdlKeyLevelModel("Pdh2", signalModel.Pdh2),
-            new PdhpdlKeyLevelModel("Pdh3", signalModel.Pdh3),
+            new PdhpdlKeyLevelModel("PDH", signalModel.Pdh), new PdhpdlKeyLevelModel("Pdh1", signalModel.Pdh1),
+            new PdhpdlKeyLevelModel("Pdh2", signalModel.Pdh2), new PdhpdlKeyLevelModel("Pdh3", signalModel.Pdh3),
         };
     }
 
@@ -112,16 +110,11 @@ public class Utils {
 
     private static bool IsWeakTrend(PdhpdlSignalModel signalModel, CandleModel current, SignalSideModel side) {
         // 弱多头：RMA13>K线收盘价格>RMA55
-        if (side == SignalSideModel.Buy) {
-            return true;
-        }
 
         // 弱空头：RMA13<K线收盘价格<RMA55
-        if (side == SignalSideModel.Sell) {
-            return true;
-        }
+        return (signalModel.FastRma < current.Close && current.Close < signalModel.SlowRma) ||
+               (signalModel.FastRma > current.Close && current.Close > signalModel.SlowRma);
 
-        return false;
     }
 
     // 趋势转换或者震荡：多头 RMA13>RMA55>K线收盘价格 | 空头 RMA13<RMA55<K线收盘价格，两者都不交易。
