@@ -33,6 +33,21 @@ The `.algo` path is not configured: `dotnet build` publishes the package to the 
 above the repo root, named after the repo root folder, so `backtest/config.py` derives it.
 Build first — the run aborts with a clear error if the `.algo` is missing.
 
+### Inheritance: `.env` is the shared base
+
+`scripts/.env` is loaded for **every** environment. An environment-specific file passed via
+`--env-file` (e.g. `.env-prod`) is loaded on top of it and only needs the keys that differ —
+same-named keys win, everything else is inherited:
+
+```
+scripts/.env         AUTH_TOKEN, CTRADER_BIN, CTID, ACCOUNT, ...   # shared, edit once
+scripts/.env-prod    only the keys that differ in production
+```
+
+So the required-keys check applies to the merged result: a key that lives in `.env` does not
+have to be repeated in `.env-prod`. Note the flip side — a key you *delete* from `.env-prod`
+falls back to the base value rather than becoming unset; to blank one out, write `KEY=`.
+
 `.env` and `.env-prod` contain the auth token and are ignored in `.gitignore`, so they are
 never committed; only the `.env.example` template is version-controlled.
 
@@ -43,7 +58,7 @@ never committed; only the `.env.example` template is version-controlled.
 
    ```bash
    python3 scripts/run_conditions.py                          # reads scripts/.env by default
-   python3 scripts/run_conditions.py --env-file scripts/.env-prod   # use the production config
+   python3 scripts/run_conditions.py --env-file scripts/.env-prod   # .env + prod overrides
    python3 scripts/run_conditions.py --jobs 4                 # run up to 4 at a time (opt-in)
    ```
 
