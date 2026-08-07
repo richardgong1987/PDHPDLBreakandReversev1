@@ -85,25 +85,25 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("均线周期(分钟)", DefaultValue = 120, MinValue = 1, Group = "均线")]
     public int MaTimeFrameMinutes { get; set; }
 
-    [Parameter("BB Period", DefaultValue = 20, MinValue = 2)]
+    [Parameter("BB Period", DefaultValue = 20, MinValue = 2, Group = "震荡检测")]
     public int BollingerPeriod { get; set; }
 
-    [Parameter("BB Deviations", DefaultValue = 2.0, MinValue = 0.1)]
+    [Parameter("BB Deviations", DefaultValue = 2.0, MinValue = 0.1, Group = "震荡检测")]
     public double BollingerDeviations { get; set; }
 
-    [Parameter("Lookback Bars", DefaultValue = 48, MinValue = 5)]
+    [Parameter("Lookback Bars", DefaultValue = 48, MinValue = 5, Group = "震荡检测")]
     public int LookbackBars { get; set; }
 
-    [Parameter("ATR Period", DefaultValue = 14, MinValue = 2)]
+    [Parameter("ATR Period", DefaultValue = 14, MinValue = 2, Group = "震荡检测")]
     public int AtrPeriod { get; set; }
 
-    [Parameter("Max Slope (ATR/Bar)", DefaultValue = 0.02, MinValue = 0)]
+    [Parameter("Max Slope (ATR/Bar)", DefaultValue = 0.02, MinValue = 0, Group = "震荡检测")]
     public double MaxSlopeAtrPerBar { get; set; }
 
-    [Parameter("Max Line Range (ATR)", DefaultValue = 1.5, MinValue = 0)]
+    [Parameter("Max Line Range (ATR)", DefaultValue = 1.5, MinValue = 0, Group = "震荡检测")]
     public double MaxLineRangeAtr { get; set; }
 
-    [Parameter("Max Width Variation", DefaultValue = 0.25, MinValue = 0)]
+    [Parameter("Max Width Variation", DefaultValue = 0.25, MinValue = 0, Group = "震荡检测")]
     public double MaxWidthVariation { get; set; }
 
     private BollingerFlatDetector _detector;
