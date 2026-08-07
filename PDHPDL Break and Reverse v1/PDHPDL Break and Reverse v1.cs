@@ -85,10 +85,10 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("均线周期(分钟)", DefaultValue = 120, MinValue = 1, Group = "均线")]
     public int MaTimeFrameMinutes { get; set; }
 
-    [Parameter("BB Period", DefaultValue = 20, MinValue = 2, Group = "震荡检测")]
+    [Parameter("BB Period(长度)", DefaultValue = 60, MinValue = 2, Group = "震荡检测")]
     public int BollingerPeriod { get; set; }
 
-    [Parameter("BB Deviations", DefaultValue = 2.0, MinValue = 0.1, Group = "震荡检测")]
+    [Parameter("BB Deviations(标准差)", DefaultValue = 2.0, MinValue = 0.1, Group = "震荡检测")]
     public double BollingerDeviations { get; set; }
 
     [Parameter("Lookback Bars", DefaultValue = 48, MinValue = 5, Group = "震荡检测")]
