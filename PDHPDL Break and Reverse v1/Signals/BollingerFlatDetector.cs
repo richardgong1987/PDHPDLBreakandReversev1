@@ -5,6 +5,16 @@ using cAlgo.API.Internals;
 
 namespace cAlgo.Robots;
 
+/// <summary>
+/// Reusable Bollinger Band flatness detector.
+///
+/// Public methods:
+/// 1. IsFlat()
+/// 2. DrawBollingerBands()
+///
+/// Call both methods from the cBot's OnBarClosed() method so that
+/// the class works only with completed bars.
+/// </summary>
 public sealed class BollingerFlatDetector {
     private readonly Bars _bars;
     private readonly Chart _chart;
@@ -85,36 +95,138 @@ public sealed class BollingerFlatDetector {
         if (!HasEnoughData())
             return false;
 
+
+        /*
+         * FORMULA 1: Average ATR
+         *
+         *                  ATR(0) + ATR(1) + ... + ATR(N - 1)
+         * AverageATR =     ------------------------------------
+         *                                      N
+         *
+         * N = _lookbackBars.
+         *
+         * We use the average ATR as our measuring ruler.
+         * This lets the same rules work more fairly on markets
+         * with very different prices, such as EURUSD, gold, and BTC.
+         */
         double averageAtr = GetAverage(_atr.Result, _lookbackBars);
 
         if (!IsPositiveFiniteNumber(averageAtr))
             return false;
 
-        // Test 1: overall direction.
+        /*
+       //             * TEST 1: Overall direction
+       //             *
+       //             * First calculate the raw linear regression slope:
+       //             *
+       //             *            SUM((x_i - MeanX) * (y_i - MeanY))
+       //             * RawSlope = -----------------------------------------
+       //             *                    SUM((x_i - MeanX)^2)
+       //             *
+       //             * x_i = the bar number: 0, 1, 2, ..., N - 1.
+       //             * y_i = the Bollinger line value at that bar.
+       //             *
+       //             * RawSlope means:
+       //             * "How much does this line move for each new bar?"
+       //             *
+       //             * Then normalize the slope with ATR:
+       //             *
+       //             * NormalizedSlope = RawSlope / AverageATR
+       //             *
+       //             * Example:
+       //             * RawSlope = 0.2
+       //             * AverageATR = 20
+       //             * NormalizedSlope = 0.2 / 20 = 0.01 ATR per bar
+       //             */
         double topSlopeAtr = GetLinearRegressionSlope(_bollingerBands.Top, _lookbackBars) / averageAtr;
 
         double middleSlopeAtr = GetLinearRegressionSlope(_bollingerBands.Main, _lookbackBars) / averageAtr;
 
         double bottomSlopeAtr = GetLinearRegressionSlope(_bollingerBands.Bottom, _lookbackBars) / averageAtr;
-
+        /*
+         * A line passes when:
+         *
+         * ABS(NormalizedSlope) <= MaximumAllowedSlope
+         *
+         * Math.Abs() treats upward and downward movement equally:
+         * ABS(+0.03) = 0.03
+         * ABS(-0.03) = 0.03
+         *
+         * All three lines must pass.
+         */
         bool slopesAreFlat = Math.Abs(topSlopeAtr) <= _maxSlopeAtrPerBar && Math.Abs(middleSlopeAtr) <= _maxSlopeAtrPerBar &&
                              Math.Abs(bottomSlopeAtr) <= _maxSlopeAtrPerBar;
 
-        // Test 2: large hills or valleys.
+        /*
+       //             * TEST 2: Large hills or valleys
+       //             *
+       //             * A line may go up and then come back down. Its slope can
+       //             * be close to zero even though the line is clearly not flat.
+       //             * Therefore, we also measure its complete movement range:
+       //             *
+       //             * LineRange = HighestLineValue - LowestLineValue
+       //             *
+       //             * LineRangeAtr = LineRange / AverageATR
+       //             *
+       //             * Example:
+       //             * Highest = 4065
+       //             * Lowest = 4045
+       //             * AverageATR = 20
+       //             * LineRangeAtr = (4065 - 4045) / 20 = 1 ATR
+       //             */
         double topRangeAtr = GetRange(_bollingerBands.Top, _lookbackBars) / averageAtr;
 
         double middleRangeAtr = GetRange(_bollingerBands.Main, _lookbackBars) / averageAtr;
 
         double bottomRangeAtr = GetRange(_bollingerBands.Bottom, _lookbackBars) / averageAtr;
 
+        /*
+         * A line passes when:
+         *
+         * LineRangeAtr <= MaximumAllowedLineRangeAtr
+         *
+         * All three lines must pass.
+         */
         bool linesDoNotBendTooMuch = topRangeAtr <= _maxLineRangeAtr && middleRangeAtr <= _maxLineRangeAtr &&
                                      bottomRangeAtr <= _maxLineRangeAtr;
 
-        // Test 3: changing distance between Top and Bottom.
+        /*
+       //             * TEST 3: Changing distance between Top and Bottom
+       //             *
+       //             * For every bar:
+       //             *
+       //             * Width_i = Top_i - Bottom_i
+       //             *
+       //             * Then calculate:
+       //             *
+       //             *                  HighestWidth - LowestWidth
+       //             * WidthVariation = --------------------------
+       //             *                         AverageWidth
+       //             *
+       //             * Example:
+       //             * HighestWidth = 110
+       //             * LowestWidth = 90
+       //             * AverageWidth = 100
+       //             * WidthVariation = (110 - 90) / 100 = 0.20 = 20%
+       //             */
         double widthVariation = GetBandWidthVariation(_lookbackBars);
 
+        /*
+         * The width passes when:
+         *
+         * WidthVariation <= MaximumAllowedWidthVariation
+         */
         bool widthIsStable = widthVariation <= _maxWidthVariation;
 
+        /*
+         * FINAL FORMULA
+         *
+         * IsFlat = SlopesAreFlat
+         *          AND LinesDoNotBendTooMuch
+         *          AND WidthIsStable
+         *
+         * If even one test is false, IsFlat() returns false.
+         */
         return slopesAreFlat && linesDoNotBendTooMuch && widthIsStable;
     }
 
@@ -144,6 +256,15 @@ public sealed class BollingerFlatDetector {
     }
 
     private bool HasEnoughData() {
+        /*
+         * FORMULA:
+         *
+         * RequiredBars = LookbackBars
+         *                + MAX(BollingerPeriod, AtrPeriod)
+         *
+         * We need the lookback data plus enough earlier data for
+         * both the Bollinger Bands and ATR to become valid.
+         */
         int requiredBars = _lookbackBars + Math.Max(_bollingerPeriod, _atrPeriod);
 
         return _bars.Count >= requiredBars;
@@ -160,6 +281,38 @@ public sealed class BollingerFlatDetector {
     }
 
     private static double GetLinearRegressionSlope(DataSeries series, int count) {
+        /*
+         * COMPLETE LINEAR REGRESSION SLOPE FORMULA
+         *
+         *         SUM((x_i - MeanX) * (y_i - MeanY))
+         * Slope = -----------------------------------------
+         *                 SUM((x_i - MeanX)^2)
+         *
+         * x_i:
+         *     The time position of each bar.
+         *     Oldest bar = 0, next bar = 1, ..., newest = N - 1.
+         *
+         * y_i:
+         *     The Bollinger line value at that bar.
+         *
+         * MeanX:
+         *     The average bar position.
+         *
+         * MeanY:
+         *     The average Bollinger line value.
+         *
+         * The result is price movement per bar.
+         */
+
+        /*
+         * Because x is always 0, 1, 2, ..., N - 1:
+         *
+         * MeanX = (0 + 1 + 2 + ... + (N - 1)) / N
+         *       = (N - 1) / 2
+         *
+         * Example with five bars:
+         * MeanX = (0 + 1 + 2 + 3 + 4) / 5 = 2
+         */
         double meanX = (count - 1) / 2.0;
         double sumY = 0;
 
@@ -169,6 +322,9 @@ public sealed class BollingerFlatDetector {
             sumY += series.Last(offset);
         }
 
+        /*
+         * MeanY = SUM(y_i) / N
+         */
         double meanY = sumY / count;
         double numerator = 0;
         double denominator = 0;
@@ -179,20 +335,30 @@ public sealed class BollingerFlatDetector {
 
             double dx = x - meanX;
             double dy = y - meanY;
-
+            /*
+             * Numerator adds:
+             *     (x_i - MeanX) * (y_i - MeanY)
+             *
+             * Denominator adds:
+             *     (x_i - MeanX)^2
+             */
             numerator += dx * dy;
             denominator += dx * dx;
         }
 
         if (denominator == 0)
             return 0;
-
+        // Slope = Numerator / Denominator
         return numerator / denominator;
     }
 
     private static double GetAverage(DataSeries series, int count) {
+        /*
+         * FORMULA:
+         *
+         * Average = SUM(all values) / NumberOfValues
+         */
         double sum = 0;
-
         for (int offset = 0; offset < count; offset++) {
             sum += series.Last(offset);
         }
@@ -201,6 +367,11 @@ public sealed class BollingerFlatDetector {
     }
 
     private static double GetRange(DataSeries series, int count) {
+        /*
+         * FORMULA:
+         *
+         * Range = MaximumValue - MinimumValue
+         */
         double minimum = double.MaxValue;
         double maximum = double.MinValue;
 
@@ -215,6 +386,17 @@ public sealed class BollingerFlatDetector {
     }
 
     private double GetBandWidthVariation(int count) {
+        /*
+         * FORMULAS:
+         *
+         * Width_i = Top_i - Bottom_i
+         *
+         * AverageWidth = SUM(Width_i) / N
+         *
+         *                  MaximumWidth - MinimumWidth
+         * WidthVariation = ---------------------------
+         *                         AverageWidth
+         */
         double minimumWidth = double.MaxValue;
         double maximumWidth = double.MinValue;
         double totalWidth = 0;
