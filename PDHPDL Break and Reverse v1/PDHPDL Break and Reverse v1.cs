@@ -85,6 +85,30 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("均线周期(分钟)", DefaultValue = 120, MinValue = 1, Group = "均线")]
     public int MaTimeFrameMinutes { get; set; }
 
+    [Parameter("BB Period", DefaultValue = 20, MinValue = 2)]
+    public int BollingerPeriod { get; set; }
+
+    [Parameter("BB Deviations", DefaultValue = 2.0, MinValue = 0.1)]
+    public double BollingerDeviations { get; set; }
+
+    [Parameter("Lookback Bars", DefaultValue = 48, MinValue = 5)]
+    public int LookbackBars { get; set; }
+
+    [Parameter("ATR Period", DefaultValue = 14, MinValue = 2)]
+    public int AtrPeriod { get; set; }
+
+    [Parameter("Max Slope (ATR/Bar)", DefaultValue = 0.02, MinValue = 0)]
+    public double MaxSlopeAtrPerBar { get; set; }
+
+    [Parameter("Max Line Range (ATR)", DefaultValue = 1.5, MinValue = 0)]
+    public double MaxLineRangeAtr { get; set; }
+
+    [Parameter("Max Width Variation", DefaultValue = 0.25, MinValue = 0)]
+    public double MaxWidthVariation { get; set; }
+
+    private BollingerFlatDetector _detector;
+
+
     private PdhpdlLines _pdhpdlLines;
     private PdhpdlLevelLines _pdhpdlLevelLines;
     private DualRmaSeries _rmaSeries;
@@ -122,6 +146,10 @@ public class PDHPDLBreakandReversev1 : Robot {
             Pdl3 = Pdl3
         };
         DrawManualLevels();
+
+        _detector = new BollingerFlatDetector(Bars, Chart, Indicators, BollingerPeriod, BollingerDeviations, LookbackBars, AtrPeriod,
+            MaxSlopeAtrPerBar, MaxLineRangeAtr, MaxWidthVariation);
+        _detector.DrawBollingerBands();
         Print("*****PDH/PDL Break and Reverse started.");
     }
 
@@ -185,6 +213,7 @@ public class PDHPDLBreakandReversev1 : Robot {
     protected override void OnBar() {
         _pdhpdlLines.Draw();
         _movingAverageLines?.Draw();
+        _detector.DrawBollingerBands();
         _orderExecutor?.ManageOpenPositions();
         // 先撤过期挂单再看新信号：让作废的挂单不再占住「本品种已有挂单」这个名额。
         _orderExecutor?.CancelExpiredPendingOrders(Bars.Count - 2);
@@ -228,10 +257,12 @@ public class PDHPDLBreakandReversev1 : Robot {
 
     protected override void OnStop() {
         Print("*****cBot stopped.*******************");
-        _orderExecutor?.Stop();
-        _signalMarkers?.Clear();
-        _pdhpdlLines?.Clear();
-        _pdhpdlLevelLines?.Clear();
-        _movingAverageLines?.Clear();
+    }
+
+    protected override void OnBarClosed() {
+        bool isFlat = _detector.IsFlat();
+        _detector.DrawBollingerBands();
+        Chart.DrawStaticText("BollingerFlatState", isFlat ? "BOLLINGER: FLAT" : "BOLLINGER: NOT FLAT", VerticalAlignment.Top,
+            HorizontalAlignment.Left, isFlat ? Color.LimeGreen : Color.OrangeRed);
     }
 }
