@@ -20,6 +20,7 @@ public class Utils {
         return new[] {
             new PdhpdlKeyLevelModel("PDH", signalModel.Pdh), new PdhpdlKeyLevelModel("Pdh1", signalModel.Pdh1),
             new PdhpdlKeyLevelModel("Pdh2", signalModel.Pdh2), new PdhpdlKeyLevelModel("Pdh3", signalModel.Pdh3),
+            new PdhpdlKeyLevelModel("Pdh4", signalModel.Pdh4), new PdhpdlKeyLevelModel("Pdh5", signalModel.Pdh5),
         };
     }
 
@@ -27,7 +28,8 @@ public class Utils {
     public static PdhpdlKeyLevelModel[] PdlLevels(PdhpdlSignalModel signalModel) {
         return new[] {
             new PdhpdlKeyLevelModel("PDL", signalModel.Pdl), new PdhpdlKeyLevelModel("Pdl1", signalModel.Pdl1),
-            new PdhpdlKeyLevelModel("Pdl2", signalModel.Pdl2), new PdhpdlKeyLevelModel("Pdl3", signalModel.Pdl3)
+            new PdhpdlKeyLevelModel("Pdl2", signalModel.Pdl2), new PdhpdlKeyLevelModel("Pdl3", signalModel.Pdl3),
+            new PdhpdlKeyLevelModel("Pdl4", signalModel.Pdl4), new PdhpdlKeyLevelModel("Pdl5", signalModel.Pdl5),
         };
     }
 
@@ -114,7 +116,6 @@ public class Utils {
         // 弱空头：RMA13<K线收盘价格<RMA55
         return (signalModel.FastRma < current.Close && current.Close < signalModel.SlowRma) ||
                (signalModel.FastRma > current.Close && current.Close > signalModel.SlowRma);
-
     }
 
     // 趋势转换或者震荡：多头 RMA13>RMA55>K线收盘价格 | 空头 RMA13<RMA55<K线收盘价格，两者都不交易。

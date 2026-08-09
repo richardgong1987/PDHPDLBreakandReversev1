@@ -19,6 +19,12 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("Pdh3", DefaultValue = 0.0)]
     public double Pdh3 { get; set; }
 
+    [Parameter("Pdh4", DefaultValue = 0.0)]
+    public double Pdh4 { get; set; }
+
+    [Parameter("Pdh5", DefaultValue = 0.0)]
+    public double Pdh5 { get; set; }
+
     [Parameter("Pdl1", DefaultValue = 0.0)]
     public double Pdl1 { get; set; }
 
@@ -27,6 +33,12 @@ public class PDHPDLBreakandReversev1 : Robot {
 
     [Parameter("Pdl3", DefaultValue = 0.0)]
     public double Pdl3 { get; set; }
+
+    [Parameter("Pdl4", DefaultValue = 0.0)]
+    public double Pdl4 { get; set; }
+
+    [Parameter("Pdl5", DefaultValue = 0.0)]
+    public double Pdl5 { get; set; }
 
     [Parameter("N次止损Lock", DefaultValue = 3)]
     public int Nlock { get; set; }
@@ -141,9 +153,13 @@ public class PDHPDLBreakandReversev1 : Robot {
             Pdh1 = Pdh1,
             Pdh2 = Pdh2,
             Pdh3 = Pdh3,
+            Pdh4 = Pdh4,
+            Pdh5 = Pdh5,
             Pdl1 = Pdl1,
             Pdl2 = Pdl2,
-            Pdl3 = Pdl3
+            Pdl3 = Pdl3,
+            Pdl4 = Pdl4,
+            Pdl5 = Pdl5
         };
         DrawManualLevels();
 
