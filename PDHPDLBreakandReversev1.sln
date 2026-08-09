@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30011.22
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PDHPDL Break and Reverse v1", "PDHPDL Break and Reverse v1\PDHPDL Break and Reverse v1.csproj", "{5200B26E-5A8C-4B33-9516-93B302E9A67F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PDHPDLBreakandReversev1", "PDHPDLBreakandReversev1\PDHPDLBreakandReversev1.csproj", "{5200B26E-5A8C-4B33-9516-93B302E9A67F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 A **cTrader cBot** (automated trading robot) written in C# against the cAlgo API, targeting
 `net6.0`. The strategy is **PDH/PDL Break and Reverse**: it detects false breakouts of the
 Previous Day High/Low, sizes an order against a fixed per-trade risk budget, places it, and
-logs each trade to CSV. The strategy is implemented; `PDHPDL Break and Reverse v1.cs` is the
+logs each trade to CSV. The strategy is implemented; `PDHPDLBreakandReversev1.cs` is the
 Robot lifecycle shell that wires the pieces together (the composition root).
 
 ## Module map
@@ -50,12 +50,12 @@ The authoritative details and numeric examples are in `docs/design/hanjin-signal
 
 ```bash
 # Build (from repo root)
-dotnet build "PDHPDL Break and Reverse v1.sln"          # Debug
-dotnet build "PDHPDL Break and Reverse v1.sln" -c Release
+dotnet build "PDHPDLBreakandReversev1.sln"          # Debug
+dotnet build "PDHPDLBreakandReversev1.sln" -c Release
 ```
 
 A successful build produces a `.algo` package under
-`PDHPDL Break and Reverse v1/bin/<Config>/net6.0/`. The `.algo` file is the deployable
+`PDHPDLBreakandReversev1/bin/<Config>/net6.0/`. The `.algo` file is the deployable
 cBot artifact loaded by the cTrader desktop platform.
 
 The cBot itself is validated by running it in cTrader's backtester/optimizer, not via a CLI

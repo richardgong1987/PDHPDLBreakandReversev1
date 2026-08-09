@@ -6,7 +6,7 @@ The cBot itself is not unit-tested here — it is validated in cTrader's backtes
 ## Why the test project is separate
 
 - It targets **`net10.0`** (the installed runtime), not the cBot's `net6.0`.
-- It is **not** part of `PDHPDL Break and Reverse v1.sln`, so cTrader never tries to build it.
+- It is **not** part of `PDHPDLBreakandReversev1.sln`, so cTrader never tries to build it.
 - It **links** pure source files via `<Compile Include>` instead of referencing the cBot
   project, so tests never pull in the `cTrader.Automate` / cAlgo.API dependency.
 
@@ -84,8 +84,8 @@ dotnet test "tests/Pdhpdl.Tests/Pdhpdl.Tests.csproj" \
    the area group; data types from `Models/` go in the `Models under test` group:
 
    ```xml
-   <Compile Include="..\..\PDHPDL Break and Reverse v1\Orders\YourClass.cs" Link="Orders\YourClass.cs" />
-   <Compile Include="..\..\PDHPDL Break and Reverse v1\Models\YourModel.cs" Link="Models\YourModel.cs" />
+   <Compile Include="..\..\PDHPDLBreakandReversev1\Orders\YourClass.cs" Link="Orders\YourClass.cs" />
+   <Compile Include="..\..\PDHPDLBreakandReversev1\Models\YourModel.cs" Link="Models\YourModel.cs" />
    ```
 
    Never link a file that has `using cAlgo.API` (e.g. `CAlgoSymbolModel`) — it would pull the

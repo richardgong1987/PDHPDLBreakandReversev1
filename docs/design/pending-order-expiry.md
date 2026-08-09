@@ -61,7 +61,7 @@ via the "symbol already has a pending order" gate.
 
 ## 8. Dependencies
 
-`PDHPDL Break and Reverse v1.cs` → `PdhpdlOrderExecutor` → cAlgo `Robot`.
+`PDHPDLBreakandReversev1.cs` → `PdhpdlOrderExecutor` → cAlgo `Robot`.
 
 ## 9. External Details
 

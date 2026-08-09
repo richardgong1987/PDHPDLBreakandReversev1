@@ -4,7 +4,7 @@
 
 This is a cTrader cBot project named:
 
-`PDHPDL Break and Reverse v1`
+`PDHPDLBreakandReversev1`
 
 The strategy is a cTrader/cAlgo C# implementation of the TradingView Pine Script strategy:
 
@@ -484,7 +484,7 @@ When editing by Codex CLI:
 Suggested project directory:
 
 ```bash
-cd "/Users/hanjingong/cAlgo/Sources/Robots/PDHPDL Break and Reverse v1"
+cd "/Users/hanjingong/cAlgo/Sources/Robots/PDHPDLBreakandReversev1"
 ```
 
 Start Codex CLI from the project directory:

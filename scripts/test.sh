@@ -11,7 +11,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
 
-SOLUTION="PDHPDL Break and Reverse v1.sln"
+SOLUTION="PDHPDLBreakandReversev1.sln"
 TEST_PROJECT="tests/Pdhpdl.Tests/Pdhpdl.Tests.csproj"
 
 echo "==> Building cBot ($SOLUTION)"
