@@ -48,9 +48,13 @@ namespace Pdhpdl.Tests.Signals {
         }
 
         // ── ③ Fractal ───────────────────────────────────────────────────────
+        // Fractal needs two things: the middle bar [1] dominating both neighbours on the high
+        // AND the low line, plus the current bar [0] confirming — closing past the middle bar's
+        // body in the signal's direction, with the right body direction and no long wick against
+        // it. A structurally perfect fractal with a non-confirming current bar is None.
         [Fact]
-        public void fractal_top_is_sell_when_middle_bar_dominates_both_neighbours() {
-            CandleModel current = new(open: 5.0, high: 6.0, low: 4.0, close: 5.0);   // [0] right
+        public void fractal_top_is_sell_when_middle_bar_dominates_and_current_bar_confirms() {
+            CandleModel current = new(open: 6.0, high: 6.0, low: 4.0, close: 4.5);   // [0] right, bearish
             CandleModel middle = new(open: 8.0, high: 9.0, low: 7.0, close: 8.0);    // [1]
             CandleModel earlier = new(open: 5.0, high: 6.0, low: 4.0, close: 5.0);   // [2] left
             (SignalSideModel top, SignalSideModel bottom) = HanJinSignals26.Fractal(current, middle, earlier);
@@ -59,13 +63,23 @@ namespace Pdhpdl.Tests.Signals {
         }
 
         [Fact]
-        public void fractal_bottom_is_buy_when_middle_bar_is_lowest_and_narrowest() {
-            CandleModel current = new(open: 5.0, high: 6.0, low: 4.0, close: 5.0);
+        public void fractal_bottom_is_buy_when_middle_bar_dominates_and_current_bar_confirms() {
+            CandleModel current = new(open: 4.0, high: 6.0, low: 4.0, close: 5.5);   // [0] right, bullish
             CandleModel middle = new(open: 2.0, high: 3.0, low: 1.0, close: 2.0);
             CandleModel earlier = new(open: 5.0, high: 6.0, low: 4.0, close: 5.0);
             (SignalSideModel top, SignalSideModel bottom) = HanJinSignals26.Fractal(current, middle, earlier);
             Assert.Equal(SignalSideModel.Buy, bottom);
             Assert.Equal(SignalSideModel.None, top);
+        }
+
+        [Fact]
+        public void fractal_is_none_when_the_current_bar_does_not_confirm() {
+            CandleModel doji = new(open: 5.0, high: 6.0, low: 4.0, close: 5.0);      // no body direction
+            CandleModel middle = new(open: 8.0, high: 9.0, low: 7.0, close: 8.0);
+            CandleModel earlier = new(open: 5.0, high: 6.0, low: 4.0, close: 5.0);
+            (SignalSideModel top, SignalSideModel bottom) = HanJinSignals26.Fractal(doji, middle, earlier);
+            Assert.Equal(SignalSideModel.None, top);
+            Assert.Equal(SignalSideModel.None, bottom);
         }
 
         // ── ④ Harami ─────────────────────────────────────────────────────────
