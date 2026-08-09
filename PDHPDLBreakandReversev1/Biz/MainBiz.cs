@@ -30,17 +30,10 @@ public class MainBiz {
 
         /*
             一. 假突破/反转
-
                PDH开仓条件（空单）
                K线接触到PDH
                出现看跌信号：看跌pinbar、看跌吞没、顶分型、孕线下破。
                看跌信号的收线价格一定要低于PDH
-
-           二. 真突破/延续
-               PDL开仓条件（空单）
-               K线接触到PDL
-               出现看跌信号：看跌pinbar、看跌吞没、顶分型、孕线下破
-               看跌信号的收线价格一定要低于PDL
          */
         if (ShortPinBar(signalModel, scanResult, current)) {
             return true;
@@ -79,7 +72,6 @@ public class MainBiz {
             return false;
         }
 
-
         /**
          一. 假突破/反转
             PDL开仓条件 （多单）
@@ -87,11 +79,6 @@ public class MainBiz {
             出现看涨信号：看涨pinbar、看涨吞没、底分型、孕线上破。
             看涨信号的收线价格一定要高于PDL
 
-          二. 真突破/延续
-              PDH开仓条件（多单）
-              K线接触到PDH
-             出现看涨信号：看涨pinbar、看涨吞没、底分型、孕线上破。
-             看涨信号的收线价格一定要高于PDH
          */
 
         if (LongPinbar(signalModel, scanResult, current)) {
@@ -125,14 +112,6 @@ public class MainBiz {
                 signalModel.KeyLevel = reversalLevel;
                 return true;
             }
-
-            // (2).真突破/延续
-            if (Utils.TryFindSellKeyLevel(Utils.PdlLevels(signalModel), current.Close, touchCandles, out string continuationLevel)) {
-                signalModel.Label = "S_Top_2";
-                signalModel.SL = previous.High;
-                signalModel.KeyLevel = continuationLevel;
-                return true;
-            }
         }
 
         return false;
@@ -150,14 +129,6 @@ public class MainBiz {
                 signalModel.KeyLevel = reversalLevel;
                 return true;
             }
-
-            // (2).真突破/延续
-            if (Utils.TryFindSellKeyLevel(Utils.PdlLevels(signalModel), current.Close, touchCandles, out string continuationLevel)) {
-                signalModel.Label = "S_Harami_2";
-                signalModel.SL = Math.Max(previous.High, current.High);
-                signalModel.KeyLevel = continuationLevel;
-                return true;
-            }
         }
 
         return false;
@@ -171,12 +142,6 @@ public class MainBiz {
             K线接触到PDL
             出现看涨信号：孕线上破。
             看涨信号的收线价格一定要高于PDL
-
-          二. 真突破/延续
-              PDH开仓条件（多单）
-              K线接触到PDH
-             出现看涨信号：孕线上破。
-             看涨信号的收线价格一定要高于PDH
          */
 
         if (scanResult.HaramiSingle == SignalSideModel.Buy) {
@@ -187,14 +152,6 @@ public class MainBiz {
                 signalModel.Label = "L_Harami_1";
                 signalModel.SL = Math.Min(previous.Low, current.Low);
                 signalModel.KeyLevel = reversalLevel;
-                return true;
-            }
-
-            // (2).真突破/延续
-            if (Utils.TryFindBuyKeyLevel(Utils.PdhLevels(signalModel), current.Close, touchCandles, out string continuationLevel)) {
-                signalModel.Label = "L_Harami_2";
-                signalModel.SL = Math.Min(previous.Low, current.Low);
-                signalModel.KeyLevel = continuationLevel;
                 return true;
             }
         }
@@ -214,14 +171,6 @@ public class MainBiz {
                 signalModel.KeyLevel = reversalLevel;
                 return true;
             }
-
-            // (2).真突破/延续
-            if (Utils.TryFindSellKeyLevel(Utils.PdlLevels(signalModel), current.Close, touchCandles, out string continuationLevel)) {
-                signalModel.Label = "S_Eng_2";
-                signalModel.SL = current.High;
-                signalModel.KeyLevel = continuationLevel;
-                return true;
-            }
         }
 
         return false;
@@ -236,14 +185,6 @@ public class MainBiz {
                 signalModel.Label = "S_Pin_1";
                 signalModel.SL = current.High;
                 signalModel.KeyLevel = reversalLevel;
-                return true;
-            }
-
-            // (2).真突破/延续
-            if (Utils.TryFindSellKeyLevel(Utils.PdlLevels(signalModel), current.Close, touchCandles, out string continuationLevel)) {
-                signalModel.Label = "S_Pin_2";
-                signalModel.SL = current.High;
-                signalModel.KeyLevel = continuationLevel;
                 return true;
             }
         }
@@ -265,14 +206,6 @@ public class MainBiz {
                 signalModel.KeyLevel = reversalLevel;
                 return true;
             }
-
-            // (2).真突破/延续
-            if (Utils.TryFindBuyKeyLevel(Utils.PdhLevels(signalModel), current.Close, touchCandles, out string continuationLevel)) {
-                signalModel.Label = "L_Bot_2";
-                signalModel.SL = previous.Low;
-                signalModel.KeyLevel = continuationLevel;
-                return true;
-            }
         }
 
         return false;
@@ -291,14 +224,6 @@ public class MainBiz {
                 signalModel.KeyLevel = reversalLevel;
                 return true;
             }
-
-            // (2).真突破/延续
-            if (Utils.TryFindBuyKeyLevel(Utils.PdhLevels(signalModel), current.Close, touchCandles, out string continuationLevel)) {
-                signalModel.Label = "L_Eng_2";
-                signalModel.SL = current.Low;
-                signalModel.KeyLevel = continuationLevel;
-                return true;
-            }
         }
 
         return false;
@@ -313,14 +238,6 @@ public class MainBiz {
                 signalModel.Label = "L_Pin_1";
                 signalModel.SL = current.Low;
                 signalModel.KeyLevel = reversalLevel;
-                return true;
-            }
-
-            // (2).真突破/延续
-            if (Utils.TryFindBuyKeyLevel(Utils.PdhLevels(signalModel), current.Close, touchCandles, out string continuationLevel)) {
-                signalModel.Label = "L_Pin_2";
-                signalModel.SL = current.Low;
-                signalModel.KeyLevel = continuationLevel;
                 return true;
             }
         }
