@@ -17,10 +17,6 @@ public class PdhpdlSignalModel {
 
     public double Open { get; set; }
 
-    public double Pdh { get; set; }
-
-    public double Pdl { get; set; }
-
     public double Pdh1 { get; set; }
     public double Pdh2 { get; set; }
     public double Pdh3 { get; set; }

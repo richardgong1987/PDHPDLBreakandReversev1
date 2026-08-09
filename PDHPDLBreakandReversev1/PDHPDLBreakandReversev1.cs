@@ -10,79 +10,80 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("策略模式", DefaultValue = StrategyModel.All)]
     public StrategyModel Strategy { get; set; }
 
-    [Parameter("Pdh1", DefaultValue = 0.0)]
+    [Parameter("Pdh1", DefaultValue = 0.0, Group = "人工判断")]
     public double Pdh1 { get; set; }
 
-    [Parameter("Pdh2", DefaultValue = 0.0)]
+    [Parameter("Pdh2", DefaultValue = 0.0, Group = "人工判断")]
     public double Pdh2 { get; set; }
 
-    [Parameter("Pdh3", DefaultValue = 0.0)]
+    [Parameter("Pdh3", DefaultValue = 0.0, Group = "人工判断")]
     public double Pdh3 { get; set; }
 
-    [Parameter("Pdh4", DefaultValue = 0.0)]
+    [Parameter("Pdh4", DefaultValue = 0.0, Group = "人工判断")]
     public double Pdh4 { get; set; }
 
-    [Parameter("Pdh5", DefaultValue = 0.0)]
+    [Parameter("Pdh5", DefaultValue = 0.0, Group = "人工判断")]
     public double Pdh5 { get; set; }
 
-    [Parameter("Pdl1", DefaultValue = 0.0)]
+    [Parameter("Pdl1", DefaultValue = 0.0, Group = "人工判断")]
     public double Pdl1 { get; set; }
 
-    [Parameter("Pdl2", DefaultValue = 0.0)]
+    [Parameter("Pdl2", DefaultValue = 0.0, Group = "人工判断")]
     public double Pdl2 { get; set; }
 
-    [Parameter("Pdl3", DefaultValue = 0.0)]
+    [Parameter("Pdl3", DefaultValue = 0.0, Group = "人工判断")]
     public double Pdl3 { get; set; }
 
-    [Parameter("Pdl4", DefaultValue = 0.0)]
+    [Parameter("Pdl4", DefaultValue = 0.0, Group = "人工判断")]
     public double Pdl4 { get; set; }
 
-    [Parameter("Pdl5", DefaultValue = 0.0)]
+    [Parameter("Pdl5", DefaultValue = 0.0, Group = "人工判断")]
     public double Pdl5 { get; set; }
 
-    [Parameter("N次止损Lock", DefaultValue = 3)]
+    [Parameter("N次止损Lock", DefaultValue = 3, Group = "风控配置")]
     public int Nlock { get; set; }
 
-    [Parameter("ATR倍数", DefaultValue = 3)] public double MaxBarRangeAtr { get; set; }
+    [Parameter("ATR倍数", DefaultValue = 3, Group = "风控配置")]
+    public double MaxBarRangeAtr { get; set; }
 
 
-    [Parameter("启动时清空交易记录CSV", DefaultValue = false)]
-    public bool ResetTradeLogOnStart { get; set; }
-
-    [Parameter("每笔交易风险百分比，默认1%", DefaultValue = 1.0, MinValue = 0.1, MaxValue = 10.0, Step = 0.1)]
+    [Parameter("每笔交易风险百分比，默认1%", DefaultValue = 1.0, MinValue = 0.1, MaxValue = 10.0, Step = 0.1, Group = "风控配置")]
     public double RiskPct { get; set; }
 
-    [Parameter("风险安全系数", DefaultValue = 1.0, MinValue = 0.1, MaxValue = 1.0, Step = 0.05)]
+    [Parameter("风险安全系数", DefaultValue = 1.0, MinValue = 0.1, MaxValue = 1.0, Step = 0.05, Group = "风控配置")]
     public double RiskSafetyFactor { get; set; }
 
-    [Parameter("止损偏移点数", DefaultValue = 50, MinValue = 0, MaxValue = 1000)]
+    [Parameter("止损偏移点数", DefaultValue = 50, MinValue = 0, MaxValue = 1000, Group = "风控配置")]
     public int StopOffsetTicks { get; set; }
 
-    [Parameter("最小止损点数 (Pips)", DefaultValue = 5.0, MinValue = 0.0, Step = 0.1)]
+    [Parameter("最小止损点数 (Pips)", DefaultValue = 5.0, MinValue = 0.0, Step = 0.1, Group = "风控配置")]
     public double MinStopLossPips { get; set; }
 
-    [Parameter("止盈目标", DefaultValue = 2.0, MinValue = 0.5, MaxValue = 20.0, Step = 0.1)]
+    [Parameter("止盈目标", DefaultValue = 2.0, MinValue = 0.5, MaxValue = 20.0, Step = 0.1, Group = "风控配置")]
     public double TakeProfitR { get; set; }
 
-    [Parameter("回撤开仓模式", DefaultValue = PdhpdlEntryModel.Close)]
+    [Parameter("回撤开仓模式", DefaultValue = PdhpdlEntryModel.Close, Group = "风控配置")]
     public PdhpdlEntryModel EntryModel { get; set; }
 
-    [Parameter("周六强制平仓小时（日本时间）", DefaultValue = 5, MinValue = 0, MaxValue = 23)]
+    [Parameter("周六强制平仓小时（日本时间）", DefaultValue = 5, MinValue = 0, MaxValue = 23, Group = "基本面设置")]
     public int SaturdayForceCloseHour { get; set; }
 
-    [Parameter("周六强制平仓分钟（日本时间）", DefaultValue = 30, MinValue = 0, MaxValue = 59)]
+    [Parameter("周六强制平仓分钟（日本时间）", DefaultValue = 30, MinValue = 0, MaxValue = 59, Group = "基本面设置")]
     public int SaturdayForceCloseMinute { get; set; }
 
-    [Parameter("五星数据空仓时间段", DefaultValue = "")]
+    [Parameter("五星数据空仓时间段", DefaultValue = "", Group = "基本面设置")]
     public string NewsBlackoutWindows { get; set; }
 
-    [Parameter("展示调试日志", DefaultValue = false)]
+    [Parameter("启动时清空交易记录CSV", DefaultValue = false, Group = "开发调试")]
+    public bool ResetTradeLogOnStart { get; set; }
+
+    [Parameter("展示调试日志", DefaultValue = false, Group = "开发调试")]
     public bool ShowDebugLogs { get; set; }
 
-    [Parameter("debug调试", DefaultValue = false)]
+    [Parameter("debug调试", DefaultValue = false, Group = "开发调试")]
     public bool IsDebug { get; set; }
 
-    [Parameter("输出文件名", DefaultValue = "pdhpdl-trades.csv")]
+    [Parameter("输出文件名", DefaultValue = "pdhpdl-trades.csv", Group = "开发调试")]
     public string FileName { get; set; }
 
     [Parameter("均线来源", DefaultValue = MovingAverageSourceModel.HigherTimeFrame, Group = "均线")]
@@ -97,31 +98,7 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("均线周期(分钟)", DefaultValue = 120, MinValue = 1, Group = "均线")]
     public int MaTimeFrameMinutes { get; set; }
 
-    [Parameter("BB Period(长度)", DefaultValue = 60, MinValue = 2, Group = "震荡检测")]
-    public int BollingerPeriod { get; set; }
 
-    [Parameter("BB Deviations(标准差)", DefaultValue = 2.0, MinValue = 0.1, Group = "震荡检测")]
-    public double BollingerDeviations { get; set; }
-
-    [Parameter("Lookback Bars", DefaultValue = 48, MinValue = 5, Group = "震荡检测")]
-    public int LookbackBars { get; set; }
-
-    [Parameter("ATR Period", DefaultValue = 14, MinValue = 2, Group = "震荡检测")]
-    public int AtrPeriod { get; set; }
-
-    [Parameter("Max Slope (ATR/Bar)", DefaultValue = 0.02, MinValue = 0, Group = "震荡检测")]
-    public double MaxSlopeAtrPerBar { get; set; }
-
-    [Parameter("Max Line Range (ATR)", DefaultValue = 1.5, MinValue = 0, Group = "震荡检测")]
-    public double MaxLineRangeAtr { get; set; }
-
-    [Parameter("Max Width Variation", DefaultValue = 0.25, MinValue = 0, Group = "震荡检测")]
-    public double MaxWidthVariation { get; set; }
-
-    private BollingerFlatDetector _detector;
-
-
-    private PdhpdlLines _pdhpdlLines;
     private PdhpdlLevelLines _pdhpdlLevelLines;
     private DualRmaSeries _rmaSeries;
     private DualRmaLines _movingAverageLines;
@@ -135,7 +112,6 @@ public class PDHPDLBreakandReversev1 : Robot {
 
     protected override void OnStart() {
         LaunchDebug();
-        DrawPdhPdl();
         DrawDualRmaLines();
         _atr14 = new Atr14Series(Indicators, Bars);
         Bars dailyBars = MarketData.GetBars(TimeFrame.Daily, SymbolName);
@@ -162,10 +138,6 @@ public class PDHPDLBreakandReversev1 : Robot {
             Pdl5 = Pdl5
         };
         DrawManualLevels();
-
-        _detector = new BollingerFlatDetector(Bars, Chart, Indicators, BollingerPeriod, BollingerDeviations, LookbackBars, AtrPeriod,
-            MaxSlopeAtrPerBar, MaxLineRangeAtr, MaxWidthVariation);
-        _detector.DrawBollingerBands();
         Print("*****PDH/PDL Break and Reverse started.");
     }
 
@@ -180,11 +152,6 @@ public class PDHPDLBreakandReversev1 : Robot {
         _pdhpdlLevelLines = new PdhpdlLevelLines(Chart, 2);
         _pdhpdlLevelLines.Draw(_parameterModel);
         Print("*****Manual levels | Pdh1: {0}, Pdh2: {1}, Pdl1: {2}, Pdl2: {3}", Pdh1, Pdh2, Pdl1, Pdl2);
-    }
-
-    private void DrawPdhPdl() {
-        _pdhpdlLines = new PdhpdlLines(Chart, MarketData, SymbolName, Bars, 3);
-        _pdhpdlLines.Draw();
     }
 
     private void LaunchDebug() {
@@ -227,9 +194,7 @@ public class PDHPDLBreakandReversev1 : Robot {
     }
 
     protected override void OnBar() {
-        _pdhpdlLines.Draw();
         _movingAverageLines?.Draw();
-        _detector.DrawBollingerBands();
         _orderExecutor?.ManageOpenPositions();
         // 先撤过期挂单再看新信号：让作废的挂单不再占住「本品种已有挂单」这个名额。
         _orderExecutor?.CancelExpiredPendingOrders(Bars.Count - 2);
@@ -244,21 +209,6 @@ public class PDHPDLBreakandReversev1 : Robot {
         PdhpdlSignalModel signalModel = _signalDetector.DetectOnClosedBar(Strategy, _parameterModel);
         if (!signalModel.HasData)
             return;
-
-        if (ShowDebugLogs) {
-            Print("*****Bar closed | Time: {0}, High: {1}, Low: {2}, Close: {3}, PDH: {4}, PDL: {5}", signalModel.BarTime, signalModel.High,
-                signalModel.Low, signalModel.Close, signalModel.Pdh, signalModel.Pdl);
-        }
-
-        if (signalModel.IsLongSignal) {
-            Print("*****LONG trigger | Time: {0}, Low: {1}, Close: {2}, PDL: {3}", signalModel.BarTime, signalModel.Low, signalModel.Close,
-                signalModel.Pdl);
-        }
-
-        if (signalModel.IsShortSignal) {
-            Print("*****SHORT trigger | Time: {0}, High: {1}, Close: {2}, PDH: {3}", signalModel.BarTime, signalModel.High,
-                signalModel.Close, signalModel.Pdh);
-        }
 
         signalModel.IsBigK = _atr14.IsBarRangeTooLarge(signalModel.BarIndex, signalModel.High, signalModel.Low, 3);
         signalModel.Atr = _atr14.TryGetValue(signalModel.BarIndex, out double atr) ? atr : 0.0;
@@ -275,10 +225,5 @@ public class PDHPDLBreakandReversev1 : Robot {
         Print("*****cBot stopped.*******************");
     }
 
-    protected override void OnBarClosed() {
-        bool isFlat = _detector.IsFlat();
-        _detector.DrawBollingerBands();
-        Chart.DrawStaticText("BollingerFlatState", isFlat ? "BOLLINGER: FLAT" : "BOLLINGER: NOT FLAT", VerticalAlignment.Top,
-            HorizontalAlignment.Left, isFlat ? Color.LimeGreen : Color.OrangeRed);
-    }
+    protected override void OnBarClosed() { }
 }

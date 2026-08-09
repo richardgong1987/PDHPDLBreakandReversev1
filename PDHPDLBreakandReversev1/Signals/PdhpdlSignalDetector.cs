@@ -3,9 +3,6 @@ using cAlgo.API;
 
 namespace cAlgo.Robots;
 
-// Reads the last fully closed bar plus the previous day's levels and assembles the signal model,
-// then hands the pure PDH/PDL false-breakout decision to PdhpdlSignalEvaluator.
-// OnBar fires when a new bar opens, so the closed bar is Count - 2.
 public class PdhpdlSignalDetector {
     private readonly Bars _chartBars;
     private readonly Bars _dailyBars;
@@ -21,9 +18,6 @@ public class PdhpdlSignalDetector {
         PdhpdlSignalModel signalModel = new();
         signalModel.Strategy = strategy;
 
-        if (_chartBars.Count < 2 || !TryGetPreviousDayLevels(out double pdh, out double pdl))
-            return signalModel;
-
         int closedBarIndex = _chartBars.Count - 2; // last fully closed bar in OnBar()
         CandleModel current = ReadCandle(closedBarIndex);
         CandleModel previous = ReadCandle(closedBarIndex - 1);
@@ -36,8 +30,6 @@ public class PdhpdlSignalDetector {
         signalModel.Close = current.Close;
         signalModel.High = current.High;
         signalModel.Low = current.Low;
-        signalModel.Pdh = pdh;
-        signalModel.Pdl = pdl;
 
         signalModel.Pdh1 = parameter.Pdh1;
         signalModel.Pdh2 = parameter.Pdh2;
@@ -61,19 +53,6 @@ public class PdhpdlSignalDetector {
     private CandleModel ReadCandle(int index) {
         return new CandleModel(open: _chartBars.OpenPrices[index], high: _chartBars.HighPrices[index], low: _chartBars.LowPrices[index],
             close: _chartBars.ClosePrices[index]);
-    }
-
-    private bool TryGetPreviousDayLevels(out double pdh, out double pdl) {
-        pdh = double.NaN;
-        pdl = double.NaN;
-
-        if (_dailyBars == null || _dailyBars.Count < 2)
-            return false;
-
-        int previousDailyIndex = _dailyBars.Count - 2;
-        pdh = _dailyBars.HighPrices[previousDailyIndex];
-        pdl = _dailyBars.LowPrices[previousDailyIndex];
-        return true;
     }
 
     private void FillRmaData(PdhpdlSignalModel signalModel) {
