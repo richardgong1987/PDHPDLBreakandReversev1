@@ -1,6 +1,6 @@
 #!/bin/bash
 
-REPO_ROOT=/Users/chenwanli/cAlgo/Sources/Robots/PDHPDLBreakandReversev1
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 SOLUTION="$REPO_ROOT/PDHPDLBreakandReversev1.sln"
 
 cd $REPO_ROOT
