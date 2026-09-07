@@ -1,15 +1,16 @@
 #!/bin/bash
-
 set -euo pipefail
 
-REPO_ROOT=/Users/chenwanli/cAlgo/Sources/Robots/PDHPDLBreakandReversev1
+# Derived from this script's own location (repo/scripts/backtester/), so double-clicking the
+# file works on any machine regardless of the shell's working directory.
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 SOLUTION="$REPO_ROOT/PDHPDLBreakandReversev1.sln"
 ROBOT_SOURCE="$REPO_ROOT/PDHPDLBreakandReversev1/PDHPDLBreakandReversev1.cs"
 
 cd "$REPO_ROOT"
 
 git pull --all
-git reset --hard origin/master
+git reset --hard origin/main
 
 # The release build ships with AccessRights.None so users installing the cBot are not asked to
 # grant full machine access. The patch is applied to the working tree only and never committed:
