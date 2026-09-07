@@ -38,13 +38,11 @@ public class PdhpdlSignalDetector {
         signalModel.Pdh2 = parameter.Pdh2;
         signalModel.Pdh3 = parameter.Pdh3;
         signalModel.Pdh4 = parameter.Pdh4;
-        signalModel.Pdh5 = parameter.Pdh5;
 
         signalModel.Pdl1 = pdl;
         signalModel.Pdl2 = parameter.Pdl2;
         signalModel.Pdl3 = parameter.Pdl3;
         signalModel.Pdl4 = parameter.Pdl4;
-        signalModel.Pdl5 = parameter.Pdl5;
 
         FillRmaData(signalModel);
 

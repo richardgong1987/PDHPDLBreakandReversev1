@@ -22,9 +22,6 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("Pdh4", DefaultValue = 0.0, Group = "人工判断")]
     public double Pdh4 { get; set; }
 
-    [Parameter("Pdh5", DefaultValue = 0.0, Group = "人工判断")]
-    public double Pdh5 { get; set; }
-
     [Parameter("Pdl1", DefaultValue = 0.0, Group = "人工判断")]
     public double Pdl1 { get; set; }
 
@@ -36,9 +33,6 @@ public class PDHPDLBreakandReversev1 : Robot {
 
     [Parameter("Pdl4", DefaultValue = 0.0, Group = "人工判断")]
     public double Pdl4 { get; set; }
-
-    [Parameter("Pdl5", DefaultValue = 0.0, Group = "人工判断")]
-    public double Pdl5 { get; set; }
 
     [Parameter("N次止损Lock", DefaultValue = 3, Group = "风控配置")]
     public int Nlock { get; set; }
@@ -130,12 +124,10 @@ public class PDHPDLBreakandReversev1 : Robot {
             Pdh2 = Pdh2,
             Pdh3 = Pdh3,
             Pdh4 = Pdh4,
-            Pdh5 = Pdh5,
             Pdl1 = Pdl1,
             Pdl2 = Pdl2,
             Pdl3 = Pdl3,
-            Pdl4 = Pdl4,
-            Pdl5 = Pdl5
+            Pdl4 = Pdl4
         };
         DrawManualLevels();
         Print("*****PDH/PDL Break and Reverse started.");

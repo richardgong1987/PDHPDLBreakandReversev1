@@ -22,7 +22,6 @@ public class Utils {
             new PdhpdlKeyLevelModel("Pdh2", signalModel.Pdh2),
             new PdhpdlKeyLevelModel("Pdh3", signalModel.Pdh3),
             new PdhpdlKeyLevelModel("Pdh4", signalModel.Pdh4),
-            new PdhpdlKeyLevelModel("Pdh5", signalModel.Pdh5),
         };
     }
 
@@ -33,7 +32,6 @@ public class Utils {
             new PdhpdlKeyLevelModel("Pdl2", signalModel.Pdl2),
             new PdhpdlKeyLevelModel("Pdl3", signalModel.Pdl3),
             new PdhpdlKeyLevelModel("Pdl4", signalModel.Pdl4),
-            new PdhpdlKeyLevelModel("Pdl5", signalModel.Pdl5),
         };
     }
 
