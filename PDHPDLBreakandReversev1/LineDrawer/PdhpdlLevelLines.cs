@@ -3,7 +3,7 @@ using cAlgo.API;
 
 namespace cAlgo.Robots;
 
-// 手工指定的 PDH/PDL 价位（Pdh1/Pdh2/Pdl1/Pdl2），横贯整个图表的水平线。
+// 手工指定的 PDH/PDL 价位（Pdh1/Pdl1），横贯整个图表的水平线。
 // 0 表示该档没有设置，不画。
 public class PdhpdlLevelLines {
     private const string Prefix = "PDH_PDL_LEVEL_";
@@ -23,14 +23,7 @@ public class PdhpdlLevelLines {
     public void Draw(ParameterModel parameter) {
         Clear();
         DrawLevel("PDH1", parameter.Pdh1, PdhColor);
-        DrawLevel("PDH2", parameter.Pdh2, PdhColor);
-        DrawLevel("PDH3", parameter.Pdh3, PdhColor);
-        DrawLevel("PDH4", parameter.Pdh4, PdhColor);
-
         DrawLevel("PDL1", parameter.Pdl1, PdlColor);
-        DrawLevel("PDL2", parameter.Pdl2, PdlColor);
-        DrawLevel("PDL3", parameter.Pdl3, PdlColor);
-        DrawLevel("PDL4", parameter.Pdl4, PdlColor);
     }
 
     public void Clear() {

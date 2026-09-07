@@ -13,26 +13,8 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("Pdh1", DefaultValue = 0.0, Group = "人工判断")]
     public double Pdh1 { get; set; }
 
-    [Parameter("Pdh2", DefaultValue = 0.0, Group = "人工判断")]
-    public double Pdh2 { get; set; }
-
-    [Parameter("Pdh3", DefaultValue = 0.0, Group = "人工判断")]
-    public double Pdh3 { get; set; }
-
-    [Parameter("Pdh4", DefaultValue = 0.0, Group = "人工判断")]
-    public double Pdh4 { get; set; }
-
     [Parameter("Pdl1", DefaultValue = 0.0, Group = "人工判断")]
     public double Pdl1 { get; set; }
-
-    [Parameter("Pdl2", DefaultValue = 0.0, Group = "人工判断")]
-    public double Pdl2 { get; set; }
-
-    [Parameter("Pdl3", DefaultValue = 0.0, Group = "人工判断")]
-    public double Pdl3 { get; set; }
-
-    [Parameter("Pdl4", DefaultValue = 0.0, Group = "人工判断")]
-    public double Pdl4 { get; set; }
 
     [Parameter("N次止损Lock", DefaultValue = 3, Group = "风控配置")]
     public int Nlock { get; set; }
@@ -121,13 +103,7 @@ public class PDHPDLBreakandReversev1 : Robot {
         _orderExecutor = new PdhpdlOrderExecutor(this, SymbolName, Bars.TimeFrame.ToString(), planner, riskGuard, _csvLogger, _lossLock);
         _parameterModel = new ParameterModel {
             Pdh1 = Pdh1,
-            Pdh2 = Pdh2,
-            Pdh3 = Pdh3,
-            Pdh4 = Pdh4,
             Pdl1 = Pdl1,
-            Pdl2 = Pdl2,
-            Pdl3 = Pdl3,
-            Pdl4 = Pdl4
         };
         DrawManualLevels();
         Print("*****PDH/PDL Break and Reverse started.");
@@ -143,7 +119,7 @@ public class PDHPDLBreakandReversev1 : Robot {
     private void DrawManualLevels() {
         _pdhpdlLevelLines = new PdhpdlLevelLines(Chart, 2);
         _pdhpdlLevelLines.Draw(_parameterModel);
-        Print("*****Manual levels | Pdh1: {0}, Pdh2: {1}, Pdl1: {2}, Pdl2: {3}", Pdh1, Pdh2, Pdl1, Pdl2);
+        Print("*****Manual levels | Pdh1: {0}, Pdl1: {1}", Pdh1, Pdl1);
     }
 
     private void LaunchDebug() {
