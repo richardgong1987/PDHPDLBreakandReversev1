@@ -24,6 +24,7 @@ public class PdhpdlOrderExecutor {
 
     // 连亏锁仓。上锁/解锁的状态机在它自己里面，这里只负责喂平仓结果、以及开单前问一句锁没锁。
     private readonly ConsecutiveLossLock _lossLock;
+    private readonly PivotEntryGate _entryGate;
 
     private readonly Dictionary<string, string> _pendingCsvIdsByLabel = new();
     private readonly Dictionary<string, double> _pendingEntryEquitiesByLabel = new();
@@ -32,9 +33,10 @@ public class PdhpdlOrderExecutor {
     private readonly Dictionary<int, string> _positionCsvIds = new();
     private readonly Dictionary<int, double> _positionEntryEquities = new();
     private readonly Dictionary<int, double> _positionEntryAtr = new();
+    private readonly Dictionary<string, EntryGateSnapshot> _pendingGateSnapshotsByLabel = new();
 
     public PdhpdlOrderExecutor(Robot robot, string symbolName, string timeFrame, PdhpdlOrderPlanner planner, PdhpdlRiskGuard riskGuard,
-        PdhpdlTradeCsvLogger csvLogger, ConsecutiveLossLock lossLock) {
+        PdhpdlTradeCsvLogger csvLogger, ConsecutiveLossLock lossLock, PivotEntryGate entryGate) {
         _robot = robot;
         _symbolName = symbolName;
         _timeFrame = timeFrame;
@@ -42,6 +44,7 @@ public class PdhpdlOrderExecutor {
         _riskGuard = riskGuard;
         _csvLogger = csvLogger;
         _lossLock = lossLock;
+        _entryGate = entryGate;
 
         if (_riskGuard.NewsBlackoutWindowCount > 0)
             _robot.Print("*****News blackout windows loaded. Count: {0}", _riskGuard.NewsBlackoutWindowCount);
@@ -91,7 +94,14 @@ public class PdhpdlOrderExecutor {
         if (IsLockedByConsecutiveLosses())
             return false;
 
-        return ExecutePlan(planModel, signalModel.Atr);
+        // 快照必须在下单之前放好：市价单的 Positions.Opened 可能在 SubmitOrder 里就回调了。
+        _pendingGateSnapshotsByLabel[planModel.Label] = new EntryGateSnapshot(planModel.DirectionModel, signalModel.PivotCount);
+
+        if (ExecutePlan(planModel, signalModel.Atr))
+            return true;
+
+        _pendingGateSnapshotsByLabel.Remove(planModel.Label);
+        return false;
     }
 
     // 锁仓期间不开新单。解锁由 ConsecutiveLossLock 在每根收盘 K 线上判断，与信号无关。
@@ -162,6 +172,7 @@ public class PdhpdlOrderExecutor {
         _pendingCsvIdsByLabel.Remove(order.Label);
         _pendingEntryEquitiesByLabel.Remove(order.Label);
         _pendingEntryAtrByLabel.Remove(order.Label);
+        _pendingGateSnapshotsByLabel.Remove(order.Label);
     }
 
     private void CloseExposureBeforeRiskWindow() {
@@ -259,6 +270,30 @@ public class PdhpdlOrderExecutor {
             _positionEntryAtr[args.Position.Id] = entryAtr;
             _pendingEntryAtrByLabel.Remove(args.Position.Label);
         }
+
+        RecordEntryForGate(args.Position.Label);
+    }
+
+    // 仓位真正开出来才算吃掉一个令牌。用的是下单那一刻的结构点编号，也就是闸门放行时比对过的
+    // 那个基准，这样「一个结构点放行一笔」才对得上：挂单成交时可能又新出了几个结构点，
+    // 拿成交那一刻的编号记账会把它们一并当成已经用掉。
+    private void RecordEntryForGate(string label) {
+        if (string.IsNullOrWhiteSpace(label) || !_pendingGateSnapshotsByLabel.TryGetValue(label, out EntryGateSnapshot snapshot))
+            return;
+
+        _pendingGateSnapshotsByLabel.Remove(label);
+        _entryGate.RecordEntry(snapshot.Direction, snapshot.PivotCount);
+        _robot.Print("*****Entry recorded | Side: {0}, PivotCount: {1}", snapshot.Direction, snapshot.PivotCount);
+    }
+
+    private readonly struct EntryGateSnapshot {
+        public EntryGateSnapshot(PdhpdlTradeDirectionModel direction, int pivotCount) {
+            Direction = direction;
+            PivotCount = pivotCount;
+        }
+
+        public PdhpdlTradeDirectionModel Direction { get; }
+        public int PivotCount { get; }
     }
 
     private void OnPositionClosed(PositionClosedEventArgs args) {

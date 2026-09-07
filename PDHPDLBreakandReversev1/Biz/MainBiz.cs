@@ -3,15 +3,16 @@ using System;
 namespace cAlgo.Robots;
 
 public class MainBiz {
-    public static void Evaluate(PdhpdlSignalModel signalModel, CandleModel current, CandleModel previous, CandleModel earlier) {
+    public static void Evaluate(PdhpdlSignalModel signalModel, CandleModel current, CandleModel previous, CandleModel earlier,
+        PivotEntryGate entryGate) {
         HanJinSignalScanModel scanResult = HanJinSignals26.Scan(current, previous, earlier);
 
-        signalModel.IsShortSignal = IsShortSignal(signalModel, scanResult, current, previous, earlier);
-        signalModel.IsLongSignal = IsLongSignal(signalModel, scanResult, current, previous, earlier);
+        signalModel.IsShortSignal = IsShortSignal(signalModel, scanResult, current, previous, earlier, entryGate);
+        signalModel.IsLongSignal = IsLongSignal(signalModel, scanResult, current, previous, earlier, entryGate);
     }
 
     private static bool IsShortSignal(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current,
-        CandleModel previous, CandleModel earlier) {
+        CandleModel previous, CandleModel earlier, PivotEntryGate entryGate) {
         if (!signalModel.HasRmaData)
             return false;
 
@@ -35,6 +36,16 @@ public class MainBiz {
                出现看跌信号：看跌pinbar、看跌吞没、顶分型、孕线下破。
                看跌信号的收线价格一定要低于PDH
          */
+        if (!MatchesShortPattern(signalModel, scanResult, current, previous, earlier))
+            return false;
+
+        // 每一笔作空都要吃掉一个新的 LL：MarketStructure 最后标出的必须是 LL（LH 不算），
+        // 而且要是上一笔作空之后才新出的那一个。
+        return entryGate.IsAllowed(PdhpdlTradeDirectionModel.Short, signalModel.LatestPivot, signalModel.PivotCount);
+    }
+
+    private static bool MatchesShortPattern(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current,
+        CandleModel previous, CandleModel earlier) {
         if (ShortPinBar(signalModel, scanResult, current)) {
             return true;
         }
@@ -55,7 +66,7 @@ public class MainBiz {
     }
 
     private static bool IsLongSignal(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current,
-        CandleModel previous, CandleModel earlier) {
+        CandleModel previous, CandleModel earlier, PivotEntryGate entryGate) {
         if (!signalModel.HasRmaData)
             return false;
 
@@ -81,6 +92,16 @@ public class MainBiz {
 
          */
 
+        if (!MatchesLongPattern(signalModel, scanResult, current, previous, earlier))
+            return false;
+
+        // 每一笔作多都要吃掉一个新的 HH：MarketStructure 最后标出的必须是 HH（HL 不算），
+        // 而且要是上一笔作多之后才新出的那一个。
+        return entryGate.IsAllowed(PdhpdlTradeDirectionModel.Long, signalModel.LatestPivot, signalModel.PivotCount);
+    }
+
+    private static bool MatchesLongPattern(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current,
+        CandleModel previous, CandleModel earlier) {
         if (LongPinbar(signalModel, scanResult, current)) {
             return true;
         }

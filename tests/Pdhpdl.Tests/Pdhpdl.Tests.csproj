@@ -24,6 +24,7 @@
     <Compile Include="..\..\PDHPDLBreakandReversev1\Signals\HanJinSignals26.cs" Link="Signals\HanJinSignals26.cs" />
     <Compile Include="..\..\PDHPDLBreakandReversev1\Biz\MainBiz.cs" Link="Biz\MainBiz.cs" />
     <Compile Include="..\..\PDHPDLBreakandReversev1\Biz\ConsecutiveLossLock.cs" Link="Biz\ConsecutiveLossLock.cs" />
+    <Compile Include="..\..\PDHPDLBreakandReversev1\Biz\PivotEntryGate.cs" Link="Biz\PivotEntryGate.cs" />
   </ItemGroup>
 
   <ItemGroup Label="OrderLogger under test">
@@ -45,6 +46,7 @@
     <Compile Include="..\..\PDHPDLBreakandReversev1\Models\PdhpdlRiskGuardConfigModel.cs" Link="Models\PdhpdlRiskGuardConfigModel.cs" />
     <Compile Include="..\..\PDHPDLBreakandReversev1\Models\NewsBlackoutWindowModel.cs" Link="Models\NewsBlackoutWindowModel.cs" />
     <Compile Include="..\..\PDHPDLBreakandReversev1\Models\PdhpdlTradeDirectionModel.cs" Link="Models\PdhpdlTradeDirectionModel.cs" />
+    <Compile Include="..\..\PDHPDLBreakandReversev1\Models\MarketStructurePivotModel.cs" Link="Models\MarketStructurePivotModel.cs" />
     <Compile Include="..\..\PDHPDLBreakandReversev1\Models\PdhpdlEntryModel.cs" Link="Models\PdhpdlEntryModel.cs" />
     <Compile Include="..\..\PDHPDLBreakandReversev1\Models\StrategyModel.cs" Link="Models\StrategyModel.cs" />
     <Compile Include="..\..\PDHPDLBreakandReversev1\Models\SignalFamilyModel.cs" Link="Models\SignalFamilyModel.cs" />

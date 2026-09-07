@@ -68,8 +68,13 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("均线周期(分钟)", DefaultValue = 120, MinValue = 1, Group = "均线")]
     public int MaTimeFrameMinutes { get; set; }
 
+    // ZigZag 突破窗口：越大结构点越少、确认越慢，结构点令牌闸门也就越紧（见 PivotEntryGate）。
+    [Parameter("ZigZag 长度", DefaultValue = 16, MinValue = 1, Group = "市场结构")]
+    public int ZigZagLength { get; set; }
+
 
     private PdhpdlLines _pdhpdlLines;
+    private MarketStructure _marketStructure;
     private DualRmaSeries _rmaSeries;
     private DualRmaLines _movingAverageLines;
     private PdhpdlSignalDetector _signalDetector;
@@ -83,8 +88,11 @@ public class PDHPDLBreakandReversev1 : Robot {
         LaunchDebug();
         DrawDualRmaLines();
         _atr14 = new Atr14Series(Indicators, Bars);
+        _marketStructure = new MarketStructure(Chart, Bars, ZigZagLength);
+        _marketStructure.Update();
         Bars dailyBars = MarketData.GetBars(TimeFrame.Daily, SymbolName);
-        _signalDetector = new PdhpdlSignalDetector(Bars, dailyBars, _rmaSeries);
+        var entryGate = new PivotEntryGate();
+        _signalDetector = new PdhpdlSignalDetector(Bars, dailyBars, _rmaSeries, _marketStructure, entryGate);
         _signalMarkers = new PdhpdlSignalMarkers(Chart, Symbol.TickSize);
 
         _csvLogger = new PdhpdlTradeCsvLogger(ResetTradeLogOnStart, ResolveReportsDirectory(), FileName);
@@ -93,7 +101,8 @@ public class PDHPDLBreakandReversev1 : Robot {
         var riskGuard = new PdhpdlRiskGuard(BuildRiskGuardConfig());
         var planner = new PdhpdlOrderPlanner(new CAlgoSymbolModel(Symbol), riskGuard, StopOffsetTicks, TakeProfitR, EntryModel, RiskPct);
         _lossLock = new ConsecutiveLossLock(Nlock, MaxBarRangeAtr);
-        _orderExecutor = new PdhpdlOrderExecutor(this, SymbolName, Bars.TimeFrame.ToString(), planner, riskGuard, _csvLogger, _lossLock);
+        _orderExecutor = new PdhpdlOrderExecutor(this, SymbolName, Bars.TimeFrame.ToString(), planner, riskGuard, _csvLogger, _lossLock,
+            entryGate);
         DrawPdhpdlLines();
         Print("*****PDH/PDL Break and Reverse started.");
     }
@@ -152,6 +161,7 @@ public class PDHPDLBreakandReversev1 : Robot {
     protected override void OnBar() {
         _pdhpdlLines?.Draw();
         _movingAverageLines?.Draw();
+        _marketStructure?.Update();
         _orderExecutor?.ManageOpenPositions();
         // 先撤过期挂单再看新信号：让作废的挂单不再占住「本品种已有挂单」这个名额。
         _orderExecutor?.CancelExpiredPendingOrders(Bars.Count - 2);
