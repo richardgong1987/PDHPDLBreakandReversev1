@@ -18,6 +18,9 @@ public class PdhpdlSignalDetector {
         PdhpdlSignalModel signalModel = new();
         signalModel.Strategy = strategy;
 
+        if (_chartBars.Count < 2 || !TryGetPreviousDayLevels(out double pdh, out double pdl))
+            return signalModel;
+
         int closedBarIndex = _chartBars.Count - 2; // last fully closed bar in OnBar()
         CandleModel current = ReadCandle(closedBarIndex);
         CandleModel previous = ReadCandle(closedBarIndex - 1);
@@ -31,13 +34,13 @@ public class PdhpdlSignalDetector {
         signalModel.High = current.High;
         signalModel.Low = current.Low;
 
-        signalModel.Pdh1 = parameter.Pdh1;
+        signalModel.Pdh1 = pdh;
         signalModel.Pdh2 = parameter.Pdh2;
         signalModel.Pdh3 = parameter.Pdh3;
         signalModel.Pdh4 = parameter.Pdh4;
         signalModel.Pdh5 = parameter.Pdh5;
 
-        signalModel.Pdl1 = parameter.Pdl1;
+        signalModel.Pdl1 = pdl;
         signalModel.Pdl2 = parameter.Pdl2;
         signalModel.Pdl3 = parameter.Pdl3;
         signalModel.Pdl4 = parameter.Pdl4;
@@ -66,5 +69,18 @@ public class PdhpdlSignalDetector {
         signalModel.RmaSourceBarTime = sourceBarTime;
         signalModel.FastRma = fastRma;
         signalModel.SlowRma = slowRma;
+    }
+
+    private bool TryGetPreviousDayLevels(out double pdh, out double pdl) {
+        pdh = double.NaN;
+        pdl = double.NaN;
+
+        if (_dailyBars == null || _dailyBars.Count < 2)
+            return false;
+
+        int previousDailyIndex = _dailyBars.Count - 2;
+        pdh = _dailyBars.HighPrices[previousDailyIndex];
+        pdl = _dailyBars.LowPrices[previousDailyIndex];
+        return true;
     }
 }
