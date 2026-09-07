@@ -14,7 +14,7 @@ public class PdhpdlSignalDetector {
         _rmaSeries = rmaSeries;
     }
 
-    public PdhpdlSignalModel DetectOnClosedBar(StrategyModel strategy, ParameterModel parameter) {
+    public PdhpdlSignalModel DetectOnClosedBar(StrategyModel strategy) {
         PdhpdlSignalModel signalModel = new();
         signalModel.Strategy = strategy;
 

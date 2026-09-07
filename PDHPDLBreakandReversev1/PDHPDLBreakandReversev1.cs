@@ -5,16 +5,10 @@ using cAlgo.API;
 
 namespace cAlgo.Robots;
 
-[Robot(TimeZone = TimeZones.TokyoStandardTime, AccessRights = AccessRights.FullAccess, AddIndicators = true)]
+[Robot(TimeZone = TimeZones.TokyoStandardTime, AccessRights = AccessRights.FullAccess, AddIndicators = false)]
 public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("策略模式", DefaultValue = StrategyModel.All)]
     public StrategyModel Strategy { get; set; }
-
-    [Parameter("Pdh1", DefaultValue = 0.0, Group = "人工判断")]
-    public double Pdh1 { get; set; }
-
-    [Parameter("Pdl1", DefaultValue = 0.0, Group = "人工判断")]
-    public double Pdl1 { get; set; }
 
     [Parameter("N次止损Lock", DefaultValue = 3, Group = "风控配置")]
     public int Nlock { get; set; }
@@ -75,7 +69,7 @@ public class PDHPDLBreakandReversev1 : Robot {
     public int MaTimeFrameMinutes { get; set; }
 
 
-    private PdhpdlLevelLines _pdhpdlLevelLines;
+    private PdhpdlLines _pdhpdlLines;
     private DualRmaSeries _rmaSeries;
     private DualRmaLines _movingAverageLines;
     private PdhpdlSignalDetector _signalDetector;
@@ -84,7 +78,6 @@ public class PDHPDLBreakandReversev1 : Robot {
     private PdhpdlTradeCsvLogger _csvLogger;
     private ConsecutiveLossLock _lossLock;
     private Atr14Series _atr14;
-    private ParameterModel _parameterModel;
 
     protected override void OnStart() {
         LaunchDebug();
@@ -101,11 +94,7 @@ public class PDHPDLBreakandReversev1 : Robot {
         var planner = new PdhpdlOrderPlanner(new CAlgoSymbolModel(Symbol), riskGuard, StopOffsetTicks, TakeProfitR, EntryModel, RiskPct);
         _lossLock = new ConsecutiveLossLock(Nlock, MaxBarRangeAtr);
         _orderExecutor = new PdhpdlOrderExecutor(this, SymbolName, Bars.TimeFrame.ToString(), planner, riskGuard, _csvLogger, _lossLock);
-        _parameterModel = new ParameterModel {
-            Pdh1 = Pdh1,
-            Pdl1 = Pdl1,
-        };
-        DrawManualLevels();
+        DrawPdhpdlLines();
         Print("*****PDH/PDL Break and Reverse started.");
     }
 
@@ -116,10 +105,9 @@ public class PDHPDLBreakandReversev1 : Robot {
         _movingAverageLines.Draw();
     }
 
-    private void DrawManualLevels() {
-        _pdhpdlLevelLines = new PdhpdlLevelLines(Chart, 2);
-        _pdhpdlLevelLines.Draw(_parameterModel);
-        Print("*****Manual levels | Pdh1: {0}, Pdl1: {1}", Pdh1, Pdl1);
+    private void DrawPdhpdlLines() {
+        _pdhpdlLines = new PdhpdlLines(Chart, MarketData, SymbolName, Bars, 3);
+        _pdhpdlLines.Draw();
     }
 
     private void LaunchDebug() {
@@ -162,6 +150,7 @@ public class PDHPDLBreakandReversev1 : Robot {
     }
 
     protected override void OnBar() {
+        _pdhpdlLines?.Draw();
         _movingAverageLines?.Draw();
         _orderExecutor?.ManageOpenPositions();
         // 先撤过期挂单再看新信号：让作废的挂单不再占住「本品种已有挂单」这个名额。
@@ -174,7 +163,7 @@ public class PDHPDLBreakandReversev1 : Robot {
     }
 
     private void HandleClosedBarSignal() {
-        PdhpdlSignalModel signalModel = _signalDetector.DetectOnClosedBar(Strategy, _parameterModel);
+        PdhpdlSignalModel signalModel = _signalDetector.DetectOnClosedBar(Strategy);
         if (!signalModel.HasData)
             return;
 
