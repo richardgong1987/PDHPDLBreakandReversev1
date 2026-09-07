@@ -16,16 +16,12 @@ public class Utils {
 
     // 上方一组关键价位：日线 PDH。
     public static PdhpdlKeyLevelModel[] PdhLevels(PdhpdlSignalModel signalModel) {
-        return new[] {
-            new PdhpdlKeyLevelModel("Pdh1", signalModel.Pdh1),
-        };
+        return new[] { new PdhpdlKeyLevelModel("Pdh1", signalModel.Pdh1), };
     }
 
     // 下方一组关键价位：日线 PDL。
     public static PdhpdlKeyLevelModel[] PdlLevels(PdhpdlSignalModel signalModel) {
-        return new[] {
-            new PdhpdlKeyLevelModel("Pdl1", signalModel.Pdl1),
-        };
+        return new[] { new PdhpdlKeyLevelModel("Pdl1", signalModel.Pdl1), };
     }
 
     // 看跌确认：K线接触到该价位，且收盘价低于该价位。返回第一个命中的价位名。
@@ -84,6 +80,8 @@ public class Utils {
                 return IsStrongTrend(signalModel, current, side);
             case StrategyModel.Weak:
                 return IsWeakTrend(signalModel, current, side);
+            case StrategyModel.StrongWeak:
+                return IsStrongTrend(signalModel, current, side) || IsWeakTrend(signalModel, current, side);
             case StrategyModel.StopWhenVolatility:
                 return IsVolatility(signalModel, current, side);
         }

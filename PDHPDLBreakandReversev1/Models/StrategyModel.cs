@@ -7,5 +7,6 @@ public enum StrategyModel {
     MultiplePosition,// 持仓情况下，照常能下单
     Strong, // 强多头：K线收盘价格>RMA13>RMA55 | 强空头：K线收盘价格<RMA13<RMA55
     Weak, // 弱多头：RMA13>K线收盘价格>RMA55   | 弱空头：RMA13<K线收盘价格<RMA55
+    StrongWeak,
     StopWhenVolatility // 趋势转换或者震荡：RMA13>RMA55>K线收盘价格  （不交易） | 趋势转换或者震荡：RMA13<RMA55<K线收盘价格 （不交易）
 }
