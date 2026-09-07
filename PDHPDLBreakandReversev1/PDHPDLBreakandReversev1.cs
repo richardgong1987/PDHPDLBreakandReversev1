@@ -10,13 +10,6 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("策略模式", DefaultValue = StrategyModel.All)]
     public StrategyModel Strategy { get; set; }
 
-    [Parameter("N次止损Lock", DefaultValue = 3, Group = "风控配置")]
-    public int Nlock { get; set; }
-
-    [Parameter("ATR倍数", DefaultValue = 3, Group = "风控配置")]
-    public double MaxBarRangeAtr { get; set; }
-
-
     [Parameter("每笔交易风险百分比，默认1%", DefaultValue = 1.0, MinValue = 0.1, MaxValue = 10.0, Step = 0.1, Group = "风控配置")]
     public double RiskPct { get; set; }
 
@@ -81,7 +74,6 @@ public class PDHPDLBreakandReversev1 : Robot {
     private PdhpdlSignalMarkers _signalMarkers;
     private PdhpdlOrderExecutor _orderExecutor;
     private PdhpdlTradeCsvLogger _csvLogger;
-    private ConsecutiveLossLock _lossLock;
     private Atr14Series _atr14;
 
     protected override void OnStart() {
@@ -100,9 +92,7 @@ public class PDHPDLBreakandReversev1 : Robot {
 
         var riskGuard = new PdhpdlRiskGuard(BuildRiskGuardConfig());
         var planner = new PdhpdlOrderPlanner(new CAlgoSymbolModel(Symbol), riskGuard, StopOffsetTicks, TakeProfitR, EntryModel, RiskPct);
-        _lossLock = new ConsecutiveLossLock(Nlock, MaxBarRangeAtr);
-        _orderExecutor = new PdhpdlOrderExecutor(this, SymbolName, Bars.TimeFrame.ToString(), planner, riskGuard, _csvLogger, _lossLock,
-            entryGate);
+        _orderExecutor = new PdhpdlOrderExecutor(this, SymbolName, Bars.TimeFrame.ToString(), planner, riskGuard, _csvLogger, entryGate);
         DrawPdhpdlLines();
         Print("*****PDH/PDL Break and Reverse started.");
     }
@@ -178,10 +168,6 @@ public class PDHPDLBreakandReversev1 : Robot {
             return;
 
         signalModel.IsBigK = _atr14.IsBarRangeTooLarge(signalModel.BarIndex, signalModel.High, signalModel.Low, 3);
-        signalModel.Atr = _atr14.TryGetValue(signalModel.BarIndex, out double atr) ? atr : 0.0;
-
-        // 每根收盘 K 线都问一次「走出来了没」，与有没有信号无关：解锁不能只在出信号那一刻才有机会。
-        _lossLock.RecordClosedBar(signalModel.High, signalModel.Low);
 
         if (_orderExecutor.ExecuteIfSignal(signalModel)) {
             _signalMarkers.Draw(signalModel);

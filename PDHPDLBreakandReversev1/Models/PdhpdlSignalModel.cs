@@ -47,8 +47,5 @@ public class PdhpdlSignalModel {
 
     public StrategyModel Strategy { get; set; }
 
-    // 这根信号 K 线上的 ATR14。下单成功时会被记下来，
-    // 作为这笔单万一亏损、触发连亏锁仓时的解锁参照（见 ConsecutiveLossLock）。
-    public double Atr { get; set; }
     public bool IsBigK { get; set; }
 }

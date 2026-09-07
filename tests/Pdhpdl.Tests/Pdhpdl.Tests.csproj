@@ -23,7 +23,6 @@
   <ItemGroup Label="Signals under test">
     <Compile Include="..\..\PDHPDLBreakandReversev1\Signals\HanJinSignals26.cs" Link="Signals\HanJinSignals26.cs" />
     <Compile Include="..\..\PDHPDLBreakandReversev1\Biz\MainBiz.cs" Link="Biz\MainBiz.cs" />
-    <Compile Include="..\..\PDHPDLBreakandReversev1\Biz\ConsecutiveLossLock.cs" Link="Biz\ConsecutiveLossLock.cs" />
     <Compile Include="..\..\PDHPDLBreakandReversev1\Biz\PivotEntryGate.cs" Link="Biz\PivotEntryGate.cs" />
   </ItemGroup>
 
