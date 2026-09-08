@@ -9,14 +9,16 @@ public class PdhpdlSignalDetector {
     private readonly DualRmaSeries _rmaSeries;
     private readonly MarketStructure _marketStructure;
     private readonly PivotEntryGate _entryGate;
+    private readonly ConsecutiveLossCounter _lossCounter;
 
     public PdhpdlSignalDetector(Bars chartBars, Bars dailyBars, DualRmaSeries rmaSeries, MarketStructure marketStructure,
-        PivotEntryGate entryGate) {
+        PivotEntryGate entryGate, ConsecutiveLossCounter lossCounter) {
         _chartBars = chartBars;
         _dailyBars = dailyBars;
         _rmaSeries = rmaSeries;
         _marketStructure = marketStructure;
         _entryGate = entryGate;
+        _lossCounter = lossCounter;
     }
 
     public PdhpdlSignalModel DetectOnClosedBar(StrategyModel strategy) {
@@ -48,7 +50,7 @@ public class PdhpdlSignalDetector {
 
         FillRmaData(signalModel);
 
-        MainBiz.Evaluate(signalModel, current, previous, earlier, _entryGate);
+        MainBiz.Evaluate(signalModel, current, previous, earlier, _entryGate, _lossCounter);
 
         return signalModel;
     }

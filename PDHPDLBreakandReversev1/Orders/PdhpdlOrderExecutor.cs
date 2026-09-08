@@ -24,6 +24,7 @@ public class PdhpdlOrderExecutor {
 
     // 连亏锁仓。上锁/解锁的状态机在它自己里面，这里只负责喂平仓结果、以及开单前问一句锁没锁。
     private readonly PivotEntryGate _entryGate;
+    private readonly ConsecutiveLossCounter _lossCounter;
 
     private readonly Dictionary<string, string> _pendingCsvIdsByLabel = new();
     private readonly Dictionary<string, double> _pendingEntryEquitiesByLabel = new();
@@ -33,7 +34,7 @@ public class PdhpdlOrderExecutor {
     private readonly Dictionary<string, EntryGateSnapshot> _pendingGateSnapshotsByLabel = new();
 
     public PdhpdlOrderExecutor(Robot robot, string symbolName, string timeFrame, PdhpdlOrderPlanner planner, PdhpdlRiskGuard riskGuard,
-        PdhpdlTradeCsvLogger csvLogger, PivotEntryGate entryGate) {
+        PdhpdlTradeCsvLogger csvLogger, PivotEntryGate entryGate, ConsecutiveLossCounter lossCounter) {
         _robot = robot;
         _symbolName = symbolName;
         _timeFrame = timeFrame;
@@ -41,6 +42,7 @@ public class PdhpdlOrderExecutor {
         _riskGuard = riskGuard;
         _csvLogger = csvLogger;
         _entryGate = entryGate;
+        _lossCounter = lossCounter;
 
         if (_riskGuard.NewsBlackoutWindowCount > 0)
             _robot.Print("*****News blackout windows loaded. Count: {0}", _riskGuard.NewsBlackoutWindowCount);
@@ -286,6 +288,10 @@ public class PdhpdlOrderExecutor {
 
         if (!string.IsNullOrWhiteSpace(closeRecordId))
             _robot.Print("*****CSV close record added. Id: {0}, ProfitLoss: {1}", closeRecordId, args.Position.NetProfit);
+
+        _lossCounter.RecordClosedTrade(args.Position.NetProfit);
+        _robot.Print("*****Consecutive losses | Count: {0}, PivotGateRequired: {1}", _lossCounter.ConsecutiveLosses,
+            _lossCounter.IsPivotGateRequired);
     }
 
     private bool IsStrategyPosition(Position position) {

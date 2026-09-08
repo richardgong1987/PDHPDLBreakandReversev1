@@ -10,6 +10,9 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("策略模式", DefaultValue = StrategyModel.All)]
     public StrategyModel Strategy { get; set; }
 
+    [Parameter("N次止损Lock", DefaultValue = 3, Group = "风控配置")]
+    public int Nlock { get; set; }
+
     [Parameter("每笔交易风险百分比，默认1%", DefaultValue = 1.0, MinValue = 0.1, MaxValue = 10.0, Step = 0.1, Group = "风控配置")]
     public double RiskPct { get; set; }
 
@@ -84,7 +87,8 @@ public class PDHPDLBreakandReversev1 : Robot {
         _marketStructure.Update();
         Bars dailyBars = MarketData.GetBars(TimeFrame.Daily, SymbolName);
         var entryGate = new PivotEntryGate();
-        _signalDetector = new PdhpdlSignalDetector(Bars, dailyBars, _rmaSeries, _marketStructure, entryGate);
+        var lossCounter = new ConsecutiveLossCounter(Nlock);
+        _signalDetector = new PdhpdlSignalDetector(Bars, dailyBars, _rmaSeries, _marketStructure, entryGate, lossCounter);
         _signalMarkers = new PdhpdlSignalMarkers(Chart, Symbol.TickSize);
 
         _csvLogger = new PdhpdlTradeCsvLogger(ResetTradeLogOnStart, ResolveReportsDirectory(), FileName);
@@ -92,7 +96,8 @@ public class PDHPDLBreakandReversev1 : Robot {
 
         var riskGuard = new PdhpdlRiskGuard(BuildRiskGuardConfig());
         var planner = new PdhpdlOrderPlanner(new CAlgoSymbolModel(Symbol), riskGuard, StopOffsetTicks, TakeProfitR, EntryModel, RiskPct);
-        _orderExecutor = new PdhpdlOrderExecutor(this, SymbolName, Bars.TimeFrame.ToString(), planner, riskGuard, _csvLogger, entryGate);
+        _orderExecutor = new PdhpdlOrderExecutor(this, SymbolName, Bars.TimeFrame.ToString(), planner, riskGuard, _csvLogger, entryGate,
+            lossCounter);
         DrawPdhpdlLines();
         Print("*****PDH/PDL Break and Reverse started.");
     }

@@ -24,6 +24,7 @@
     <Compile Include="..\..\PDHPDLBreakandReversev1\Signals\HanJinSignals26.cs" Link="Signals\HanJinSignals26.cs" />
     <Compile Include="..\..\PDHPDLBreakandReversev1\Biz\MainBiz.cs" Link="Biz\MainBiz.cs" />
     <Compile Include="..\..\PDHPDLBreakandReversev1\Biz\PivotEntryGate.cs" Link="Biz\PivotEntryGate.cs" />
+    <Compile Include="..\..\PDHPDLBreakandReversev1\Biz\ConsecutiveLossCounter.cs" Link="Biz\ConsecutiveLossCounter.cs" />
   </ItemGroup>
 
   <ItemGroup Label="OrderLogger under test">
