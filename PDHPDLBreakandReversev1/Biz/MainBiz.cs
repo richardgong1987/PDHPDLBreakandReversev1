@@ -20,7 +20,7 @@ public class MainBiz {
         RmaPositionModel rmaPosition = RmaUtils.GetFastToSlowPosition(signalModel.FastRma, signalModel.SlowRma);
 
         /**
-         * 蓝线在上面，作多。但这里是专门作空的。所以就跳过
+         * 蓝线下面，作空。这里判断的是如果蓝线在上面，不作
          */
         if (rmaPosition == RmaPositionModel.FastAboveSlow)
             return false;
@@ -77,7 +77,7 @@ public class MainBiz {
         RmaPositionModel rmaPosition = RmaUtils.GetFastToSlowPosition(signalModel.FastRma, signalModel.SlowRma);
 
         /**
-         * 蓝线在下面，代表，只作空。这但这里都是作多的，所以就不走这里的逻辑了。
+         * 条件是：蓝线在上面，作多。这里判断的是蓝线在下面，直接不作
          */
         if (rmaPosition == RmaPositionModel.FastBelowSlow) {
             return false;
