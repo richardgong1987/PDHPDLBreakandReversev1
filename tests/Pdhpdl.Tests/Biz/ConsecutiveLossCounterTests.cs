@@ -118,5 +118,35 @@ namespace Pdhpdl.Tests.Biz {
 
             Assert.True(counter.IsPivotGateRequired);
         }
+
+        // 换线（新的一对 PDH/PDL）就清零：昨天的连亏不带进新的一天，闸门跟着松开。
+        [Fact]
+        public void reset_clears_the_streak_and_releases_the_pivot_gate() {
+            ConsecutiveLossCounter counter = CreateCounter();
+
+            counter.RecordClosedTrade(Loss);
+            counter.RecordClosedTrade(Loss);
+            Assert.True(counter.IsPivotGateRequired);
+
+            counter.Reset();
+
+            Assert.Equal(0, counter.ConsecutiveLosses);
+            Assert.False(counter.IsPivotGateRequired);
+        }
+
+        // 清零之后重新数，不留半截历史：Nlock = 2 时还要再亏满两笔才重新要求闸门。
+        [Fact]
+        public void the_streak_restarts_from_zero_after_a_reset() {
+            ConsecutiveLossCounter counter = CreateCounter();
+
+            counter.RecordClosedTrade(Loss);
+            counter.Reset();
+
+            counter.RecordClosedTrade(Loss);
+            Assert.False(counter.IsPivotGateRequired);
+
+            counter.RecordClosedTrade(Loss);
+            Assert.True(counter.IsPivotGateRequired);
+        }
     }
 }

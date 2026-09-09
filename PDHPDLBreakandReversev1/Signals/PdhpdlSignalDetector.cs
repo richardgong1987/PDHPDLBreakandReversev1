@@ -11,6 +11,8 @@ public class PdhpdlSignalDetector {
     private readonly PivotEntryGate _entryGate;
     private readonly ConsecutiveLossCounter _lossCounter;
 
+    private DateTime _levelsDayOpenTime = DateTime.MinValue;
+
     public PdhpdlSignalDetector(Bars chartBars, Bars dailyBars, DualRmaSeries rmaSeries, MarketStructure marketStructure,
         PivotEntryGate entryGate, ConsecutiveLossCounter lossCounter) {
         _chartBars = chartBars;
@@ -27,6 +29,8 @@ public class PdhpdlSignalDetector {
 
         if (_chartBars.Count < 2 || !TryGetPreviousDayLevels(out double pdh, out double pdl))
             return signalModel;
+
+        ResetLossStreakOnNewLevels();
 
         int closedBarIndex = _chartBars.Count - 2; // last fully closed bar in OnBar()
         CandleModel current = ReadCandle(closedBarIndex);
@@ -73,6 +77,21 @@ public class PdhpdlSignalDetector {
         signalModel.SlowRma = slowRma;
     }
 
+    // 关键位换到新的一天就把连亏计数清零：亏损是对着昨天那对 PDH/PDL 累出来的，不该带进
+    // 新的一对，否则新的一天一开盘结构点闸门就已经被顶开着（见 ConsecutiveLossCounter）。
+    // 调用点在关键位就位之后、评估信号之前，所以当天开出来的仓位不会被这里清掉。
+    private void ResetLossStreakOnNewLevels() {
+        DateTime dayOpenTime = _dailyBars.OpenTimes[PreviousDailyIndex];
+
+        if (dayOpenTime == _levelsDayOpenTime)
+            return;
+
+        _levelsDayOpenTime = dayOpenTime;
+        _lossCounter.Reset();
+    }
+
+    private int PreviousDailyIndex => _dailyBars.Count - 2;
+
     private bool TryGetPreviousDayLevels(out double pdh, out double pdl) {
         pdh = double.NaN;
         pdl = double.NaN;
@@ -80,9 +99,8 @@ public class PdhpdlSignalDetector {
         if (_dailyBars == null || _dailyBars.Count < 2)
             return false;
 
-        int previousDailyIndex = _dailyBars.Count - 2;
-        pdh = _dailyBars.HighPrices[previousDailyIndex];
-        pdl = _dailyBars.LowPrices[previousDailyIndex];
+        pdh = _dailyBars.HighPrices[PreviousDailyIndex];
+        pdl = _dailyBars.LowPrices[PreviousDailyIndex];
         return true;
     }
 }

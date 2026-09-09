@@ -23,6 +23,12 @@ public class ConsecutiveLossCounter {
     // 连亏够了 Nlock 笔，从这一刻起每一笔入场都要先过结构点闸门，直到赢一笔把计数清零。
     public bool IsPivotGateRequired => IsEnabled && ConsecutiveLosses >= _maxConsecutiveLosses;
 
+    // 换线清零：PDH/PDL 每天换一对，昨天那几笔亏损属于昨天那对关键位，不带进新的一天
+    //（见 PdhpdlSignalDetector）。
+    public void Reset() {
+        ConsecutiveLosses = 0;
+    }
+
     public void RecordClosedTrade(double netProfit) {
         if (netProfit < 0) {
             ConsecutiveLosses++;
