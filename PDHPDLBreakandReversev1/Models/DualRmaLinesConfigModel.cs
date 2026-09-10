@@ -1,3 +1,5 @@
+using cAlgo.API;
+
 namespace cAlgo.Robots;
 
 // Tunables for the "MA 1 + MA 2" overlay (see LineDrawer/DualRmaLines).
@@ -11,7 +13,7 @@ public class DualRmaLinesConfigModel {
 
     public int SlowPeriod { get; set; } = 55;
 
-    public int HigherTimeFrameMinutes { get; set; } = 120;
+    public TimeFrameSelectModel HigherTimeFrameMinutes { get; set; }
 
     public int Thickness { get; set; } = 3;
 }

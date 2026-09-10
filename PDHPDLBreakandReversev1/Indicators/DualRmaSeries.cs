@@ -39,36 +39,34 @@ public class DualRmaSeries {
 
         fastRma = FastValues[confirmedIndex];
         slowRma = SlowValues[confirmedIndex];
-        if (double.IsNaN(fastRma) || double.IsInfinity(fastRma) ||
-            double.IsNaN(slowRma) || double.IsInfinity(slowRma))
+        if (double.IsNaN(fastRma) || double.IsInfinity(fastRma) || double.IsNaN(slowRma) || double.IsInfinity(slowRma))
             return false;
 
         sourceBarTime = SourceBars.OpenTimes[confirmedIndex];
         return true;
     }
 
-    private static TimeFrame ToTimeFrame(int minutes) {
+    private static TimeFrame ToTimeFrame(TimeFrameSelectModel minutes) {
         return minutes switch {
-            1 => TimeFrame.Minute,
-            2 => TimeFrame.Minute2,
-            3 => TimeFrame.Minute3,
-            4 => TimeFrame.Minute4,
-            5 => TimeFrame.Minute5,
-            10 => TimeFrame.Minute10,
-            15 => TimeFrame.Minute15,
-            20 => TimeFrame.Minute20,
-            30 => TimeFrame.Minute30,
-            45 => TimeFrame.Minute45,
-            60 => TimeFrame.Hour,
-            120 => TimeFrame.Hour2,
-            180 => TimeFrame.Hour3,
-            240 => TimeFrame.Hour4,
-            360 => TimeFrame.Hour6,
-            480 => TimeFrame.Hour8,
-            720 => TimeFrame.Hour12,
-            1440 => TimeFrame.Daily,
-            _ => throw new ArgumentOutOfRangeException(nameof(minutes), minutes,
-                "Unsupported higher-timeframe minutes for DualRmaSeries.")
+            TimeFrameSelectModel.M1 => TimeFrame.Minute,
+            TimeFrameSelectModel.M2 => TimeFrame.Minute2,
+            TimeFrameSelectModel.M3 => TimeFrame.Minute3,
+            TimeFrameSelectModel.M4 => TimeFrame.Minute4,
+            TimeFrameSelectModel.M5 => TimeFrame.Minute5,
+            TimeFrameSelectModel.M10 => TimeFrame.Minute10,
+            TimeFrameSelectModel.M15 => TimeFrame.Minute15,
+            TimeFrameSelectModel.M20 => TimeFrame.Minute20,
+            TimeFrameSelectModel.M30 => TimeFrame.Minute30,
+            TimeFrameSelectModel.M45 => TimeFrame.Minute45,
+            TimeFrameSelectModel.H1 => TimeFrame.Hour,
+            TimeFrameSelectModel.H2 => TimeFrame.Hour2,
+            TimeFrameSelectModel.H3 => TimeFrame.Hour3,
+            TimeFrameSelectModel.H4 => TimeFrame.Hour4,
+            TimeFrameSelectModel.H6 => TimeFrame.Hour6,
+            TimeFrameSelectModel.H8 => TimeFrame.Hour8,
+            TimeFrameSelectModel.H12 => TimeFrame.Hour12,
+            TimeFrameSelectModel.D1 => TimeFrame.Daily,
+            _ => throw new ArgumentOutOfRangeException(nameof(minutes), minutes, null)
         };
     }
 }

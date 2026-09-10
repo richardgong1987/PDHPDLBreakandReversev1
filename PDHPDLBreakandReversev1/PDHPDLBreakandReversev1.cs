@@ -64,7 +64,7 @@ public class PDHPDLBreakandReversev1 : Robot {
     public int MaSlowPeriod { get; set; }
 
     [Parameter("均线周期(分钟)", DefaultValue = 120, MinValue = 1, Group = "均线")]
-    public int MaTimeFrameMinutes { get; set; }
+    public TimeFrameSelectModel MaTimeFrameMinutes { get; set; }
 
     // ZigZag 突破窗口：越大结构点越少、确认越慢，结构点令牌闸门也就越紧（见 PivotEntryGate）。
     [Parameter("ZigZag 长度", DefaultValue = 16, MinValue = 1, Group = "市场结构")]
