@@ -13,6 +13,10 @@ public class MainBiz {
 
     private static bool IsShortSignal(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current,
         CandleModel previous, CandleModel earlier, PivotEntryGate entryGate, ConsecutiveLossCounter lossCounter) {
+        if (signalModel.BuyOrSellOnly == BuyOrSellOnlyModel.BuyOnly) {
+            return false;
+        }
+
         if (!signalModel.HasRmaData)
             return false;
 
@@ -71,6 +75,10 @@ public class MainBiz {
 
     private static bool IsLongSignal(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current,
         CandleModel previous, CandleModel earlier, PivotEntryGate entryGate, ConsecutiveLossCounter lossCounter) {
+        if (signalModel.BuyOrSellOnly == BuyOrSellOnlyModel.SellOnly) {
+            return false;
+        }
+
         if (!signalModel.HasRmaData)
             return false;
 

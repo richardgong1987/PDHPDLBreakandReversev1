@@ -23,9 +23,10 @@ public class PdhpdlSignalDetector {
         _lossCounter = lossCounter;
     }
 
-    public PdhpdlSignalModel DetectOnClosedBar(StrategyModel strategy) {
+    public PdhpdlSignalModel DetectOnClosedBar(StrategyModel strategy, BuyOrSellOnlyModel buyOrSellOnly) {
         PdhpdlSignalModel signalModel = new();
         signalModel.Strategy = strategy;
+        signalModel.BuyOrSellOnly = buyOrSellOnly;
 
         if (_chartBars.Count < 2 || !TryGetPreviousDayLevels(out double pdh, out double pdl))
             return signalModel;

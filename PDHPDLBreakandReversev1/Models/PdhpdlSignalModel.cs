@@ -46,6 +46,7 @@ public class PdhpdlSignalModel {
     public double SL { get; set; }
 
     public StrategyModel Strategy { get; set; }
+    public BuyOrSellOnlyModel BuyOrSellOnly { get; set; }
 
     public bool IsBigK { get; set; }
 }

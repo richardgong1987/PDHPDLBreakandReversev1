@@ -12,6 +12,9 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("策略模式", DefaultValue = StrategyModel.All)]
     public StrategyModel Strategy { get; set; }
 
+    [Parameter("只作多或作空模式", DefaultValue = BuyOrSellOnlyModel.All)]
+    public BuyOrSellOnlyModel BuyOrSellOnly { get; set; }
+
     [Parameter("N次止损Lock", DefaultValue = 3, Group = "风控配置")]
     public int Nlock { get; set; }
 
@@ -172,7 +175,7 @@ public class PDHPDLBreakandReversev1 : Robot {
     }
 
     private void HandleClosedBarSignal() {
-        PdhpdlSignalModel signalModel = _signalDetector.DetectOnClosedBar(Strategy);
+        PdhpdlSignalModel signalModel = _signalDetector.DetectOnClosedBar(Strategy,BuyOrSellOnly);
         if (!signalModel.HasData)
             return;
 
