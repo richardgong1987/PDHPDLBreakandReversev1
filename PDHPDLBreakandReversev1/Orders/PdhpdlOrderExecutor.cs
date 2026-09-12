@@ -91,6 +91,7 @@ public class PdhpdlOrderExecutor {
         planModel.AtrRatioH1 = signalModel.AtrRatioH1;
         planModel.PdRangeAtr = signalModel.PdRangeAtr;
         planModel.Adx14H1 = signalModel.Adx14H1;
+        planModel.Adx14H1Previous = signalModel.Adx14H1Previous;
         planModel.DiPlus14H1 = signalModel.DiPlus14H1;
         planModel.DiMinus14H1 = signalModel.DiMinus14H1;
 

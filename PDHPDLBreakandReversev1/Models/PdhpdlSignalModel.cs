@@ -58,6 +58,9 @@ public class PdhpdlSignalModel {
 
     // H1 的 DMI(14)：趋势强度与多空双方的方向力量。同样只用于记录。
     public double Adx14H1 { get; set; } = double.NaN;
+
+    // 再往前一根已收盘 H1 的 ADX(14)，用来看趋势强度的变化方向。
+    public double Adx14H1Previous { get; set; } = double.NaN;
     public double DiPlus14H1 { get; set; } = double.NaN;
     public double DiMinus14H1 { get; set; } = double.NaN;
 }

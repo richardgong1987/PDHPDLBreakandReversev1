@@ -21,16 +21,17 @@ public class Dms14Series {
     // 与 Atr14Series 同一口径：只读最后一根完全收盘的 K 线，不看正在形成的那根。
     public int LastClosedBarIndex => _bars.Count - 2;
 
-    public double LastClosedAdx => ReadLastClosed(_dms.ADX);
+    public double LastClosedAdx => ReadAt(_dms.ADX, LastClosedBarIndex);
 
-    public double LastClosedDiPlus => ReadLastClosed(_dms.DIPlus);
+    // 再往前一根已收盘 K 线的 ADX：和 LastClosedAdx 一起看，趋势强度是在增强还是在衰减。
+    public double PreviousClosedAdx => ReadAt(_dms.ADX, LastClosedBarIndex - 1);
 
-    public double LastClosedDiMinus => ReadLastClosed(_dms.DIMinus);
+    public double LastClosedDiPlus => ReadAt(_dms.DIPlus, LastClosedBarIndex);
+
+    public double LastClosedDiMinus => ReadAt(_dms.DIMinus, LastClosedBarIndex);
 
     // ADX 要经过两轮 Wilder 平滑才成形，暖机期读到的是 NaN；一律返回 NaN，由调用方留空。
-    private double ReadLastClosed(IndicatorDataSeries series) {
-        int barIndex = LastClosedBarIndex;
-
+    private double ReadAt(IndicatorDataSeries series, int barIndex) {
         if (barIndex < Period * 2 || barIndex >= _bars.Count)
             return double.NaN;
 

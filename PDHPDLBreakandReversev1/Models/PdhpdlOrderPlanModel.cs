@@ -31,6 +31,7 @@ public class PdhpdlOrderPlanModel {
     public double AtrRatioH1 { get; set; } = double.NaN;
     public double PdRangeAtr { get; set; } = double.NaN;
     public double Adx14H1 { get; set; } = double.NaN;
+    public double Adx14H1Previous { get; set; } = double.NaN;
     public double DiPlus14H1 { get; set; } = double.NaN;
     public double DiMinus14H1 { get; set; } = double.NaN;
 

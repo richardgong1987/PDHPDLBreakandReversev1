@@ -201,6 +201,7 @@ public class PDHPDLBreakandReversev1 : Robot {
         signalModel.AtrRatioH1 = _atrH1.LastClosedRatio;
         signalModel.PdRangeAtr = CalculatePdRangeAtr(signalModel);
         signalModel.Adx14H1 = _dmsH1.LastClosedAdx;
+        signalModel.Adx14H1Previous = _dmsH1.PreviousClosedAdx;
         signalModel.DiPlus14H1 = _dmsH1.LastClosedDiPlus;
         signalModel.DiMinus14H1 = _dmsH1.LastClosedDiMinus;
     }
