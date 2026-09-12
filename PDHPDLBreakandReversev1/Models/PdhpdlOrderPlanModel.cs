@@ -34,6 +34,7 @@ public class PdhpdlOrderPlanModel {
     public double Adx14H1Previous { get; set; } = double.NaN;
     public double DiPlus14H1 { get; set; } = double.NaN;
     public double DiMinus14H1 { get; set; } = double.NaN;
+    public double GapExpansionX { get; set; } = double.NaN;
 
     // 产生该计划的那根收盘 K 线。挂单用它计时：过了 N 根 K 线还没成交就撤单。
     public int SignalBarIndex { get; set; }

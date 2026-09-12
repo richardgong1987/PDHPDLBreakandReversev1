@@ -7,7 +7,7 @@ namespace Pdhpdl.Tests.OrderLogger {
     // column removal (strip column index 1), and the market-state columns appended since — these
     // only ever grew at the end, so an old row just needs the missing fields as empties.
     public class PdhpdlTradeCsvMigratorTests {
-        private const int CurrentColumnCount = 28;
+        private const int CurrentColumnCount = 29;
 
         // 移除 "多空" 之前本 cBot 输出的表头（23 列，Side 位于索引 1）。
         private const string PreviousHeaderWithSide =
@@ -19,16 +19,18 @@ namespace Pdhpdl.Tests.OrderLogger {
             "编号,关键位,信号,回撤开仓模式,备注,交易品种,时间周期,入场时间,入场价格,平仓价格,止损价格,止盈价格,风险价格距离,下单数量,平仓原因,开仓账户权益,平仓账户权益,平仓盈亏,平仓时间,挂单ID,持仓ID,成交ID";
         private const string HeaderBeforeDmsState = HeaderBeforeAtrState + ",ATR_Ratio_H1,PD_Range_ATR";
         private const string HeaderBeforeAdxPreviousState = HeaderBeforeDmsState + ",ADX14_H1,DI+14_H1,DI-14_H1";
-        private const string CurrentHeader = HeaderBeforeAdxPreviousState + ",ADX14_H1_Previous";
+        private const string HeaderBeforeGapX = HeaderBeforeAdxPreviousState + ",ADX14_H1_Previous";
+        private const string CurrentHeader = HeaderBeforeGapX + ",GapX";
 
         private const string CurrentRow =
-            "1001,PDL,false-breakout,收线入场,ENTRY,XAUUSD,m5,2026-01-01 00:00:00,2000,,1990,2020,10,1,,10000,,0,,,1001,5001,1.2345,0.87,28.4,31.2,12.9,26.1";
+            "1001,PDL,false-breakout,收线入场,ENTRY,XAUUSD,m5,2026-01-01 00:00:00,2000,,1990,2020,10,1,,10000,,0,,,1001,5001,1.2345,0.87,28.4,31.2,12.9,26.1,-0.32";
 
         // 每个曾经的表头配它当时的列数。24 列的布局与一个更早的历史布局列数相同，靠表头区分。
         [Theory]
         [InlineData(HeaderBeforeAtrState, 22)]
         [InlineData(HeaderBeforeDmsState, 24)]
         [InlineData(HeaderBeforeAdxPreviousState, 27)]
+        [InlineData(HeaderBeforeGapX, 28)]
         public void pads_the_columns_appended_after_a_row_was_written(string previousHeader, int previousColumnCount) {
             string previousRow = string.Join(",", CurrentRow.Split(',').Take(previousColumnCount));
             string[] lines = { previousHeader, previousRow };
@@ -47,7 +49,7 @@ namespace Pdhpdl.Tests.OrderLogger {
             string[] upgraded = PdhpdlTradeCsvMigrator.Upgrade(lines, CurrentHeader);
 
             string expectedRow =
-                "1001,PDL,false-breakout,收线入场,ENTRY,XAUUSD,m5,2026-01-01 00:00:00,2000,,1990,2020,10,1,,10000,,0,,,1001,5001,,,,,,";
+                "1001,PDL,false-breakout,收线入场,ENTRY,XAUUSD,m5,2026-01-01 00:00:00,2000,,1990,2020,10,1,,10000,,0,,,1001,5001,,,,,,,";
             Assert.Equal(CurrentHeader, upgraded[0]);
             Assert.Equal(expectedRow, upgraded[1]);
             Assert.Equal(CurrentColumnCount, upgraded[1].Split(',').Length);

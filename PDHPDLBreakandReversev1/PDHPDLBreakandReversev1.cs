@@ -74,6 +74,11 @@ public class PDHPDLBreakandReversev1 : Robot {
     public int ZigZagLength { get; set; }
 
 
+    // GapX 的回看长度，单位是「均线来源周期的 K 线」。搬自 MovingAverageV1 的开口扩大闸门：
+    // 它的参数按 15 分钟 K 线计数（默认 12 根 = 180 分钟），换算到它 60 分钟的均线周期正好是 3 根。
+    // 这里不做成参数——GapX 只写进 CSV 供分析，不参与任何判断。
+    private const int GapExpansionLookbackBars = 3;
+
     private PdhpdlLines _pdhpdlLines;
     private MarketStructure _marketStructure;
     private DualRmaSeries _rmaSeries;
@@ -88,6 +93,9 @@ public class PDHPDLBreakandReversev1 : Robot {
     private Atr14Series _atrH1;
     private Atr14Series _atrDaily;
     private Dms14Series _dmsH1;
+
+    // 均线来源周期上的 ATR，只服务 GapX。它和图表周期的 ATR 周期不同，不能共用一个实例。
+    private Atr14Series _rmaSourceAtr14;
     private DateTime _optimisationWindowStart;
 
     protected override void OnStart() {
@@ -102,6 +110,7 @@ public class PDHPDLBreakandReversev1 : Robot {
         _atrH1 = new Atr14Series(Indicators, hourBars);
         _atrDaily = new Atr14Series(Indicators, dailyBars);
         _dmsH1 = new Dms14Series(Indicators, hourBars);
+        _rmaSourceAtr14 = new Atr14Series(Indicators, _rmaSeries.SourceBars);
         var entryGate = new PivotEntryGate();
         var lossCounter = new ConsecutiveLossCounter(Nlock);
         _signalDetector = new PdhpdlSignalDetector(Bars, dailyBars, _rmaSeries, _marketStructure, entryGate, lossCounter);
@@ -204,6 +213,26 @@ public class PDHPDLBreakandReversev1 : Robot {
         signalModel.Adx14H1Previous = _dmsH1.PreviousClosedAdx;
         signalModel.DiPlus14H1 = _dmsH1.LastClosedDiPlus;
         signalModel.DiMinus14H1 = _dmsH1.LastClosedDiMinus;
+        signalModel.GapExpansionX = CalculateGapExpansionX(signalModel);
+    }
+
+    // 开口扩大 X，搬自 MovingAverageV1 的开口扩大闸门：
+    // (现在的快慢线开口 - GapExpansionLookbackBars 根之前的开口) / 均线来源周期的 ATR14。
+    // 多头视角（快 - 慢），开口收窄时为负；空头看的是它的相反数。
+    // ATR 必须取均线来源周期上的同一根已收 K 线：用图表周期的 ATR 去除高周期均线的间距，
+    // 分子分母量纲不同，算出来的倍数没有意义。
+    private double CalculateGapExpansionX(PdhpdlSignalModel signalModel) {
+        if (!signalModel.HasRmaData)
+            return double.NaN;
+
+        if (!_rmaSourceAtr14.TryGetValue(_rmaSeries.ConfirmedIndex, out double atr))
+            return double.NaN;
+
+        if (!_rmaSeries.TryGetGap(GapExpansionLookbackBars, out double pastGap))
+            return double.NaN;
+
+        double currentGap = signalModel.FastRma - signalModel.SlowRma;
+        return (currentGap - pastGap) / atr;
     }
 
     // 日线 ATR 取的是与 PDH/PDL 同一根 K 线（上一根收盘日线），两者口径才对得上。

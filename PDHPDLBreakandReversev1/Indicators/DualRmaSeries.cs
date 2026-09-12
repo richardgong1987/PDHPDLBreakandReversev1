@@ -28,12 +28,33 @@ public class DualRmaSeries {
 
     public IndicatorDataSeries SlowValues => _slowMa.Result;
 
+    // 均线来源周期上最后一根已收盘的 K 线。
+    public int ConfirmedIndex => SourceBars.Count - 2;
+
+    // 往前 barsAgo 根已收 K 线时的快慢线开口（快 - 慢）。barsAgo = 0 就是当前那根。
+    public bool TryGetGap(int barsAgo, out double gap) {
+        gap = double.NaN;
+        int barIndex = ConfirmedIndex - barsAgo;
+
+        if (barIndex < 0)
+            return false;
+
+        double fastRma = FastValues[barIndex];
+        double slowRma = SlowValues[barIndex];
+
+        if (double.IsNaN(fastRma) || double.IsInfinity(fastRma) || double.IsNaN(slowRma) || double.IsInfinity(slowRma))
+            return false;
+
+        gap = fastRma - slowRma;
+        return true;
+    }
+
     public bool TryGetLastConfirmedValues(out DateTime sourceBarTime, out double fastRma, out double slowRma) {
         sourceBarTime = DateTime.MinValue;
         fastRma = double.NaN;
         slowRma = double.NaN;
 
-        int confirmedIndex = SourceBars.Count - 2;
+        int confirmedIndex = ConfirmedIndex;
         if (confirmedIndex < 0)
             return false;
 

@@ -61,6 +61,9 @@ public class PdhpdlSignalModel {
 
     // 再往前一根已收盘 H1 的 ADX(14)，用来看趋势强度的变化方向。
     public double Adx14H1Previous { get; set; } = double.NaN;
+
+    // 开口扩大 X（GapX）：快慢线开口这段时间扩大了几个 ATR。多头视角，收窄为负。只用于记录。
+    public double GapExpansionX { get; set; } = double.NaN;
     public double DiPlus14H1 { get; set; } = double.NaN;
     public double DiMinus14H1 { get; set; } = double.NaN;
 }
