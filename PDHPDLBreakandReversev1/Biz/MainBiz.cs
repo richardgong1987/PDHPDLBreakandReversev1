@@ -20,6 +20,9 @@ public class MainBiz {
         if (!signalModel.HasRmaData)
             return false;
 
+        if (!IsGapExpanding(signalModel, SignalSideModel.Sell))
+            return false;
+
 
         RmaPositionModel rmaPosition = RmaUtils.GetFastToSlowPosition(signalModel.FastRma, signalModel.SlowRma);
 
@@ -52,6 +55,11 @@ public class MainBiz {
         return entryGate.IsAllowed(PdhpdlTradeDirectionModel.Short, signalModel.LatestPivot, signalModel.PivotCount);
     }
 
+    // 闸门读的是 3 根窗口那一列；1 根窗口那一列只写进 CSV 供对比，不参与判断。
+    private static bool IsGapExpanding(PdhpdlSignalModel signalModel, SignalSideModel side) {
+        return GapXGate.IsExpanding(signalModel.UseGapX, signalModel.GapExpansionX3Bar, signalModel.GapXThreshold, side);
+    }
+
     private static bool MatchesShortPattern(PdhpdlSignalModel signalModel, HanJinSignalScanModel scanResult, CandleModel current,
         CandleModel previous, CandleModel earlier) {
         if (ShortPinBar(signalModel, scanResult, current)) {
@@ -80,6 +88,9 @@ public class MainBiz {
         }
 
         if (!signalModel.HasRmaData)
+            return false;
+
+        if (!IsGapExpanding(signalModel, SignalSideModel.Buy))
             return false;
 
         RmaPositionModel rmaPosition = RmaUtils.GetFastToSlowPosition(signalModel.FastRma, signalModel.SlowRma);

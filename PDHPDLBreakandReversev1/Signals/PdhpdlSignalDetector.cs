@@ -10,17 +10,19 @@ public class PdhpdlSignalDetector {
     private readonly MarketStructure _marketStructure;
     private readonly PivotEntryGate _entryGate;
     private readonly ConsecutiveLossCounter _lossCounter;
+    private readonly GapXSeries _gapXSeries;
 
     private DateTime _levelsDayOpenTime = DateTime.MinValue;
 
     public PdhpdlSignalDetector(Bars chartBars, Bars dailyBars, DualRmaSeries rmaSeries, MarketStructure marketStructure,
-        PivotEntryGate entryGate, ConsecutiveLossCounter lossCounter) {
+        PivotEntryGate entryGate, ConsecutiveLossCounter lossCounter, GapXSeries gapXSeries) {
         _chartBars = chartBars;
         _dailyBars = dailyBars;
         _rmaSeries = rmaSeries;
         _marketStructure = marketStructure;
         _entryGate = entryGate;
         _lossCounter = lossCounter;
+        _gapXSeries = gapXSeries;
     }
 
     public PdhpdlSignalModel DetectOnClosedBar(StrategyModel strategy, BuyOrSellOnlyModel buyOrSellOnly) {
@@ -54,6 +56,9 @@ public class PdhpdlSignalDetector {
         signalModel.PivotCount = _marketStructure.PivotCount;
 
         FillRmaData(signalModel);
+
+        // GapX 是进场条件之一，必须在 Evaluate 之前就位。
+        _gapXSeries.Fill(signalModel);
 
         MainBiz.Evaluate(signalModel, current, previous, earlier, _entryGate, _lossCounter);
 

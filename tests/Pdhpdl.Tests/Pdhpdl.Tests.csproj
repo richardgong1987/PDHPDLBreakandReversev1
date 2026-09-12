@@ -25,6 +25,7 @@
     <Compile Include="..\..\PDHPDLBreakandReversev1\Biz\MainBiz.cs" Link="Biz\MainBiz.cs" />
     <Compile Include="..\..\PDHPDLBreakandReversev1\Biz\PivotEntryGate.cs" Link="Biz\PivotEntryGate.cs" />
     <Compile Include="..\..\PDHPDLBreakandReversev1\Biz\ConsecutiveLossCounter.cs" Link="Biz\ConsecutiveLossCounter.cs" />
+    <Compile Include="..\..\PDHPDLBreakandReversev1\Biz\GapXGate.cs" Link="Biz\GapXGate.cs" />
   </ItemGroup>
 
   <ItemGroup Label="OrderLogger under test">

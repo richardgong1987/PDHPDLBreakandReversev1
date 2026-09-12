@@ -66,6 +66,10 @@ public class PdhpdlSignalModel {
     // 两个窗口一起记，事后比哪个窗口对胜率更有分辨力（单位是均线来源周期的 K 线根数）。
     public double GapExpansionX3Bar { get; set; } = double.NaN;
     public double GapExpansionX1Bar { get; set; } = double.NaN;
+
+    // 开口扩大闸门的设置，随信号一起传给 MainBiz（见 GapXGate）。
+    public bool UseGapX { get; set; }
+    public double GapXThreshold { get; set; }
     public double DiPlus14H1 { get; set; } = double.NaN;
     public double DiMinus14H1 { get; set; } = double.NaN;
 }

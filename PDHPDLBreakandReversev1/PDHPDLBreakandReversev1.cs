@@ -69,17 +69,19 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("均线周期(分钟)", DefaultValue = 120, MinValue = 1, Group = "均线")]
     public TimeFrameSelectModel MaTimeFrameMinutes { get; set; }
 
+    // 开口扩大闸门：趋势均线的开口要「还在继续拉开」才放行（见 GapXGate）。
+    // 关闭时交易逻辑与加这个开关之前完全一致；GapX 无论开关与否都照常写进 CSV。
+    [Parameter("启用开口扩大闸门 GapX", DefaultValue = false, Group = "均线")]
+    public bool UseGapX { get; set; }
+
+    // 阈值只取 0 以上：GapX 本身可正可负，但要求开口继续收窄不是这道闸门的用途。
+    [Parameter("开口扩大阈值 GapX (ATR倍数)", DefaultValue = 0.10, MinValue = 0.0, Step = 0.05, Group = "均线")]
+    public double GapXThreshold { get; set; }
+
     // ZigZag 突破窗口：越大结构点越少、确认越慢，结构点令牌闸门也就越紧（见 PivotEntryGate）。
     [Parameter("ZigZag 长度", DefaultValue = 16, MinValue = 1, Group = "市场结构")]
     public int ZigZagLength { get; set; }
 
-
-    // GapX 的两个回看长度，单位都是「均线来源周期的 K 线」。搬自 MovingAverageV1 的开口扩大闸门。
-    // 3 根：V1 的参数按 15 分钟 K 线计数（默认 12 根 = 180 分钟），换算到它 60 分钟的均线周期正好是 3 根。
-    // 1 根：V1 那 180 分钟的挂钟长度换算到更高的均线周期（H3）只够 1 根，窗口更短、也更噪。
-    // 哪个窗口更有分辨力要用回测数据说话，所以两个都记。都不做成参数——只写进 CSV，不参与任何判断。
-    private const int GapExpansionLookbackBars = 3;
-    private const int ShortGapExpansionLookbackBars = 1;
 
     private PdhpdlLines _pdhpdlLines;
     private MarketStructure _marketStructure;
@@ -95,9 +97,6 @@ public class PDHPDLBreakandReversev1 : Robot {
     private Atr14Series _atrH1;
     private Atr14Series _atrDaily;
     private Dms14Series _dmsH1;
-
-    // 均线来源周期上的 ATR，只服务 GapX。它和图表周期的 ATR 周期不同，不能共用一个实例。
-    private Atr14Series _rmaSourceAtr14;
     private DateTime _optimisationWindowStart;
 
     protected override void OnStart() {
@@ -112,10 +111,12 @@ public class PDHPDLBreakandReversev1 : Robot {
         _atrH1 = new Atr14Series(Indicators, hourBars);
         _atrDaily = new Atr14Series(Indicators, dailyBars);
         _dmsH1 = new Dms14Series(Indicators, hourBars);
-        _rmaSourceAtr14 = new Atr14Series(Indicators, _rmaSeries.SourceBars);
         var entryGate = new PivotEntryGate();
         var lossCounter = new ConsecutiveLossCounter(Nlock);
-        _signalDetector = new PdhpdlSignalDetector(Bars, dailyBars, _rmaSeries, _marketStructure, entryGate, lossCounter);
+
+        // 快慢线与 ATR 同取趋势均线的那个 HTF 周期：GapXSeries 自己从 _rmaSeries.SourceBars 建 ATR。
+        var gapXSeries = new GapXSeries(Indicators, _rmaSeries, BuildGapXConfig());
+        _signalDetector = new PdhpdlSignalDetector(Bars, dailyBars, _rmaSeries, _marketStructure, entryGate, lossCounter, gapXSeries);
         _signalMarkers = new PdhpdlSignalMarkers(Chart, Symbol.TickSize);
 
         _csvLogger = new PdhpdlTradeCsvLogger(ResetTradeLogOnStart, ResolveReportsDirectory(), FileName);
@@ -170,6 +171,11 @@ public class PDHPDLBreakandReversev1 : Robot {
         return Account.IsLive ? "release_trading_reports" : "simulate_trading_reports";
     }
 
+    // 负阈值在这里就夹成 0：参数面板的 MinValue 管得住手输，管不住旧的参数集或优化器配置。
+    private PdhpdlGapXConfigModel BuildGapXConfig() {
+        return new PdhpdlGapXConfigModel { IsEnabled = UseGapX, Threshold = Math.Max(0.0, GapXThreshold) };
+    }
+
     private PdhpdlRiskGuardConfigModel BuildRiskGuardConfig() {
         return new PdhpdlRiskGuardConfigModel {
             RiskSafetyFactor = RiskSafetyFactor,
@@ -215,27 +221,6 @@ public class PDHPDLBreakandReversev1 : Robot {
         signalModel.Adx14H1Previous = _dmsH1.PreviousClosedAdx;
         signalModel.DiPlus14H1 = _dmsH1.LastClosedDiPlus;
         signalModel.DiMinus14H1 = _dmsH1.LastClosedDiMinus;
-        signalModel.GapExpansionX3Bar = CalculateGapExpansionX(signalModel, GapExpansionLookbackBars);
-        signalModel.GapExpansionX1Bar = CalculateGapExpansionX(signalModel, ShortGapExpansionLookbackBars);
-    }
-
-    // 开口扩大 X，搬自 MovingAverageV1 的开口扩大闸门：
-    // (现在的快慢线开口 - lookbackBars 根之前的开口) / 均线来源周期的 ATR14。
-    // 多头视角（快 - 慢），开口收窄时为负；空头看的是它的相反数。
-    // ATR 必须取均线来源周期上的同一根已收 K 线：用图表周期的 ATR 去除高周期均线的间距，
-    // 分子分母量纲不同，算出来的倍数没有意义。
-    private double CalculateGapExpansionX(PdhpdlSignalModel signalModel, int lookbackBars) {
-        if (!signalModel.HasRmaData)
-            return double.NaN;
-
-        if (!_rmaSourceAtr14.TryGetValue(_rmaSeries.ConfirmedIndex, out double atr))
-            return double.NaN;
-
-        if (!_rmaSeries.TryGetGap(lookbackBars, out double pastGap))
-            return double.NaN;
-
-        double currentGap = signalModel.FastRma - signalModel.SlowRma;
-        return (currentGap - pastGap) / atr;
     }
 
     // 日线 ATR 取的是与 PDH/PDL 同一根 K 线（上一根收盘日线），两者口径才对得上。
