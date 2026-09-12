@@ -8,7 +8,9 @@ namespace cAlgo.Robots;
 // history of older layouts (fewer columns, equity columns in different positions, per-pullback
 // entry-mode columns) and rewrites old rows in place. Pure string work, no cAlgo dependency.
 public static class PdhpdlTradeCsvMigrator {
-    private const int CurrentColumnCount = 29;
+    private const int CurrentColumnCount = 30;
+    // GapX_1Bar 一列加入之前的 schema（那时 GapX_3Bar 还叫 GapX，位置没变，只需补列）。
+    private const int ColumnCountBeforeShortGapX = 29;
     // GapX 一列加入之前的 schema。
     private const int ColumnCountBeforeGapX = 28;
     // ADX14_H1_Previous 一列加入之前的 schema。
@@ -76,7 +78,7 @@ public static class PdhpdlTradeCsvMigrator {
             // 只在末尾追加过列的两个近期 schema：补空列即可，列序没有变过。
             // 24 列同时也是更早的 OldColumnCountBeforeSingleTakeProfit 布局，所以要看表头。
             if (columns.Length == ColumnCountBeforeAtrState || columns.Length == ColumnCountBeforeAdxPreviousState ||
-                columns.Length == ColumnCountBeforeGapX ||
+                columns.Length == ColumnCountBeforeGapX || columns.Length == ColumnCountBeforeShortGapX ||
                 (columns.Length == ColumnCountBeforeDmsState && isHeaderBeforeDmsState)) {
                 lines[i] = string.Join(",", AppendEmptyColumns(columns, CurrentColumnCount));
                 continue;

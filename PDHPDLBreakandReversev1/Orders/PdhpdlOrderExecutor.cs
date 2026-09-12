@@ -94,7 +94,8 @@ public class PdhpdlOrderExecutor {
         planModel.Adx14H1Previous = signalModel.Adx14H1Previous;
         planModel.DiPlus14H1 = signalModel.DiPlus14H1;
         planModel.DiMinus14H1 = signalModel.DiMinus14H1;
-        planModel.GapExpansionX = signalModel.GapExpansionX;
+        planModel.GapExpansionX3Bar = signalModel.GapExpansionX3Bar;
+        planModel.GapExpansionX1Bar = signalModel.GapExpansionX1Bar;
 
         // 快照必须在下单之前放好：市价单的 Positions.Opened 可能在 SubmitOrder 里就回调了。
         _pendingGateSnapshotsByLabel[planModel.Label] = new EntryGateSnapshot(planModel.DirectionModel, signalModel.PivotCount);

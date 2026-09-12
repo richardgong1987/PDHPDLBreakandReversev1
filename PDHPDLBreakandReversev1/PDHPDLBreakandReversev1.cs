@@ -74,10 +74,12 @@ public class PDHPDLBreakandReversev1 : Robot {
     public int ZigZagLength { get; set; }
 
 
-    // GapX 的回看长度，单位是「均线来源周期的 K 线」。搬自 MovingAverageV1 的开口扩大闸门：
-    // 它的参数按 15 分钟 K 线计数（默认 12 根 = 180 分钟），换算到它 60 分钟的均线周期正好是 3 根。
-    // 这里不做成参数——GapX 只写进 CSV 供分析，不参与任何判断。
+    // GapX 的两个回看长度，单位都是「均线来源周期的 K 线」。搬自 MovingAverageV1 的开口扩大闸门。
+    // 3 根：V1 的参数按 15 分钟 K 线计数（默认 12 根 = 180 分钟），换算到它 60 分钟的均线周期正好是 3 根。
+    // 1 根：V1 那 180 分钟的挂钟长度换算到更高的均线周期（H3）只够 1 根，窗口更短、也更噪。
+    // 哪个窗口更有分辨力要用回测数据说话，所以两个都记。都不做成参数——只写进 CSV，不参与任何判断。
     private const int GapExpansionLookbackBars = 3;
+    private const int ShortGapExpansionLookbackBars = 1;
 
     private PdhpdlLines _pdhpdlLines;
     private MarketStructure _marketStructure;
@@ -213,22 +215,23 @@ public class PDHPDLBreakandReversev1 : Robot {
         signalModel.Adx14H1Previous = _dmsH1.PreviousClosedAdx;
         signalModel.DiPlus14H1 = _dmsH1.LastClosedDiPlus;
         signalModel.DiMinus14H1 = _dmsH1.LastClosedDiMinus;
-        signalModel.GapExpansionX = CalculateGapExpansionX(signalModel);
+        signalModel.GapExpansionX3Bar = CalculateGapExpansionX(signalModel, GapExpansionLookbackBars);
+        signalModel.GapExpansionX1Bar = CalculateGapExpansionX(signalModel, ShortGapExpansionLookbackBars);
     }
 
     // 开口扩大 X，搬自 MovingAverageV1 的开口扩大闸门：
-    // (现在的快慢线开口 - GapExpansionLookbackBars 根之前的开口) / 均线来源周期的 ATR14。
+    // (现在的快慢线开口 - lookbackBars 根之前的开口) / 均线来源周期的 ATR14。
     // 多头视角（快 - 慢），开口收窄时为负；空头看的是它的相反数。
     // ATR 必须取均线来源周期上的同一根已收 K 线：用图表周期的 ATR 去除高周期均线的间距，
     // 分子分母量纲不同，算出来的倍数没有意义。
-    private double CalculateGapExpansionX(PdhpdlSignalModel signalModel) {
+    private double CalculateGapExpansionX(PdhpdlSignalModel signalModel, int lookbackBars) {
         if (!signalModel.HasRmaData)
             return double.NaN;
 
         if (!_rmaSourceAtr14.TryGetValue(_rmaSeries.ConfirmedIndex, out double atr))
             return double.NaN;
 
-        if (!_rmaSeries.TryGetGap(GapExpansionLookbackBars, out double pastGap))
+        if (!_rmaSeries.TryGetGap(lookbackBars, out double pastGap))
             return double.NaN;
 
         double currentGap = signalModel.FastRma - signalModel.SlowRma;

@@ -59,6 +59,7 @@ public class PdhpdlTradeCsvRecordModel {
     public double DiPlus14H1 { get; set; } = double.NaN;
     public double DiMinus14H1 { get; set; } = double.NaN;
 
-    // 开口扩大 X：(现在的快慢线开口 - 回看若干根之前的开口) / 均线周期 ATR(14)
-    public double GapExpansionX { get; set; } = double.NaN;
+    // 开口扩大 X：(现在的快慢线开口 - 回看 N 根之前的开口) / 均线周期 ATR(14)。N = 3 根 / 1 根两种窗口。
+    public double GapExpansionX3Bar { get; set; } = double.NaN;
+    public double GapExpansionX1Bar { get; set; } = double.NaN;
 }
