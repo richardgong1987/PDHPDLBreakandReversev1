@@ -8,8 +8,10 @@ namespace cAlgo.Robots;
 // history of older layouts (fewer columns, equity columns in different positions, per-pullback
 // entry-mode columns) and rewrites old rows in place. Pure string work, no cAlgo dependency.
 public static class PdhpdlTradeCsvMigrator {
-    private const int CurrentColumnCount = 24;
-    // ATR_Ratio_H1 / PD_Range_ATR 两列加入之前的 schema：旧行在末尾补两个空列即可。
+    private const int CurrentColumnCount = 27;
+    // ADX14_H1 / DI+14_H1 / DI-14_H1 三列加入之前的 schema。
+    private const int ColumnCountBeforeDmsState = 24;
+    // ATR_Ratio_H1 / PD_Range_ATR 两列加入之前的 schema。这两种旧行都只需在末尾补空列。
     private const int ColumnCountBeforeAtrState = 22;
     // "多空"(Side) 列移除之前的旧 schema：所有历史布局的第 1 列（索引 SideColumnIndex）都是 Side。
     private const int ColumnCountWithSide = 23;
@@ -24,6 +26,11 @@ public static class PdhpdlTradeCsvMigrator {
     private const string PreviousHeaderWithSide =
         "编号,多空,关键位,信号,回撤开仓模式,备注,交易品种,时间周期,入场时间,入场价格,平仓价格,止损价格,止盈价格,风险价格距离,下单数量,平仓原因,开仓账户权益,平仓账户权益,平仓盈亏,平仓时间,挂单ID,持仓ID,成交ID";
 
+    // 加入 DMI 三列之前的表头（24 列）。它的列数与更早的 OldColumnCountBeforeSingleTakeProfit 相同，
+    // 只能靠表头把两者区分开。
+    private const string PreviousHeaderBeforeDmsState =
+        "编号,关键位,信号,回撤开仓模式,备注,交易品种,时间周期,入场时间,入场价格,平仓价格,止损价格,止盈价格,风险价格距离,下单数量,平仓原因,开仓账户权益,平仓账户权益,平仓盈亏,平仓时间,挂单ID,持仓ID,成交ID,ATR_Ratio_H1,PD_Range_ATR";
+
     // Returns the upgraded lines (header replaced, old rows rewritten), or null when the file is
     // already on the current schema and needs no rewrite.
     public static string[] Upgrade(string[] lines, string currentHeader) {
@@ -33,7 +40,7 @@ public static class PdhpdlTradeCsvMigrator {
             return null;
 
         bool isPreviousWithSideHeader = lines[0] == PreviousHeaderWithSide;
-        MigrateRows(lines, isPreviousWithSideHeader, hasCurrentHeader);
+        MigrateRows(lines, isPreviousWithSideHeader, lines[0] == PreviousHeaderBeforeDmsState);
         lines[0] = currentHeader;
         return lines;
     }
@@ -52,19 +59,20 @@ public static class PdhpdlTradeCsvMigrator {
         return false;
     }
 
-    private static void MigrateRows(string[] lines, bool isPreviousWithSideHeader, bool hasCurrentHeader) {
+    private static void MigrateRows(string[] lines, bool isPreviousWithSideHeader, bool isHeaderBeforeDmsState) {
         for (int i = 1; i < lines.Length; i++) {
             if (string.IsNullOrWhiteSpace(lines[i]))
                 continue;
 
             string[] columns = lines[i].Split(',');
 
-            // 当前 schema 的列数与更早的 OldColumnCountBeforeSingleTakeProfit 撞在同一个数字上，
-            // 靠表头区分：表头已是当前表头，这样的行就是当前布局，否则按旧布局迁移。
-            if (columns.Length == CurrentColumnCount && hasCurrentHeader)
+            if (columns.Length == CurrentColumnCount)
                 continue;
 
-            if (columns.Length == ColumnCountBeforeAtrState) {
+            // 只在末尾追加过列的两个近期 schema：补空列即可，列序没有变过。
+            // 24 列同时也是更早的 OldColumnCountBeforeSingleTakeProfit 布局，所以要看表头。
+            if (columns.Length == ColumnCountBeforeAtrState ||
+                (columns.Length == ColumnCountBeforeDmsState && isHeaderBeforeDmsState)) {
                 lines[i] = string.Join(",", AppendEmptyColumns(columns, CurrentColumnCount));
                 continue;
             }

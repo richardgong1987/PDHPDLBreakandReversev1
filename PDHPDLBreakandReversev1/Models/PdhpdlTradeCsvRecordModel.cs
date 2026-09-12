@@ -52,4 +52,9 @@ public class PdhpdlTradeCsvRecordModel {
 
     // (PDH - PDL) / 日线 ATR(14)
     public double PdRangeAtr { get; set; } = double.NaN;
+
+    // H1 DMI(14)
+    public double Adx14H1 { get; set; } = double.NaN;
+    public double DiPlus14H1 { get; set; } = double.NaN;
+    public double DiMinus14H1 { get; set; } = double.NaN;
 }

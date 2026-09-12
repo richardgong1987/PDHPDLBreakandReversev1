@@ -27,9 +27,12 @@ public class PdhpdlOrderPlanModel {
     public string KeyLevel { get; set; } = "";
     public string SignalName { get; set; } = "";
 
-    // 下单那一刻的市场波动状态，原样来自信号（见 PdhpdlSignalModel），只为写进 CSV。
+    // 下单那一刻的市场波动与趋势状态，原样来自信号（见 PdhpdlSignalModel），只为写进 CSV。
     public double AtrRatioH1 { get; set; } = double.NaN;
     public double PdRangeAtr { get; set; } = double.NaN;
+    public double Adx14H1 { get; set; } = double.NaN;
+    public double DiPlus14H1 { get; set; } = double.NaN;
+    public double DiMinus14H1 { get; set; } = double.NaN;
 
     // 产生该计划的那根收盘 K 线。挂单用它计时：过了 N 根 K 线还没成交就撤单。
     public int SignalBarIndex { get; set; }

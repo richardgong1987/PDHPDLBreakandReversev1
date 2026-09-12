@@ -2,9 +2,9 @@ using cAlgo.Robots;
 using Xunit;
 
 namespace Pdhpdl.Tests.OrderLogger {
-    // Locks in the two schema changes the migrator still has to undo for old files: the
-    // "多空"(Side) column removal (strip column index 1) and the ATR_Ratio_H1 / PD_Range_ATR
-    // columns added at the end (pad with empties).
+    // Locks in the schema changes the migrator still has to undo for old files: the
+    // "多空"(Side) column removal (strip column index 1), and the market-state columns appended
+    // since — ATR_Ratio_H1 / PD_Range_ATR, then the DMI trio (pad with empties).
     public class PdhpdlTradeCsvMigratorTests {
         // 移除 "多空" 之前本 cBot 输出的表头（23 列，Side 位于索引 1）。
         private const string PreviousHeaderWithSide =
@@ -14,8 +14,11 @@ namespace Pdhpdl.Tests.OrderLogger {
         private const string PreviousHeaderBeforeAtrState =
             "编号,关键位,信号,回撤开仓模式,备注,交易品种,时间周期,入场时间,入场价格,平仓价格,止损价格,止盈价格,风险价格距离,下单数量,平仓原因,开仓账户权益,平仓账户权益,平仓盈亏,平仓时间,挂单ID,持仓ID,成交ID";
 
-        // 当前表头（24 列）。与 PdhpdlTradeCsvLogger.BuildHeader 保持一致。
-        private const string CurrentHeader = PreviousHeaderBeforeAtrState + ",ATR_Ratio_H1,PD_Range_ATR";
+        // 加入 DMI 三列之前的表头（24 列）。
+        private const string PreviousHeaderBeforeDmsState = PreviousHeaderBeforeAtrState + ",ATR_Ratio_H1,PD_Range_ATR";
+
+        // 当前表头（27 列）。与 PdhpdlTradeCsvLogger.BuildHeader 保持一致。
+        private const string CurrentHeader = PreviousHeaderBeforeDmsState + ",ADX14_H1,DI+14_H1,DI-14_H1";
 
         [Fact]
         public void strips_side_column_when_upgrading_previous_with_side_file() {
@@ -24,10 +27,10 @@ namespace Pdhpdl.Tests.OrderLogger {
 
             string[] upgraded = PdhpdlTradeCsvMigrator.Upgrade(lines, CurrentHeader);
 
-            string expectedRow = "1001,PDL,false-breakout,收线入场,ENTRY,XAUUSD,m5,2026-01-01 00:00:00,2000,,1990,2020,10,1,,10000,,0,,,1001,5001,,";
+            string expectedRow = "1001,PDL,false-breakout,收线入场,ENTRY,XAUUSD,m5,2026-01-01 00:00:00,2000,,1990,2020,10,1,,10000,,0,,,1001,5001,,,,,";
             Assert.Equal(CurrentHeader, upgraded[0]);
             Assert.Equal(expectedRow, upgraded[1]);
-            Assert.Equal(24, upgraded[1].Split(',').Length);
+            Assert.Equal(27, upgraded[1].Split(',').Length);
         }
 
         [Fact]
@@ -38,12 +41,26 @@ namespace Pdhpdl.Tests.OrderLogger {
             string[] upgraded = PdhpdlTradeCsvMigrator.Upgrade(lines, CurrentHeader);
 
             Assert.Equal(CurrentHeader, upgraded[0]);
-            Assert.Equal(rowBeforeAtrState + ",,", upgraded[1]);
+            Assert.Equal(rowBeforeAtrState + ",,,,,", upgraded[1]);
+        }
+
+        // 24 列既是 "加入 DMI 之前" 的布局，也是一个更早的历史布局；表头决定按哪种处理。
+        [Fact]
+        public void pads_dms_columns_when_upgrading_file_written_before_them() {
+            string rowBeforeDmsState =
+                "1001,PDL,false-breakout,收线入场,ENTRY,XAUUSD,m5,2026-01-01 00:00:00,2000,,1990,2020,10,1,,10000,,0,,,1001,5001,1.2345,0.87";
+            string[] lines = { PreviousHeaderBeforeDmsState, rowBeforeDmsState };
+
+            string[] upgraded = PdhpdlTradeCsvMigrator.Upgrade(lines, CurrentHeader);
+
+            Assert.Equal(CurrentHeader, upgraded[0]);
+            Assert.Equal(rowBeforeDmsState + ",,,", upgraded[1]);
         }
 
         [Fact]
         public void returns_null_when_file_is_already_on_current_schema() {
-            string currentRow = "1001,PDL,false-breakout,收线入场,ENTRY,XAUUSD,m5,2026-01-01 00:00:00,2000,,1990,2020,10,1,,10000,,0,,,1001,5001,1.2345,0.87";
+            string currentRow =
+                "1001,PDL,false-breakout,收线入场,ENTRY,XAUUSD,m5,2026-01-01 00:00:00,2000,,1990,2020,10,1,,10000,,0,,,1001,5001,1.2345,0.87,28.4,31.2,12.9";
             string[] lines = { CurrentHeader, currentRow };
 
             string[] upgraded = PdhpdlTradeCsvMigrator.Upgrade(lines, CurrentHeader);

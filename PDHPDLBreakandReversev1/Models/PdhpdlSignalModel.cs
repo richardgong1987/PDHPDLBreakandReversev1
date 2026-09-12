@@ -55,4 +55,9 @@ public class PdhpdlSignalModel {
 
     // 昨日区间相对日线波动的宽窄 = (PDH - PDL) ÷ 日线 ATR(14)。同样只用于记录。
     public double PdRangeAtr { get; set; } = double.NaN;
+
+    // H1 的 DMI(14)：趋势强度与多空双方的方向力量。同样只用于记录。
+    public double Adx14H1 { get; set; } = double.NaN;
+    public double DiPlus14H1 { get; set; } = double.NaN;
+    public double DiMinus14H1 { get; set; } = double.NaN;
 }

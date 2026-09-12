@@ -84,9 +84,10 @@ public class PDHPDLBreakandReversev1 : Robot {
     private PdhpdlTradeCsvLogger _csvLogger;
     private Atr14Series _atr14;
 
-    // 只为写进 CSV 的波动状态：H1 的 ATR 状态值、日线 ATR（用于 PD_Range_ATR）。
+    // 只为写进 CSV 的市场状态：H1 的 ATR 状态值与 DMI，日线 ATR（用于 PD_Range_ATR）。
     private Atr14Series _atrH1;
     private Atr14Series _atrDaily;
+    private Dms14Series _dmsH1;
     private DateTime _optimisationWindowStart;
 
     protected override void OnStart() {
@@ -97,8 +98,10 @@ public class PDHPDLBreakandReversev1 : Robot {
         _marketStructure = new MarketStructure(Chart, Bars, ZigZagLength);
         _marketStructure.Update();
         Bars dailyBars = MarketData.GetBars(TimeFrame.Daily, SymbolName);
-        _atrH1 = new Atr14Series(Indicators, MarketData.GetBars(TimeFrame.Hour, SymbolName));
+        Bars hourBars = MarketData.GetBars(TimeFrame.Hour, SymbolName);
+        _atrH1 = new Atr14Series(Indicators, hourBars);
         _atrDaily = new Atr14Series(Indicators, dailyBars);
+        _dmsH1 = new Dms14Series(Indicators, hourBars);
         var entryGate = new PivotEntryGate();
         var lossCounter = new ConsecutiveLossCounter(Nlock);
         _signalDetector = new PdhpdlSignalDetector(Bars, dailyBars, _rmaSeries, _marketStructure, entryGate, lossCounter);
@@ -186,17 +189,20 @@ public class PDHPDLBreakandReversev1 : Robot {
             return;
 
         signalModel.IsBigK = _atr14.IsBarRangeTooLarge(signalModel.BarIndex, signalModel.High, signalModel.Low, 3);
-        FillAtrState(signalModel);
+        FillMarketState(signalModel);
 
         if (_orderExecutor.ExecuteIfSignal(signalModel)) {
             _signalMarkers.Draw(signalModel);
         }
     }
 
-    // 两个只记录、不参与判断的波动指标。数据不足（暖机期）时留 NaN，CSV 里写成空。
-    private void FillAtrState(PdhpdlSignalModel signalModel) {
+    // 只记录、不参与判断的波动与趋势指标。数据不足（暖机期）时留 NaN，CSV 里写成空。
+    private void FillMarketState(PdhpdlSignalModel signalModel) {
         signalModel.AtrRatioH1 = _atrH1.LastClosedRatio;
         signalModel.PdRangeAtr = CalculatePdRangeAtr(signalModel);
+        signalModel.Adx14H1 = _dmsH1.LastClosedAdx;
+        signalModel.DiPlus14H1 = _dmsH1.LastClosedDiPlus;
+        signalModel.DiMinus14H1 = _dmsH1.LastClosedDiMinus;
     }
 
     // 日线 ATR 取的是与 PDH/PDL 同一根 K 线（上一根收盘日线），两者口径才对得上。

@@ -65,7 +65,10 @@ public class PdhpdlTradeCsvLogger {
             PositionId = position.Id.ToString(),
             DealId = GetOpenDealId(position),
             AtrRatioH1 = planModel.AtrRatioH1,
-            PdRangeAtr = planModel.PdRangeAtr
+            PdRangeAtr = planModel.PdRangeAtr,
+            Adx14H1 = planModel.Adx14H1,
+            DiPlus14H1 = planModel.DiPlus14H1,
+            DiMinus14H1 = planModel.DiMinus14H1
         };
 
         Append(record);
@@ -97,7 +100,10 @@ public class PdhpdlTradeCsvLogger {
             VolumeInUnits = order.VolumeInUnits,
             PendingOrderId = csvId,
             AtrRatioH1 = planModel.AtrRatioH1,
-            PdRangeAtr = planModel.PdRangeAtr
+            PdRangeAtr = planModel.PdRangeAtr,
+            Adx14H1 = planModel.Adx14H1,
+            DiPlus14H1 = planModel.DiPlus14H1,
+            DiMinus14H1 = planModel.DiMinus14H1
         };
 
         Append(record);
@@ -158,7 +164,9 @@ public class PdhpdlTradeCsvLogger {
             Escape(FormatOptionalNumber(recordModel.EntryAccountEquity)), Escape(FormatOptionalNumber(recordModel.CloseAccountEquity)),
             Escape(recordModel.ProfitLoss.ToString(CultureInfo.InvariantCulture)), Escape(recordModel.CloseTime),
             Escape(recordModel.PendingOrderId), Escape(recordModel.PositionId), Escape(recordModel.DealId),
-            Escape(FormatRatio(recordModel.AtrRatioH1)), Escape(FormatRatio(recordModel.PdRangeAtr)));
+            Escape(FormatMetric(recordModel.AtrRatioH1)), Escape(FormatMetric(recordModel.PdRangeAtr)),
+            Escape(FormatMetric(recordModel.Adx14H1)), Escape(FormatMetric(recordModel.DiPlus14H1)),
+            Escape(FormatMetric(recordModel.DiMinus14H1)));
         System.IO.File.AppendAllText(_filePath, line + Environment.NewLine, CsvEncoding);
     }
 
@@ -186,12 +194,14 @@ public class PdhpdlTradeCsvLogger {
     private static string BuildHeader() {
         // "多空" (Side) 字段已废弃，从当前表头中移除。历史文件由 PdhpdlTradeCsvMigrator 升级时会剥离该列。
         return string.Join(",", "编号", "关键位", "信号", "回撤开仓模式", "备注", "交易品种", "时间周期", "入场时间", "入场价格", "平仓价格", "止损价格", "止盈价格", "风险价格距离", "下单数量",
-            "平仓原因", "开仓账户权益", "平仓账户权益", "平仓盈亏", "平仓时间", "挂单ID", "持仓ID", "成交ID", "ATR_Ratio_H1", "PD_Range_ATR");
+            "平仓原因", "开仓账户权益", "平仓账户权益", "平仓盈亏", "平仓时间", "挂单ID", "持仓ID", "成交ID", "ATR_Ratio_H1", "PD_Range_ATR",
+            "ADX14_H1", "DI+14_H1", "DI-14_H1");
     }
 
-    // 波动状态值只写在开仓行；平仓行与数据不足（暖机期）的情况留空。
-    private static string FormatRatio(double value) {
-        if (double.IsNaN(value) || double.IsInfinity(value) || value <= 0.0)
+    // 波动/趋势状态值只写在开仓行；平仓行与数据不足（暖机期）的情况留空。
+    // 0 是 DI 的合法取值（单边行情里另一侧可以归零），所以只把 NaN 与负数当作缺失。
+    private static string FormatMetric(double value) {
+        if (double.IsNaN(value) || double.IsInfinity(value) || value < 0.0)
             return "";
 
         return value.ToString("0.####", CultureInfo.InvariantCulture);

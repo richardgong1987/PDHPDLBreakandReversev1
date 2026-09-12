@@ -90,6 +90,9 @@ public class PdhpdlOrderExecutor {
         planModel.SignalBarIndex = signalModel.BarIndex;
         planModel.AtrRatioH1 = signalModel.AtrRatioH1;
         planModel.PdRangeAtr = signalModel.PdRangeAtr;
+        planModel.Adx14H1 = signalModel.Adx14H1;
+        planModel.DiPlus14H1 = signalModel.DiPlus14H1;
+        planModel.DiMinus14H1 = signalModel.DiMinus14H1;
 
         // 快照必须在下单之前放好：市价单的 Positions.Opened 可能在 SubmitOrder 里就回调了。
         _pendingGateSnapshotsByLabel[planModel.Label] = new EntryGateSnapshot(planModel.DirectionModel, signalModel.PivotCount);
