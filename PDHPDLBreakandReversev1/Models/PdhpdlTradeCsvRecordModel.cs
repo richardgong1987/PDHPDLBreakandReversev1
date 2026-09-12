@@ -46,4 +46,10 @@ public class PdhpdlTradeCsvRecordModel {
     public string PositionId { get; set; }
 
     public string DealId { get; set; }
+
+    // ATR14_H1 / SMA(ATR14_H1,100)
+    public double AtrRatioH1 { get; set; } = double.NaN;
+
+    // (PDH - PDL) / 日线 ATR(14)
+    public double PdRangeAtr { get; set; } = double.NaN;
 }

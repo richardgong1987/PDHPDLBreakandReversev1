@@ -8,7 +8,9 @@ namespace cAlgo.Robots;
 // history of older layouts (fewer columns, equity columns in different positions, per-pullback
 // entry-mode columns) and rewrites old rows in place. Pure string work, no cAlgo dependency.
 public static class PdhpdlTradeCsvMigrator {
-    private const int CurrentColumnCount = 22;
+    private const int CurrentColumnCount = 24;
+    // ATR_Ratio_H1 / PD_Range_ATR 两列加入之前的 schema：旧行在末尾补两个空列即可。
+    private const int ColumnCountBeforeAtrState = 22;
     // "多空"(Side) 列移除之前的旧 schema：所有历史布局的第 1 列（索引 SideColumnIndex）都是 Side。
     private const int ColumnCountWithSide = 23;
     private const int PreviousColumnCount = 26;
@@ -31,7 +33,7 @@ public static class PdhpdlTradeCsvMigrator {
             return null;
 
         bool isPreviousWithSideHeader = lines[0] == PreviousHeaderWithSide;
-        MigrateRows(lines, isPreviousWithSideHeader);
+        MigrateRows(lines, isPreviousWithSideHeader, hasCurrentHeader);
         lines[0] = currentHeader;
         return lines;
     }
@@ -50,23 +52,43 @@ public static class PdhpdlTradeCsvMigrator {
         return false;
     }
 
-    private static void MigrateRows(string[] lines, bool isPreviousWithSideHeader) {
+    private static void MigrateRows(string[] lines, bool isPreviousWithSideHeader, bool hasCurrentHeader) {
         for (int i = 1; i < lines.Length; i++) {
             if (string.IsNullOrWhiteSpace(lines[i]))
                 continue;
 
             string[] columns = lines[i].Split(',');
 
-            if (columns.Length == CurrentColumnCount)
+            // 当前 schema 的列数与更早的 OldColumnCountBeforeSingleTakeProfit 撞在同一个数字上，
+            // 靠表头区分：表头已是当前表头，这样的行就是当前布局，否则按旧布局迁移。
+            if (columns.Length == CurrentColumnCount && hasCurrentHeader)
                 continue;
+
+            if (columns.Length == ColumnCountBeforeAtrState) {
+                lines[i] = string.Join(",", AppendEmptyColumns(columns, CurrentColumnCount));
+                continue;
+            }
 
             string[] withSide = NormalizeToWithSideLayout(columns, isPreviousWithSideHeader);
 
             // 只有成功归一到 "含 Side 的 23 列布局" 才剥离 Side 列；无法识别长度的行保持原样，
             // 与旧逻辑一致（旧代码对未命中任何分支的行也不改动）。
             if (withSide.Length == ColumnCountWithSide)
-                lines[i] = string.Join(",", RemoveSideColumn(withSide));
+                lines[i] = string.Join(",", AppendEmptyColumns(RemoveSideColumn(withSide), CurrentColumnCount));
         }
+    }
+
+    private static string[] AppendEmptyColumns(string[] columns, int targetColumnCount) {
+        if (columns.Length >= targetColumnCount)
+            return columns;
+
+        string[] padded = new string[targetColumnCount];
+        Array.Copy(columns, padded, columns.Length);
+
+        for (int i = columns.Length; i < targetColumnCount; i++)
+            padded[i] = "";
+
+        return padded;
     }
 
     // 把任意历史布局归一到 "含 Side 的 23 列布局"，随后由 RemoveSideColumn 统一剥离 Side。
@@ -96,7 +118,7 @@ public static class PdhpdlTradeCsvMigrator {
         return columns;
     }
 
-    // 删除索引 SideColumnIndex 处的 "多空" 列，把 23 列布局收敛到当前 22 列 schema。
+    // 删除索引 SideColumnIndex 处的 "多空" 列，把 23 列布局收敛到 ColumnCountBeforeAtrState 布局。
     private static string[] RemoveSideColumn(string[] columnsWithSide) {
         string[] result = new string[columnsWithSide.Length - 1];
         result[0] = columnsWithSide[0];

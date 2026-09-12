@@ -49,4 +49,10 @@ public class PdhpdlSignalModel {
     public BuyOrSellOnlyModel BuyOrSellOnly { get; set; }
 
     public bool IsBigK { get; set; }
+
+    // ATR 状态值（H1）= ATR14_H1 ÷ SMA(ATR14_H1,100)。只写进 CSV 供事后分析，不参与进出场判断。
+    public double AtrRatioH1 { get; set; } = double.NaN;
+
+    // 昨日区间相对日线波动的宽窄 = (PDH - PDL) ÷ 日线 ATR(14)。同样只用于记录。
+    public double PdRangeAtr { get; set; } = double.NaN;
 }
