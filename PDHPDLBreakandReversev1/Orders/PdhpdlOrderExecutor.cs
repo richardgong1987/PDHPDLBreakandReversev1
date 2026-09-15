@@ -8,7 +8,6 @@ namespace cAlgo.Robots;
 // exposure, asks PdhpdlOrderPlanner to size the order, submits it, and keeps the CSV
 // row ids so opens and closes can be reconciled. All sizing math lives in the planner.
 public class PdhpdlOrderExecutor {
-    private const string StrategyLabelPrefix = PdhpdlOrderPlanner.LabelPrefix + "_";
     private const string EntryComment = "ENTRY";
 
     // 挂单最多等 3 根收盘 K 线；等不到回撤就撤单。
@@ -17,6 +16,11 @@ public class PdhpdlOrderExecutor {
     private readonly Robot _robot;
     private readonly string _symbolName;
     private readonly string _timeFrame;
+
+    // Orders are labelled "{OrderLabel}_L" / "{OrderLabel}_S". The side suffix keeps simultaneous long and
+    // short pending orders (MultiplePosition) apart in the per-label CSV maps; the prefix marks this
+    // instance's orders, so manual trades and other bots on the same symbol are ignored.
+    private readonly string _strategyLabelPrefix;
 
     private readonly PdhpdlOrderPlanner _planner;
     private readonly PdhpdlRiskGuard _riskGuard;
@@ -33,11 +37,12 @@ public class PdhpdlOrderExecutor {
     private readonly Dictionary<int, double> _positionEntryEquities = new();
     private readonly Dictionary<string, EntryGateSnapshot> _pendingGateSnapshotsByLabel = new();
 
-    public PdhpdlOrderExecutor(Robot robot, string symbolName, string timeFrame, PdhpdlOrderPlanner planner, PdhpdlRiskGuard riskGuard,
-        PdhpdlTradeCsvLogger csvLogger, PivotEntryGate entryGate, ConsecutiveLossCounter lossCounter) {
+    public PdhpdlOrderExecutor(Robot robot, string symbolName, string timeFrame, string orderLabel, PdhpdlOrderPlanner planner,
+        PdhpdlRiskGuard riskGuard, PdhpdlTradeCsvLogger csvLogger, PivotEntryGate entryGate, ConsecutiveLossCounter lossCounter) {
         _robot = robot;
         _symbolName = symbolName;
         _timeFrame = timeFrame;
+        _strategyLabelPrefix = orderLabel + "_";
         _planner = planner;
         _riskGuard = riskGuard;
         _csvLogger = csvLogger;
@@ -72,11 +77,11 @@ public class PdhpdlOrderExecutor {
             return false;
         }
 
-        if (signalModel.Strategy != StrategyModel.MultiplePosition && (HasOpenSymbolPosition() || HasOpenSymbolPendingOrder())) {
-            _robot.Print("*****Order skipped | Existing position found on symbol: {0}", _symbolName);
+        if (signalModel.Strategy != StrategyModel.MultiplePosition && HasStrategyOrderOrPosition()) {
+            _robot.Print("*****Order skipped | Label {0}* already has a pending order or open position on symbol: {1}",
+                _strategyLabelPrefix, _symbolName);
             return false;
         }
-
 
         PdhpdlOrderPlanModel planModel = _planner.CreatePlan(signalModel, _robot.Account.Equity);
 
@@ -85,6 +90,7 @@ public class PdhpdlOrderExecutor {
             return false;
         }
 
+        planModel.Label = _strategyLabelPrefix + (planModel.DirectionModel == PdhpdlTradeDirectionModel.Long ? "L" : "S");
         planModel.SignalName = signalModel.Label;
         planModel.KeyLevel = signalModel.KeyLevel;
         planModel.SignalBarIndex = signalModel.BarIndex;
@@ -107,12 +113,9 @@ public class PdhpdlOrderExecutor {
         return false;
     }
 
-    private bool HasOpenSymbolPosition() {
-        return _robot.Positions.Any(position => position.SymbolName == _symbolName);
-    }
-
-    private bool HasOpenSymbolPendingOrder() {
-        return _robot.PendingOrders.Any(order => order.SymbolName == _symbolName);
+    // Checks live broker state rather than in-memory maps, so a restart does not stack a second order.
+    private bool HasStrategyOrderOrPosition() {
+        return _robot.PendingOrders.Any(IsStrategyPendingOrder) || _robot.Positions.Any(IsStrategyPosition);
     }
 
     // 大 K 线的挂单是「等价格回撤到中点」，回撤没来就说明这笔已经作废：只给它 PendingOrderExpiryBars
@@ -304,11 +307,11 @@ public class PdhpdlOrderExecutor {
 
     private bool IsStrategyPosition(Position position) {
         return position.SymbolName == _symbolName && !string.IsNullOrWhiteSpace(position.Label) &&
-               position.Label.StartsWith(StrategyLabelPrefix);
+               position.Label.StartsWith(_strategyLabelPrefix);
     }
 
     private bool IsStrategyPendingOrder(PendingOrder order) {
-        return order.SymbolName == _symbolName && !string.IsNullOrWhiteSpace(order.Label) && order.Label.StartsWith(StrategyLabelPrefix);
+        return order.SymbolName == _symbolName && !string.IsNullOrWhiteSpace(order.Label) && order.Label.StartsWith(_strategyLabelPrefix);
     }
 
     private string GetPositionCsvId(Position position) {

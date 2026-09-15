@@ -8,8 +8,6 @@ namespace cAlgo.Robots;
 // Sizing: volume = riskMoney / riskPrice, rounded to the nearest tradable step, so a
 // stop-out loses as close to the risk budget (e.g. 1% of equity) as the step allows.
 public class PdhpdlOrderPlanner {
-    public const string LabelPrefix = "PDHPDL_V1";
-
     private readonly IPdhpdlSymbolModel _symbolModel;
     private readonly PdhpdlRiskGuard _riskGuard;
     private readonly int _stopOffsetTicks;
@@ -110,8 +108,6 @@ public class PdhpdlOrderPlanner {
     private void FillPlan(PdhpdlOrderPlanModel planModel, PdhpdlTradeDirectionModel directionModel, PdhpdlEntryModel entryModel,
         double entry, double stop, double takeProfit, double riskPrice, double stopLossPips, double takeProfitPips, double volume,
         double accountEquity, double riskMoney) {
-        string side = directionModel == PdhpdlTradeDirectionModel.Long ? "L" : "S";
-
         planModel.IsValid = true;
         planModel.DirectionModel = directionModel;
         planModel.EntryModel = entryModel;
@@ -127,7 +123,6 @@ public class PdhpdlOrderPlanner {
         planModel.AccountEquity = accountEquity;
         planModel.RiskMoney = riskMoney;
         planModel.EstimatedRiskMoney = _symbolModel.AmountRisked(volume, stopLossPips);
-        planModel.Label = $"{LabelPrefix}_{side}";
     }
 
     private double GetEntryPrice(PdhpdlSignalModel signalModel, double stop, PdhpdlTradeDirectionModel directionModel) {

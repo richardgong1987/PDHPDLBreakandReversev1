@@ -12,6 +12,9 @@ public class PDHPDLBreakandReversev1 : Robot {
     [Parameter("策略模式", DefaultValue = StrategyModel.All)]
     public StrategyModel Strategy { get; set; }
 
+    [Parameter("订单标签", DefaultValue = "PDHPDLBreakandReversev1-label")]
+    public string OrderLabel { get; set; }
+
     [Parameter("只作多或作空模式", DefaultValue = BuyOrSellOnlyModel.All)]
     public BuyOrSellOnlyModel BuyOrSellOnly { get; set; }
 
@@ -100,6 +103,13 @@ public class PDHPDLBreakandReversev1 : Robot {
     private DateTime _optimisationWindowStart;
 
     protected override void OnStart() {
+        // A blank label would make every "_L"/"_S" label on the symbol look like this bot's order.
+        if (string.IsNullOrWhiteSpace(OrderLabel)) {
+            Print("*****OrderLabel must not be empty. cBot stopped.");
+            Stop();
+            return;
+        }
+
         _optimisationWindowStart = Server.Time;
         LaunchDebug();
         DrawDualRmaLines();
@@ -124,8 +134,8 @@ public class PDHPDLBreakandReversev1 : Robot {
 
         var riskGuard = new PdhpdlRiskGuard(BuildRiskGuardConfig());
         var planner = new PdhpdlOrderPlanner(new CAlgoSymbolModel(Symbol), riskGuard, StopOffsetTicks, TakeProfitR, EntryModel, RiskPct);
-        _orderExecutor = new PdhpdlOrderExecutor(this, SymbolName, Bars.TimeFrame.ToString(), planner, riskGuard, _csvLogger, entryGate,
-            lossCounter);
+        _orderExecutor = new PdhpdlOrderExecutor(this, SymbolName, Bars.TimeFrame.ToString(), OrderLabel.Trim(), planner, riskGuard,
+            _csvLogger, entryGate, lossCounter);
         DrawPdhpdlLines();
         Print("*****PDH/PDL Break and Reverse started.");
     }
@@ -201,7 +211,7 @@ public class PDHPDLBreakandReversev1 : Robot {
     }
 
     private void HandleClosedBarSignal() {
-        PdhpdlSignalModel signalModel = _signalDetector.DetectOnClosedBar(Strategy,BuyOrSellOnly);
+        PdhpdlSignalModel signalModel = _signalDetector.DetectOnClosedBar(Strategy, BuyOrSellOnly);
         if (!signalModel.HasData)
             return;
 
